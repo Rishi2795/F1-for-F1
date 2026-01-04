@@ -1,0 +1,297 @@
+{
+  "season": 2023,
+  "round": 20,
+  "event_name": "S\u00e3o Paulo Grand Prix",
+  "track": {
+    "name": "S\u00e3o Paulo Grand Prix",
+    "location": "S\u00e3o Paulo"
+  },
+  "sessions": {
+    "race": {
+      "results": [
+        {
+          "driver_code": "VER",
+          "team": "Red Bull Racing",
+          "grid": 1,
+          "finish": 1,
+          "positions_gained": 0,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 42
+        },
+        {
+          "driver_code": "NOR",
+          "team": "McLaren",
+          "grid": 6,
+          "finish": 2,
+          "positions_gained": 4,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 39
+        },
+        {
+          "driver_code": "ALO",
+          "team": "Aston Martin",
+          "grid": 4,
+          "finish": 3,
+          "positions_gained": 1,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 49
+        },
+        {
+          "driver_code": "PER",
+          "team": "Red Bull Racing",
+          "grid": 9,
+          "finish": 4,
+          "positions_gained": 5,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 45
+        },
+        {
+          "driver_code": "STR",
+          "team": "Aston Martin",
+          "grid": 3,
+          "finish": 5,
+          "positions_gained": -2,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 41
+        },
+        {
+          "driver_code": "SAI",
+          "team": "Ferrari",
+          "grid": 7,
+          "finish": 6,
+          "positions_gained": 1,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 46
+        },
+        {
+          "driver_code": "GAS",
+          "team": "Alpine",
+          "grid": 15,
+          "finish": 7,
+          "positions_gained": 8,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 51
+        },
+        {
+          "driver_code": "HAM",
+          "team": "Mercedes",
+          "grid": 5,
+          "finish": 8,
+          "positions_gained": -3,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 43
+        },
+        {
+          "driver_code": "TSU",
+          "team": "AlphaTauri",
+          "grid": 16,
+          "finish": 9,
+          "positions_gained": 7,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 42
+        },
+        {
+          "driver_code": "OCO",
+          "team": "Alpine",
+          "grid": 14,
+          "finish": 10,
+          "positions_gained": 4,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 53
+        },
+        {
+          "driver_code": "SAR",
+          "team": "Williams",
+          "grid": 19,
+          "finish": 11,
+          "positions_gained": 8,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 68
+        },
+        {
+          "driver_code": "HUL",
+          "team": "Haas F1 Team",
+          "grid": 11,
+          "finish": 12,
+          "positions_gained": -1,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 69
+        },
+        {
+          "driver_code": "RIC",
+          "team": "AlphaTauri",
+          "grid": 17,
+          "finish": 13,
+          "positions_gained": 4,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 41
+        },
+        {
+          "driver_code": "PIA",
+          "team": "McLaren",
+          "grid": 10,
+          "finish": 14,
+          "positions_gained": -4,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 46
+        },
+        {
+          "driver_code": "RUS",
+          "team": "Mercedes",
+          "grid": 8,
+          "finish": 15,
+          "positions_gained": -7,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "SOFT"
+          ],
+          "longest_stint": 31
+        },
+        {
+          "driver_code": "BOT",
+          "team": "Alfa Romeo",
+          "grid": 18,
+          "finish": 16,
+          "positions_gained": 2,
+          "stops": 1,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM"
+          ],
+          "longest_stint": 21
+        },
+        {
+          "driver_code": "ZHO",
+          "team": "Alfa Romeo",
+          "grid": 20,
+          "finish": 17,
+          "positions_gained": 3,
+          "stops": 1,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM"
+          ],
+          "longest_stint": 15
+        },
+        {
+          "driver_code": "MAG",
+          "team": "Haas F1 Team",
+          "grid": 12,
+          "finish": 18,
+          "positions_gained": -6,
+          "stops": 0,
+          "tyre_sequence": [
+            "SOFT"
+          ],
+          "longest_stint": 1
+        },
+        {
+          "driver_code": "ALB",
+          "team": "Williams",
+          "grid": 13,
+          "finish": 19,
+          "positions_gained": -6,
+          "stops": 0,
+          "tyre_sequence": [
+            "SOFT"
+          ],
+          "longest_stint": 1
+        },
+        {
+          "driver_code": "LEC",
+          "team": "Ferrari",
+          "grid": 2,
+          "finish": 20,
+          "positions_gained": -18,
+          "stops": 0,
+          "tyre_sequence": [
+            "SOFT"
+          ],
+          "longest_stint": 1
+        }
+      ]
+    }
+  },
+  "derived": {
+    "winning_recipe": {
+      "typical_stops": 2,
+      "common_tyre_sequence": "SOFT-MEDIUM-SOFT",
+      "avg_longest_stint": 37
+    },
+    "style_profile": [
+      "Tyre Saver Track",
+      "Track Position Critical"
+    ]
+  }
+}

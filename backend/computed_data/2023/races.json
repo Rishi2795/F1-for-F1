@@ -1,0 +1,128 @@
+[
+  {
+    "season": 2023,
+    "round": 1,
+    "event_name": "Bahrain Grand Prix",
+    "location": "Sakhir"
+  },
+  {
+    "season": 2023,
+    "round": 2,
+    "event_name": "Saudi Arabian Grand Prix",
+    "location": "Jeddah"
+  },
+  {
+    "season": 2023,
+    "round": 3,
+    "event_name": "Australian Grand Prix",
+    "location": "Melbourne"
+  },
+  {
+    "season": 2023,
+    "round": 4,
+    "event_name": "Azerbaijan Grand Prix",
+    "location": "Baku"
+  },
+  {
+    "season": 2023,
+    "round": 5,
+    "event_name": "Miami Grand Prix",
+    "location": "Miami"
+  },
+  {
+    "season": 2023,
+    "round": 6,
+    "event_name": "Monaco Grand Prix",
+    "location": "Monaco"
+  },
+  {
+    "season": 2023,
+    "round": 7,
+    "event_name": "Spanish Grand Prix",
+    "location": "Barcelona"
+  },
+  {
+    "season": 2023,
+    "round": 8,
+    "event_name": "Canadian Grand Prix",
+    "location": "Montr\u00e9al"
+  },
+  {
+    "season": 2023,
+    "round": 9,
+    "event_name": "Austrian Grand Prix",
+    "location": "Spielberg"
+  },
+  {
+    "season": 2023,
+    "round": 10,
+    "event_name": "British Grand Prix",
+    "location": "Silverstone"
+  },
+  {
+    "season": 2023,
+    "round": 11,
+    "event_name": "Hungarian Grand Prix",
+    "location": "Budapest"
+  },
+  {
+    "season": 2023,
+    "round": 12,
+    "event_name": "Belgian Grand Prix",
+    "location": "Spa-Francorchamps"
+  },
+  {
+    "season": 2023,
+    "round": 13,
+    "event_name": "Dutch Grand Prix",
+    "location": "Zandvoort"
+  },
+  {
+    "season": 2023,
+    "round": 14,
+    "event_name": "Italian Grand Prix",
+    "location": "Monza"
+  },
+  {
+    "season": 2023,
+    "round": 16,
+    "event_name": "Japanese Grand Prix",
+    "location": "Suzuka"
+  },
+  {
+    "season": 2023,
+    "round": 17,
+    "event_name": "Qatar Grand Prix",
+    "location": "Lusail"
+  },
+  {
+    "season": 2023,
+    "round": 18,
+    "event_name": "United States Grand Prix",
+    "location": "Austin"
+  },
+  {
+    "season": 2023,
+    "round": 19,
+    "event_name": "Mexico City Grand Prix",
+    "location": "Mexico City"
+  },
+  {
+    "season": 2023,
+    "round": 20,
+    "event_name": "S\u00e3o Paulo Grand Prix",
+    "location": "S\u00e3o Paulo"
+  },
+  {
+    "season": 2023,
+    "round": 21,
+    "event_name": "Las Vegas Grand Prix",
+    "location": "Las Vegas"
+  },
+  {
+    "season": 2023,
+    "round": 22,
+    "event_name": "Abu Dhabi Grand Prix",
+    "location": "Yas Island"
+  }
+]

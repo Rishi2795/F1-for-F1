@@ -1,0 +1,288 @@
+{
+  "season": 2023,
+  "round": 21,
+  "event_name": "Las Vegas Grand Prix",
+  "track": {
+    "name": "Las Vegas Grand Prix",
+    "location": "Las Vegas"
+  },
+  "sessions": {
+    "race": {
+      "results": [
+        {
+          "driver_code": "VER",
+          "team": "Red Bull Racing",
+          "grid": 2,
+          "finish": 1,
+          "positions_gained": 1,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 34
+        },
+        {
+          "driver_code": "LEC",
+          "team": "Ferrari",
+          "grid": 1,
+          "finish": 2,
+          "positions_gained": -1,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 29
+        },
+        {
+          "driver_code": "PER",
+          "team": "Red Bull Racing",
+          "grid": 11,
+          "finish": 3,
+          "positions_gained": 8,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 49
+        },
+        {
+          "driver_code": "OCO",
+          "team": "Alpine",
+          "grid": 16,
+          "finish": 4,
+          "positions_gained": 12,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 30
+        },
+        {
+          "driver_code": "STR",
+          "team": "Aston Martin",
+          "grid": 19,
+          "finish": 5,
+          "positions_gained": 14,
+          "stops": 1,
+          "tyre_sequence": [
+            "SOFT",
+            "HARD"
+          ],
+          "longest_stint": 47
+        },
+        {
+          "driver_code": "SAI",
+          "team": "Ferrari",
+          "grid": 12,
+          "finish": 6,
+          "positions_gained": 6,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 47
+        },
+        {
+          "driver_code": "HAM",
+          "team": "Mercedes",
+          "grid": 10,
+          "finish": 7,
+          "positions_gained": 3,
+          "stops": 2,
+          "tyre_sequence": [
+            "HARD",
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 41
+        },
+        {
+          "driver_code": "RUS",
+          "team": "Mercedes",
+          "grid": 3,
+          "finish": 8,
+          "positions_gained": -5,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 35
+        },
+        {
+          "driver_code": "ALO",
+          "team": "Aston Martin",
+          "grid": 9,
+          "finish": 9,
+          "positions_gained": 0,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 49
+        },
+        {
+          "driver_code": "PIA",
+          "team": "McLaren",
+          "grid": 18,
+          "finish": 10,
+          "positions_gained": 8,
+          "stops": 1,
+          "tyre_sequence": [
+            "HARD",
+            "MEDIUM"
+          ],
+          "longest_stint": 43
+        },
+        {
+          "driver_code": "GAS",
+          "team": "Alpine",
+          "grid": 4,
+          "finish": 11,
+          "positions_gained": -7,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 33
+        },
+        {
+          "driver_code": "ALB",
+          "team": "Williams",
+          "grid": 5,
+          "finish": 12,
+          "positions_gained": -7,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 34
+        },
+        {
+          "driver_code": "MAG",
+          "team": "Haas F1 Team",
+          "grid": 8,
+          "finish": 13,
+          "positions_gained": -5,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 36
+        },
+        {
+          "driver_code": "RIC",
+          "team": "AlphaTauri",
+          "grid": 14,
+          "finish": 14,
+          "positions_gained": 0,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 33
+        },
+        {
+          "driver_code": "ZHO",
+          "team": "Alfa Romeo",
+          "grid": 17,
+          "finish": 15,
+          "positions_gained": 2,
+          "stops": 1,
+          "tyre_sequence": [
+            "HARD",
+            "MEDIUM"
+          ],
+          "longest_stint": 26
+        },
+        {
+          "driver_code": "SAR",
+          "team": "Williams",
+          "grid": 6,
+          "finish": 16,
+          "positions_gained": -10,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 35
+        },
+        {
+          "driver_code": "BOT",
+          "team": "Alfa Romeo",
+          "grid": 7,
+          "finish": 17,
+          "positions_gained": -10,
+          "stops": 2,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD",
+            "MEDIUM"
+          ],
+          "longest_stint": 27
+        },
+        {
+          "driver_code": "TSU",
+          "team": "AlphaTauri",
+          "grid": 20,
+          "finish": 18,
+          "positions_gained": 2,
+          "stops": 2,
+          "tyre_sequence": [
+            "SOFT",
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 26
+        },
+        {
+          "driver_code": "HUL",
+          "team": "Haas F1 Team",
+          "grid": 13,
+          "finish": 19,
+          "positions_gained": -6,
+          "stops": 1,
+          "tyre_sequence": [
+            "MEDIUM",
+            "HARD"
+          ],
+          "longest_stint": 34
+        },
+        {
+          "driver_code": "NOR",
+          "team": "McLaren",
+          "grid": 15,
+          "finish": 20,
+          "positions_gained": -5,
+          "stops": 0,
+          "tyre_sequence": [
+            "MEDIUM"
+          ],
+          "longest_stint": 3
+        }
+      ]
+    }
+  },
+  "derived": {
+    "winning_recipe": {
+      "typical_stops": 1,
+      "common_tyre_sequence": "MEDIUM-HARD",
+      "avg_longest_stint": 34
+    },
+    "style_profile": [
+      "Tyre Saver Track",
+      "Track Position Critical"
+    ]
+  }
+}
