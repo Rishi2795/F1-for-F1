@@ -1,17 +1,54 @@
-# Python
+# =========================
+# Logs
+# =========================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# =========================
+# Node / Frontend
+# =========================
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+dist-ssr/
+*.local
+
+# =========================
+# Python / Backend
+# =========================
 backend/venv/
-backend/.fastf1-cache/
 __pycache__/
 *.pyc
 
+# FastF1 cache (CRITICAL)
+.fastf1-cache/
+backend/.fastf1-cache/
+
+# Precomputed race data (stored in MongoDB)
+backend/computed_data/
+
+# =========================
 # Environment variables
+# =========================
 .env
-.env.local
+.env.*
+backend/.env
+frontend/.env
 
-# Node
-frontend/node_modules/
-frontend/dist/
-
-# OS
+# =========================
+# Editor / OS
+# =========================
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
 Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
