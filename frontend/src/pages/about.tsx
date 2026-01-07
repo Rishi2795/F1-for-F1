@@ -81,7 +81,7 @@ export default function About() {
       name: "Michael Schumacher",
       era: "2000–2004",
       titles: "7× World Champion",
-      img: "https://upload.wikimedia.org/wikipedia/commons/3/3a/Michael_Schumacher_2004.jpg",
+      img: "drivers/schumacher.jpeg",
       impact:
         "Redefined professionalism in Formula 1. Ferrari’s dominance was built on relentless testing, operational discipline, and race execution."
     },
@@ -89,7 +89,7 @@ export default function About() {
       name: "Sebastian Vettel",
       era: "2010–2013",
       titles: "4× World Champion",
-      img: "https://upload.wikimedia.org/wikipedia/commons/0/0f/Sebastian_Vettel_2015_Malaysia.jpg",
+      img: "drivers/vettel.jpg",
       impact:
         "Mastered peak-downforce aerodynamic cars. His success highlighted the importance of regulation exploitation and car-driver harmony."
     },
@@ -97,15 +97,15 @@ export default function About() {
       name: "Lewis Hamilton",
       era: "2014–2020",
       titles: "7× World Champion",
-      img: "https://upload.wikimedia.org/wikipedia/commons/4/44/Lewis_Hamilton_2016_Malaysia.jpg",
+      img: "drivers/hamilton.jpeg",
       impact:
-        "The reference driver of the hybrid era — adaptable, intelligent, and consistently elite across regulation refinements."
+        "The reference driver of the hybrid era ,he was adaptable, intelligent, and consistently elite across regulation refinements."
     },
     {
       name: "Max Verstappen",
       era: "2021–Present",
       titles: "4× World Champion",
-      img: "https://upload.wikimedia.org/wikipedia/commons/7/75/Max_Verstappen_2022.jpg",
+      img: "drivers/verstappen.jpeg",
       impact:
         "Combines aggressive precision with strategic maturity, defining the ground-effect era through tyre control and consistency."
     },
@@ -117,7 +117,7 @@ export default function About() {
         {/* ================= HERO ================= */}
       <section className="relative px-6 pt-32 pb-32 text-center">
         <img
-          src="https://images.unsplash.com/photo-1526726538690-5cbf956ae2fd"
+          src="https://images.twinkl.co.uk/tw1n/image/private/t_630/u/ux/jeff-cooper-tumxquem5pe-unsplash_ver_1.png"
           className="absolute inset-0 w-full h-full object-cover opacity-20"
           alt=""
         />
@@ -129,7 +129,7 @@ export default function About() {
           </div>
 
           <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight">
-            F1 <span className="italic text-red-600">for</span> F1
+            F1 for <span className="italic text-red-600">F1</span> 
           </h1>
 
           <p className="mt-8 text-xl md:text-2xl text-slate-300 max-w-4xl mx-auto">
@@ -293,20 +293,40 @@ export default function About() {
 
       {/* ================= DRIVERS ================= */}
       <section className="px-6 pb-32 max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold mb-12">Legendary Drivers & Their Impact</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {drivers.map((d) => (
-            <div key={d.name} className="border border-slate-800 rounded-xl overflow-hidden">
-              <img src={d.img} alt={d.name} className="h-56 w-full object-cover" />
-              <div className="p-5">
-                <h3 className="font-semibold">{d.name}</h3>
-                <p className="text-xs text-slate-400">{d.titles} · {d.era}</p>
-                <p className="text-sm text-slate-400 mt-3">{d.impact}</p>
-              </div>
-            </div>
-          ))}
+  <h2 className="text-3xl font-bold mb-12">Legendary Drivers & Their Impact</h2>
+
+  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+    {drivers.map((d) => (
+      <div
+        key={d.name}
+        className="border border-slate-800 rounded-xl overflow-hidden flex flex-col h-full"
+      >
+        {/* Image container with fixed aspect ratio */}
+        <div className="relative w-full aspect-[3/4] overflow-hidden">
+          <img
+            src={d.img}
+            alt={d.name}
+            className="absolute inset-0 w-full h-full object-cover object-top"
+          />
         </div>
-      </section>
+
+        {/* Content */}
+        <div className="p-5 flex-1 flex flex-col">
+          <h3 className="font-semibold">{d.name}</h3>
+
+          <p className="text-xs text-slate-400">
+            {d.titles} · {d.era}
+          </p>
+
+          <p className="text-sm text-slate-400 mt-3">
+            {d.impact}
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
 
       {/* <footer className="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
         Educational & analytical project · Built with historical Formula 1 race data · Not affiliated with Formula 1
