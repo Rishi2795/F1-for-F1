@@ -1,10 +1,10 @@
 import fastf1
 from functools import lru_cache
 
-# Adapted in part from: IAmTomShaw/f1-race-replay (MIT, FastF1 usage pattern)
+CACHE_DIR = os.path.join(os.getcwd(), ".fastf1-cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
 
-# Enable on-disk cache so we don't refetch every time
-fastf1.Cache.enable_cache(".fastf1-cache")
+fastf1.Cache.enable_cache(CACHE_DIR)
 
 
 @lru_cache(maxsize=32)
