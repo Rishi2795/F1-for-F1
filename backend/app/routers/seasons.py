@@ -1,22 +1,55 @@
 from fastapi import APIRouter, HTTPException
-from app.core.precomputed_loader import list_seasons, list_races, load_race
+from app.db.mongo import db
 
 router = APIRouter(prefix="/seasons", tags=["seasons"])
 
+
 @router.get("")
 def seasons():
-    return {"seasons": list_seasons()}
+    """
+    Returns available seasons from MongoDB
+    """
+    seasons = db.races.distinct("season")
+    seasons = sorted(seasons, reverse=True)
+
+    return {"seasons": seasons}
+
 
 @router.get("/{year}/races")
 def races(year: int):
-    data = list_races(year)
-    if not data:
-        raise HTTPException(404, "Season not found")
-    return {"season": year, "races": data}
+    """
+    Returns circuit list for a season
+    """
+    races = list(
+        db.races.find(
+            {"season": year},
+            {
+                "_id": 0,
+                "season": 1,
+                "round": 1,
+                "event_name": 1,
+                "location": 1,
+            },
+        ).sort("round", 1)
+    )
+
+    if not races:
+        raise HTTPException(status_code=404, detail="Season not found")
+
+    return {"season": year, "races": races}
+
 
 @router.get("/{year}/races/{round_number}")
 def race(year: int, round_number: int):
-    data = load_race(year, round_number)
-    if not data:
-        raise HTTPException(404, "Race not found")
-    return data
+    """
+    Returns full race analysis document
+    """
+    race = db.races.find_one(
+        {"season": year, "round": round_number},
+        {"_id": 0},
+    )
+
+    if not race:
+        raise HTTPException(status_code=404, detail="Race not found")
+
+    return race
