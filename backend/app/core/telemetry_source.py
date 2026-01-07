@@ -1,3 +1,4 @@
+import os
 import fastf1
 from functools import lru_cache
 
