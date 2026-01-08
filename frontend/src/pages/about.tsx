@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
 
 
 export default function About() {
@@ -128,52 +129,122 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-black text-slate-100 overflow-x-hidden">
+    {/* ================= HERO ================= */}
+    <section className="relative px-6 pt-32 pb-32 text-center overflow-hidden">
+      {/*
+        HERO CAROUSEL IMAGES
+        Keep this minimal (3–4 max)
+      */}
+      {(() => {
+        const heroImages = [
+          "https://media.formula1.com/image/upload/c_lfill,w_2560,q_auto,f_auto/v1740000000/fom-website/2026%20regulations/2026_Explainer_FIA_Front_3_4_1920x1080.webp",
+          "https://cdn-6.motorsport.com/images/amp/0R7wZ5E2/s1000/f1-2026-car-renders.jpg",
+          "https://ichef.bbci.co.uk/ace/standard/3840/cpsprodpb/b841/live/718f2bc0-db45-11f0-bd60-5332627fd119.jpg",
+        ];
 
-        {/* ================= HERO ================= */}
-      <section className="relative px-6 pt-32 pb-32 text-center">
-        <img
-          src="https://images.twinkl.co.uk/tw1n/image/private/t_630/u/ux/jeff-cooper-tumxquem5pe-unsplash_ver_1.png"
-          className="absolute inset-0 w-full h-full object-cover opacity-20"
-          alt=""
-        />
+        const [index, setIndex] = useState(0);
 
-        <div className="relative max-w-6xl mx-auto">
-          {/* F1⁴ Logo */}
-          <div className="mb-6 text-slate-400 text-sm tracking-widest">
-            F1<sup className="text-red-600 font-semibold">4</sup> · help for Formula 1
-          </div>
+        useEffect(() => {
+          const id = setInterval(() => {
+            setIndex((prev) => (prev + 1) % heroImages.length);
+          }, 7000);
+          return () => clearInterval(id);
+        }, []);
 
-          <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight">
-            F1 for <span className="italic text-red-600">F1</span> 
-          </h1>
+        return (
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={heroImages[index]}
+              src={heroImages[index]}
+              alt=""
+              referrerPolicy="no-referrer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1 }}
+              className="absolute inset-0 w-full h-full object-cover scale-105"
+            />
+          </AnimatePresence>
+        );
+      })()}
 
-          <p className="mt-8 text-xl md:text-2xl text-slate-300 max-w-4xl mx-auto">
-            Understanding Formula 1 using
-            <span className="text-white font-semibold"> Formula 1 thinking</span>.
-          </p>
+      {/* Overlays */}
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60" />
 
-          <p className="mt-6 text-slate-400 leading-relaxed max-w-5xl mx-auto">
-            This platform decodes races the way teams do — tyre degradation,
-            pit window optimisation, regulation trade-offs, and execution under constraints.
-            No simplification. No noise. Just Formula 1, explained on its own terms.
-          </p>
-
-          <div className="mt-14 flex flex-col sm:flex-row justify-center gap-5">
-            <button
-              onClick={() => navigate("/explore")}
-              className="px-9 py-3 rounded-xl bg-red-600 hover:bg-red-500 transition font-semibold"
-            >
-              Explore Circuits
-            </button>
-            <button
-              onClick={() => navigate("/race/2023/1")}
-              className="px-9 py-3 rounded-xl border border-slate-700 hover:border-slate-500"
-            >
-              Open Race Dashboard
-            </button>
-          </div>
+      {/* Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+        className="relative max-w-6xl mx-auto"
+      >
+        {/* Brand */}
+        <div className="mb-6 text-slate-400 text-sm tracking-widest">
+          F1<sup className="text-red-600 font-semibold">4</sup> · help for Formula 1
         </div>
-      </section>
+
+        {/* Title — keep as-is (key concept) */}
+        <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight">
+          F1 for <span className="italic text-red-600">F1</span>
+        </h1>
+
+        {/* Subtitle */}
+        <p className="mt-8 text-xl md:text-2xl text-slate-300 max-w-4xl mx-auto">
+          Understanding Formula&nbsp;1 using
+          <span className="text-white font-semibold"> Formula&nbsp;1 thinking</span>.
+        </p>
+
+        {/* UPDATED DESCRIPTION — simpler, natural */}
+        <p className="mt-6 text-slate-400 leading-relaxed max-w-5xl mx-auto">
+          Races aren’t won by lap time alone. They unfold through tyre behaviour,
+          energy management, regulations, and the timing of decisions made on the pit
+          wall. This platform breaks those moments down clearly — so what happens on
+          track actually makes sense.
+        </p>
+
+        {/* CTAs — control-inspired motion */}
+        <div className="mt-14 flex flex-col sm:flex-row justify-center gap-5">
+          {/* Primary */}
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 300 }}
+            onClick={() => navigate("/explore")}
+            className="
+              px-9 py-3 rounded-xl font-semibold
+              bg-red-600 text-white
+              shadow-[0_0_0_0_rgba(255,0,0,0.4)]
+              hover:shadow-[0_0_35px_rgba(255,0,0,0.35)]
+              transition-shadow
+            "
+          >
+            Explore Circuits
+          </motion.button>
+
+          {/* Secondary */}
+          <motion.button
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => navigate("/race/2023/1")}
+            className="
+              px-9 py-3 rounded-xl font-medium
+              border border-slate-600 hover:border-slate-400
+              bg-black/40 backdrop-blur
+              text-slate-200
+              flex items-center gap-2 justify-center
+            "
+          >
+            <span>Open Race Dashboard</span>
+            <span className="text-slate-400">→</span>
+          </motion.button>
+        </div>
+      </motion.div>
+    </section>
+
+
+
 
       {/* ================= HISTORY ================= */}
 <section className="px-6 pt-14 pb-24 max-w-7xl mx-auto">
