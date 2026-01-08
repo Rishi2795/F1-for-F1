@@ -105,7 +105,7 @@ export default function About() {
       name: "Sebastian Vettel",
       era: "2010–2013",
       titles: "4× World Champion",
-      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/vet.jpg",
+      img: "https://cdn.mos.cms.futurecdn.net/c6CmwiEQ2cHYUqYAK45ed8.jpg",
       impact:
         "Mastered peak-downforce aerodynamic cars. His success highlighted the importance of regulation exploitation and car-driver harmony."
     },
@@ -113,7 +113,7 @@ export default function About() {
       name: "Lewis Hamilton",
       era: "2014–2020",
       titles: "7× World Champion",
-      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/ham.jpg",
+      img: "https://a.espncdn.com/photo/2024/1120/r1417327_1296x729_16-9.jpg",
       impact:
         "The reference driver of the hybrid era ,he was adaptable, intelligent, and consistently elite across regulation refinements."
     },
@@ -121,7 +121,7 @@ export default function About() {
       name: "Max Verstappen",
       era: "2021–Present",
       titles: "4× World Champion",
-      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/ver%20(2).jpg",
+      img: "https://4kwallpapers.com/images/wallpapers/max-verstappen-f1-1280x1280-13972.jpeg",
       impact:
         "Combines aggressive precision with strategic maturity, defining the ground-effect era through tyre control and consistency."
     },
@@ -629,11 +629,7 @@ export default function About() {
 
 
 
-      {/* <footer className="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
-        Educational & analytical project · Built with historical Formula 1 race data · Not affiliated with Formula 1
-      </footer>
-    </div>
-  ); */}
+    
 
   {/* ================= FOOTER ================= */}
 <footer className="relative border-t border-white/10 py-14 text-center text-xs text-slate-500">
