@@ -81,7 +81,7 @@ export default function About() {
       name: "Michael Schumacher",
       era: "2000–2004",
       titles: "7× World Champion",
-      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/schumacher.jpeg",
+      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/mic.jpg",
       impact:
         "Redefined professionalism in Formula 1. Ferrari’s dominance was built on relentless testing, operational discipline, and race execution."
     },
@@ -89,7 +89,7 @@ export default function About() {
       name: "Sebastian Vettel",
       era: "2010–2013",
       titles: "4× World Champion",
-      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/vettel.jpg",
+      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/vet.jpg",
       impact:
         "Mastered peak-downforce aerodynamic cars. His success highlighted the importance of regulation exploitation and car-driver harmony."
     },
@@ -97,7 +97,7 @@ export default function About() {
       name: "Lewis Hamilton",
       era: "2014–2020",
       titles: "7× World Champion",
-      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/hamilton.jpeg",
+      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/ham.jpg",
       impact:
         "The reference driver of the hybrid era ,he was adaptable, intelligent, and consistently elite across regulation refinements."
     },
@@ -105,7 +105,7 @@ export default function About() {
       name: "Max Verstappen",
       era: "2021–Present",
       titles: "4× World Champion",
-      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/verstappen.jpeg",
+      img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/ver%20(2).jpg",
       impact:
         "Combines aggressive precision with strategic maturity, defining the ground-effect era through tyre control and consistency."
     },
