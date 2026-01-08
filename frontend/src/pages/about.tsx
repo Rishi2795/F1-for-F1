@@ -130,7 +130,12 @@ export default function About() {
   return (
     <div className="min-h-screen bg-black text-slate-100 overflow-x-hidden">
     {/* ================= HERO ================= */}
-    <section className="relative px-6 pt-32 pb-32 text-center overflow-hidden">
+    <section className="
+  relative px-6 text-center overflow-hidden
+  pt-24 pb-24 md:pt-32 md:pb-32
+">
+
+
       {/*
         HERO CAROUSEL IMAGES
         Keep this minimal (3–4 max)
@@ -153,18 +158,25 @@ export default function About() {
 
         return (
           <AnimatePresence mode="wait">
-            <motion.img
-              key={heroImages[index]}
-              src={heroImages[index]}
-              alt=""
-              referrerPolicy="no-referrer"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1 }}
-              className="absolute inset-0 w-full h-full object-cover scale-105"
-            />
-          </AnimatePresence>
+  <motion.img
+    key={heroImages[index]}
+    src={heroImages[index]}
+    alt=""
+    referrerPolicy="no-referrer"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 1 }}
+    className="
+      absolute inset-0
+      w-full h-full
+      object-contain md:object-cover
+      object-center
+    "
+  />
+</AnimatePresence>
+
+
         );
       })()}
 
