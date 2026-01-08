@@ -291,22 +291,45 @@ export default function RaceDashboard() {
       </Card>
 
       {/* ================= DRIVER COMPARISON ================= */}
-      <Card title="Driver Comparison">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <Select label="Driver A" value={driverA} onChange={setDriverA} drivers={race.drivers} />
-          <Select label="Driver B" value={driverB} onChange={setDriverB} drivers={race.drivers} />
-        </div>
+<Card title="Driver Comparison">
+  {/* Driver selectors */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+    <Select
+      label="Driver A"
+      value={driverA}
+      onChange={setDriverA}
+      drivers={race.drivers}
+    />
+    <Select
+      label="Driver B"
+      value={driverB}
+      onChange={setDriverB}
+      drivers={race.drivers}
+    />
+  </div>
 
-        {A && B && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-            <CompareRow label="Finish" a={A.finish} b={B.finish} />
-            <CompareRow label="Δ Positions" a={A.positions_gained} b={B.positions_gained} />
-            <CompareRow label="Risk Score" a={A.strategy_risk.risk_score} b={B.strategy_risk.risk_score} />
-            <CompareRow label="Tyre Deg" a={A.tyre_degradation_index} b={B.tyre_degradation_index} />
-            <CompareRow label="Verdict" a={A.strategy_simulation.verdict} b={B.strategy_simulation.verdict} />
-          </div>
-        )}
-      </Card>
+  {/* Comparison */}
+  {A && B && (
+    <div className="space-y-4">
+      {/* Header (desktop only) */}
+      <div className="hidden sm:grid grid-cols-3 text-xs text-slate-500 uppercase tracking-widest pb-2 border-b border-white/10">
+        <div>Metric</div>
+        <div className="text-center">Driver A</div>
+        <div className="text-center">Driver B</div>
+      </div>
+
+      {/* Rows */}
+      <div className="space-y-3">
+        <CompareRow label="Finish" a={A.finish} b={B.finish} />
+        <CompareRow label="Δ Positions" a={A.positions_gained} b={B.positions_gained} />
+        <CompareRow label="Risk Score" a={A.strategy_risk.risk_score} b={B.strategy_risk.risk_score} />
+        <CompareRow label="Tyre Degradation" a={A.tyre_degradation_index} b={B.tyre_degradation_index} />
+        <CompareRow label="Strategic Verdict" a={A.strategy_simulation.verdict} b={B.strategy_simulation.verdict} />
+      </div>
+    </div>
+  )}
+</Card>
+
     </div>
   );
 }
@@ -368,12 +391,38 @@ function Select({ label, value, onChange, drivers }: any) {
   );
 }
 
-function CompareRow({ label, a, b }: any) {
+function CompareRow({
+  label,
+  a,
+  b,
+}: {
+  label: string;
+  a: any;
+  b: any;
+}) {
   return (
-    <>
-      <div className="text-slate-500">{label}</div>
-      <div className="text-center">{a}</div>
-      <div className="text-center">{b}</div>
-    </>
+    <div
+      className="
+        grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4
+        rounded-xl border border-white/10 bg-[#020202]
+        px-4 py-3
+      "
+    >
+      {/* Label */}
+      <div className="text-xs uppercase tracking-widest text-slate-500">
+        {label}
+      </div>
+
+      {/* Driver A */}
+      <div className="text-sm text-slate-200 sm:text-center font-medium">
+        {a}
+      </div>
+
+      {/* Driver B */}
+      <div className="text-sm text-slate-200 sm:text-center font-medium">
+        {b}
+      </div>
+    </div>
   );
 }
+
