@@ -117,6 +117,14 @@ export default function RaceDashboard() {
     <p className="text-xs text-slate-400">
       Race Analysis • {race.track.location} • {race.season}
     </p>
+    <div className="mt-2">
+      <Link
+        to={`/race/${year}/${round}/simulation`}
+        className="px-4 py-2 bg-red-600 hover:bg-red-500 transition font-semibold rounded-lg text-sm"
+      >
+        Launch Race Simulation
+      </Link>
+    </div>
   </div>
 
 </div>
