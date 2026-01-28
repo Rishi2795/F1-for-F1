@@ -39,7 +39,7 @@ export default function RaceDashboard() {
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
   const [driverA, setDriverA] = useState("");
   const [driverB, setDriverB] = useState("");
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [,setIsLoaded] = useState(false);
 
   useEffect(() => {
     axios.get(`${API_URL}/seasons/${year}/races/${round}`)
@@ -433,13 +433,13 @@ export default function RaceDashboard() {
             <div className="grid grid-cols-2 border-t border-white/5 divide-x divide-white/5">
               <div className="p-5 bg-black/40 group hover:bg-black/60 transition-colors">
                 <span className="text-[7px] font-black text-red-600 uppercase tracking-widest block mb-2">Alpha_Logic</span>
-                <p className="font-serif italic text-[11px] text-zinc-400 leading-relaxed line-clamp-2 italic">
+                <p className="font-serif text-[11px] text-zinc-400 leading-relaxed line-clamp-2 italic">
                   "{A.strategy_simulation.verdict}"
                 </p>
               </div>
               <div className="p-5 bg-black/40 group hover:bg-black/60 transition-colors">
                 <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest block mb-2 text-right">Beta_Logic</span>
-                <p className="font-serif italic text-[11px] text-zinc-400 leading-relaxed line-clamp-2 text-right italic">
+                <p className="font-serif italic text-[11px] text-zinc-400 leading-relaxed line-clamp-2 text-right">
                   "{B.strategy_simulation.verdict}"
                 </p>
               </div>
@@ -494,73 +494,9 @@ const MetricWhite = memo(({ label, value }: any) => (
   </div>
 ));
 
-const DriverStrip = memo(({ driver, isExpanded, onToggle }: any) => (
-  <div 
-    onClick={onToggle}
-    className={`
-      group relative cursor-pointer transition-all duration-300
-      ${isExpanded ? 'bg-white text-black p-8' : 'bg-red-600 text-white hover:bg-black hover:text-white p-4 md:px-10'}
-    `}
-  >
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-      <div className="flex items-center gap-8">
-        <span className={`text-[9px] font-mono font-bold italic opacity-50 ${isExpanded ? 'text-zinc-400' : 'text-white'}`}>#{driver.finish}</span>
-        <div>
-          <p className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">{driver.driver_code}</p>
-          <p className={`text-[7px] font-bold tracking-widest uppercase mt-1 ${isExpanded ? 'text-zinc-500' : 'text-red-200 group-hover:text-red-600'}`}>
-            {driver.team}
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex gap-8 text-right items-center">
-        <CompactStat label="GRID" val={driver.grid} inv={isExpanded} />
-        <CompactStat label="GAIN" val={driver.positions_gained > 0 ? `+${driver.positions_gained}` : driver.positions_gained} inv={isExpanded} />
-        <CompactStat label="CONS" val={`${driver.consistency_index}%`} inv={isExpanded} />
-        <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[9px] font-black transition-all
-          ${isExpanded ? 'border-red-600 text-red-600 scale-110' : 'border-white/20 group-hover:border-red-600 group-hover:text-red-600'}`}>
-          {driver.driver_code.slice(0, 1)}
-        </div>
-      </div>
-    </div>
-
-    {isExpanded && (
-      <div className="mt-8 pt-8 border-t border-black/5 animate-in slide-in-from-top-2 duration-300">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-          <div className="md:col-span-8">
-            <h4 className="text-[8px] font-black uppercase tracking-widest text-zinc-400 mb-4">// SIMULATION_VERDICT</h4>
-            <p className="font-serif text-lg md:text-xl italic text-zinc-900 leading-snug">"{driver.strategy_simulation.verdict}"</p>
-          </div>
-          <div className="md:col-span-4 space-y-4">
-            <DetailRow label="Pit Efficiency" value={driver.pit_efficiency} />
-            <DetailRow label="Degradation Index" value={driver.tyre_degradation_index} />
-            <div className="flex gap-2 pt-2">
-               <span className="px-2 py-0.5 bg-red-600 text-white text-[7px] font-black uppercase rounded-sm">High_Deg_Alert</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
-  </div>
-));
-
-const CompactStat = ({ label, val, inv }: any) => (
-  <div className="flex flex-col min-w-[40px]">
-    <span className={`text-[7px] font-black uppercase mb-0.5 tracking-tighter ${inv ? 'text-zinc-400' : 'text-red-100/60'}`}>{label}</span>
-    <span className={`text-sm font-black italic leading-none ${inv ? 'text-black' : 'text-white'}`}>{val}</span>
-  </div>
-);
-
-const DetailRow = ({ label, value }: any) => (
-  <div className="flex justify-between items-center py-2 border-b border-black/5">
-    <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">{label}</span>
-    <span className="text-xs font-black italic text-red-600">{value}</span>
-  </div>
-);
-
 const VSelector = ({ label, value, onChange, drivers }: any) => (
   <div className="text-left">
-    <p className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-2 ml-2 uppercase">{label}</p>
+    <p className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-2 ml-2 ">{label}</p>
     <select 
       value={value} 
       onChange={(e) => onChange(e.target.value)} 
@@ -587,9 +523,3 @@ const VMetricRow = ({ label, a, b }: any) => (
   </div>
 );
 
-const VerdictBox = ({ label, text, highlight }: any) => (
-  <div className={`p-6 rounded-sm border transition-all duration-500 ${highlight ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-[#111] text-zinc-300 border-white/5'}`}>
-    <p className={`text-[8px] font-black uppercase mb-4 tracking-[0.2em] ${highlight ? 'text-white/60' : 'text-zinc-500'}`}>{label}</p>
-    <p className="font-serif text-sm leading-relaxed italic">"{text}"</p>
-  </div>
-);
