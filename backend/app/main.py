@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from app.routers import races, tracks, seasons
 from app.core.precomputed_loader import list_seasons
@@ -11,11 +12,21 @@ app = FastAPI(
 )
 
 # -----------------------------
-# CORS (safe for now, tighten later)
+# ✅ GZIP COMPRESSION (KEY FIX)
+# -----------------------------
+# Compress responses > 500 bytes
+# This dramatically speeds up mobile & slow networks
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=500
+)
+
+# -----------------------------
+# CORS
 # -----------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: restrict to frontend domain
+    allow_origins=["*"],  # tighten later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,22 +40,17 @@ app.include_router(tracks.router, prefix="/api")
 app.include_router(seasons.router, prefix="/api")
 
 # -----------------------------
-# 🔥 Warm critical caches on startup
+# Warm cache on startup
 # -----------------------------
 @app.on_event("startup")
 def warm_cache():
-    """
-    Warm frequently-used cached data once on startup
-    to avoid slow first user request (Render cold start).
-    """
     try:
         list_seasons()
     except Exception:
-        # Fail silently — app should still start
         pass
 
 # -----------------------------
-# Health check (Render / monitoring)
+# Health check
 # -----------------------------
 @app.get("/health")
 def health():

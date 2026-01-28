@@ -10,8 +10,7 @@ def seasons():
     Returns available seasons from MongoDB
     """
     seasons = db.races.distinct("season")
-    seasons = sorted(seasons, reverse=True)
-
+    seasons.sort(reverse=True)
     return {"seasons": seasons}
 
 
@@ -20,18 +19,18 @@ def races(year: int):
     """
     Returns circuit list for a season
     """
-    races = list(
-        db.races.find(
-            {"season": year},
-            {
-                "_id": 0,
-                "season": 1,
-                "round": 1,
-                "event_name": 1,
-                "location": 1,
-            },
-        ).sort("round", 1)
-    )
+    cursor = db.races.find(
+        {"season": year},
+        {
+            "_id": 0,
+            "season": 1,
+            "round": 1,
+            "event_name": 1,
+            "location": 1,
+        },
+    ).sort("round", 1)
+
+    races = list(cursor)
 
     if not races:
         raise HTTPException(status_code=404, detail="Season not found")
