@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MONGO_URI = os.getenv("MONGO_URI")
+MONGO_URI = os.getenv("MONGO_URI_NEW")
 
 if not MONGO_URI:
     raise RuntimeError("❌ MONGO_URI not found. Check backend/.env")
