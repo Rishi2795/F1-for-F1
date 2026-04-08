@@ -32,12 +32,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -----------------------------
-# API Routers
-# -----------------------------
+# with /api (keep this)
 app.include_router(races.router, prefix="/api")
 app.include_router(tracks.router, prefix="/api")
 app.include_router(seasons.router, prefix="/api")
+
+# without /api (ADD THIS)
+app.include_router(races.router)
+app.include_router(tracks.router)
+app.include_router(seasons.router)
 
 # -----------------------------
 # Warm cache on startup
