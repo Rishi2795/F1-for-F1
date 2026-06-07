@@ -5,7 +5,8 @@ import axios from "axios";
 // Make sure to add these to your index.html or CSS:
 // @import url('https://fonts.googleapis.com/css2?family=PT+Serif:italic,wght@400;700&display=swap');
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+const API_URL =
+  (import.meta.env.VITE_API_URL ?? "http://localhost:8000") + "/api";
 const SEASONS: number[] = [2025, 2024, 2023, 2022, 2021, 2020];
 
 type RaceIndexItem = {
