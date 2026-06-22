@@ -2,12 +2,8 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-// Make sure to add these to your index.html or CSS:
-// @import url('https://fonts.googleapis.com/css2?family=PT+Serif:italic,wght@400;700&display=swap');
 
-const API_URL =
-  (import.meta.env.VITE_API_URL ?? "http://localhost:8000") + "/api";
-const SEASONS: number[] = [2025, 2024, 2023, 2022, 2021, 2020];
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 type RaceIndexItem = {
   round: number;
@@ -22,6 +18,26 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [seasons, setSeasons] = useState<number[]>([]);
+
+  useEffect(() => {
+  const fetchSeasons = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/seasons`);
+      setSeasons(res.data?.seasons || []);
+      
+      // Auto-select latest if not set
+      if (res.data?.seasons?.length) {
+        setSeason(res.data.seasons[0]);
+      }
+
+    } catch (err) {
+      console.error("Failed to load seasons", err);
+    }
+  };
+
+  fetchSeasons();
+}, []);
 
   useEffect(() => {
     const fetchRaces = async () => {
@@ -35,51 +51,53 @@ export default function Home() {
     fetchRaces();
   }, [season]);
 
-  const filteredRaces = useMemo(() => {
-    return races.filter(race => 
-      race.event_name.toLowerCase().includes(search.toLowerCase()) ||
-      race.location.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [races, search]);
+ const filteredRaces = useMemo(() => {
+  const q = search.toLowerCase();
+
+  return races.filter((race) => {
+    const name = race?.event_name?.toLowerCase() || "";
+    const loc = race?.location?.toLowerCase() || "";
+
+    return name.includes(q) || loc.includes(q);
+  });
+
+}, [races, search]);
 
   return (
     <div className="min-h-screen bg-[#020202] text-white antialiased selection:bg-red-600/30">
       
       {/* GLOBAL HEADER */}
       <header className="w-full border-b border-white/[0.08] bg-black/60 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto px-6 h-20 flex items-center gap-10">
-          
-          {/* STYLISH LOGO */}
-          <div onClick={() => navigate("/")} className="cursor-pointer shrink-0">
-            <h1 className="font-serif italic text-3xl tracking-tight leading-none">
-              F1<span className="text-red-600 font-sans not-italic font-black text-xs tracking-[0.3em] ml-2">FOR FORMULA 1</span>
-            </h1>
-          </div>
+  <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4 md:gap-10">
+    
+    {/* LOGO */}
+    <div onClick={() => navigate("/")} className="cursor-pointer shrink-0">
+      <h1 className="font-serif italic text-2xl sm:text-3xl tracking-tight leading-none">
+        F1<span className="hidden xs:inline text-red-600 font-sans not-italic font-black text-[10px] tracking-[0.3em] ml-2 uppercase">FOR FORMULA 1</span>
+      </h1>
+    </div>
 
-          {/* STARK WHITE SEARCH BAR */}
-          <div className="flex-grow max-w-lg relative group">
-            <input 
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search circuits..."
-              className="w-full bg-white text-black rounded-full py-2.5 px-6 text-[11px] font-bold tracking-widest uppercase outline-none ring-4 ring-white/5 focus:ring-red-600/20 transition-all placeholder:text-black/40 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-black/20 tracking-tighter hidden md:block">
-              {filteredRaces.length} FOUND
-            </div>
-          </div>
-          
-          {/* SEASON PICKER */}
-          <button 
-            onClick={() => setOpen(!open)} 
-            className="hidden sm:flex items-center gap-4 px-2 py-1 border-b-2 border-white/10 hover:border-red-600 transition-all group"
-          >
-            <span className="text-[10px] font-black tracking-[0.2em] uppercase opacity-40 group-hover:opacity-100 transition-opacity">Season</span>
-            <span className="text-sm ">{season}</span>
-          </button>
-        </div>
-      </header>
+    {/* SEARCH BAR */}
+    <div className="flex-grow max-w-lg relative group">
+      <input 
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search..."
+        className="w-full bg-white text-black rounded-full py-2 px-4 sm:px-6 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase outline-none ring-4 ring-white/5 focus:ring-red-600/20 transition-all placeholder:text-black/40 shadow-lg"
+      />
+    </div>
+    
+    {/* SEASON PICKER (Now Visible on Mobile) */}
+    <button 
+      onClick={() => setOpen(!open)} 
+      className="flex items-center gap-2 sm:gap-4 px-1 sm:px-2 py-1 border-b-2 border-white/10 hover:border-red-600 transition-all group shrink-0"
+    >
+      <span className="hidden xs:block text-[9px] font-black tracking-[0.2em] uppercase opacity-40 group-hover:opacity-100 transition-opacity">Season</span>
+      <span className="text-xs sm:text-sm font-bold">{season}</span>
+    </button>
+  </div>
+</header>
 
       <main className="max-w-[1400px] mx-auto px-6 py-16">
         
@@ -111,11 +129,14 @@ export default function Home() {
 
                 <div className="mt-auto">
                   <h3 className="text-xs font-black uppercase tracking-tight leading-[1.1] mb-1 group-hover:translate-x-1 transition-transform">
-                    {race.event_name.replace("Grand Prix", "").trim()}
-                  </h3>
-                  <p className="text-[9px] font-medium opacity-30 uppercase tracking-[0.2em] truncate group-hover:opacity-60 transition-opacity">
-                    {race.location.split(',')[0]}
-                  </p>
+  {(race.event_name || "Unknown Race")
+    .replace("Grand Prix", "")
+    .trim()}
+</h3>
+
+<p className="text-[9px] font-medium opacity-30 uppercase tracking-[0.2em] truncate group-hover:opacity-60 transition-opacity">
+  {(race.location || "Unknown").split(",")[0]}
+</p>
                 </div>
 
                 {/* INVERTED ICON ON HOVER */}
@@ -131,7 +152,7 @@ export default function Home() {
         {open && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-in fade-in">
             <div className="max-w-xs w-full grid grid-cols-2 gap-2">
-              {SEASONS.map(y => (
+              {seasons.map(y => (
                 <button key={y} onClick={() => {setSeason(y); setOpen(false); setSearch("");}} className={`px-6 py-4 rounded-xl text-xs font-black tracking-widest transition-all ${season === y ? 'bg-red-600 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}>
                   {y}
                 </button>

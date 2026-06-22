@@ -1,17 +1,14 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence, useScroll, useSpring, useTransform } from "framer-motion";
+import { useState, useRef } from "react";
+import { motion, useScroll, useSpring } from "framer-motion";
+import Hero from "../components/hero";
+import React from "react";
 
-/**
- * PREMUM F1 ABOUT PAGE - V4.0 (EXPANDED ARCHIVE)
- * Total Lines: ~600
- * Logic: Fixed Scroll Progress, Viewport Scaling, Navigation Protocol
- */
+
 
 export default function About() {
   const navigate = useNavigate();
   const containerRef = useRef(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   /* ================= 01. REGULATION DATA ARCHIVE ================= */
   const rules = [
@@ -48,6 +45,7 @@ export default function About() {
     category: "TECHNICAL" 
   }
   ];
+  
 
   /* ================= 02. HISTORICAL CHAMPIONS DATA ================= */
   const champions = [
@@ -66,7 +64,8 @@ export default function About() {
 
   /* ================= 03. DRIVER MATRIX DATA ================= */
   const driversData = [
-    { name: "Michael Schumacher", era: "2000–2004", titles: "7× World Champion", img: "https://aggknlhltxzgwqmceyya.supabase.co/storage/v1/object/public/F1-for-F1/mic.jpg", impact: "Redefined professionalism in F1. Ferrari’s dominance was built on relentless testing and operational discipline." },
+     {name: "Ayrton Senna", era: "1988–1991", titles: "3× World Champion", img: "https://static.nationalgeographicbrasil.com/files/styles/image_3200/public/senna_divulgacao-gov-bra--1-.jpeg.webp?w=1600&h=1067&p=top", impact: "The ultimate qualifying specialist. His raw speed and spiritual approach to racing transformed the sport into an art form." },
+    { name: "Michael Schumacher", era: "2000–2004", titles: "7× World Champion", img: "https://www.merkur.de/assets/images/40/852/40852597-michael-schumacher-laesst-die-korken-knallen-2ta7xEQOSTBG.jpg", impact: "Redefined professionalism in F1. Ferrari’s dominance was built on relentless testing and operational discipline." },
     { name: "Sebastian Vettel", era: "2010–2013", titles: "4× World Champion", img: "https://cdn.mos.cms.futurecdn.net/c6CmwiEQ2cHYUqYAK45ed8.jpg", impact: "Mastered peak-downforce aero. His success highlighted regulation exploitation and car-driver harmony." },
     { name: "Lewis Hamilton", era: "2014–2020", titles: "7× World Champion", img: "https://a.espncdn.com/photo/2024/1120/r1417327_1296x729_16-9.jpg", impact: "The reference of the hybrid era: adaptable, intelligent, and elite across massive technical refinements." },
     { name: "Max Verstappen", era: "2021–Present", titles: "4× World Champion", img: "https://4kwallpapers.com/images/wallpapers/max-verstappen-f1-1280x1280-13972.jpeg", impact: "Combines aggressive precision with strategic maturity, defining the ground-effect era through tyre control." },
@@ -74,256 +73,414 @@ export default function About() {
 
   /* ================= 04. REGULATION TIMELINE ================= */
   const timelineData = [
-    { year: "1950", t: "Origins", d: "Mechanical reliability and driver endurance defined the inaugural World Championship. Early success was dictated by those who could simply finish the 300km distance.", tag: "ARCH-01" },
-    { year: "1980s", t: "Turbo Era", d: "Turbocharged engines reached extreme outputs, exceeding 1000hp, forcing radical safety controls and the eventual temporary ban on turbocharging.", tag: "POW-TRB" },
-    { year: "2014", t: "Hybrid Era", d: "Energy recovery systems (MGU-K/MGU-H) and software became the decisive performance differentiators in the most efficient engines ever built.", tag: "POW-HYB" },
-    { year: "2022", t: "Ground Effect", d: "Aerodynamics were fundamentally redesigned to use under-car tunnels, reducing dirty air to allow cars to follow and overtake at high speeds.", tag: "AERO-GE" },
-    { year: "2026", t: "Active Aero", d: "The future shift focuses on a 50/50 electrical-to-ICE power split and adaptive wing configurations to optimize drag-to-downforce ratios in real-time.", tag: "FUT-SPEC" }
+    { year: "1950", t: "Origins", d: "Mechanical reliability and driver endurance defined the inaugural World Championship. Early success was dictated by those who could simply finish the 300km distance.", tag: "ARCH-01", short: "Inaugural Championship" },
+    { year: "1980s", t: "Turbo Era", d: "Turbocharged engines reached extreme outputs, exceeding 1000hp, forcing radical safety controls and the eventual temporary ban on turbocharging.", tag: "POW-TRB", short: "Turbocharged Engines" },
+    { year: "2014", t: "Hybrid Era", d: "Energy recovery systems (MGU-K/MGU-H) and software became the decisive performance differentiators in the most efficient engines ever built.", tag: "POW-HYB", short: "Energy Recovery Systems" },
+    { year: "2022", t: "Ground Effect", d: "Aerodynamics were fundamentally redesigned to use under-car tunnels, reducing dirty air to allow cars to follow and overtake at high speeds.", tag: "AERO-GE", short: "Aerodynamic Redesign" },
+    { year: "2026", t: "Active Aero", d: "The future shift focuses on a 50/50 electrical-to-ICE power split and adaptive wing configurations to optimize drag-to-downforce ratios in real-time.", tag: "FUT-SPEC", short: "Adaptive Wing Configurations" }
   ];
 
-  /* ================= 05. MOTION CORE ================= */
-  const { scrollYProgress } = useScroll();
-  const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
-  const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const yHero = useTransform(scrollYProgress, [0, 0.2], [0, -80]);
+    /* ================= 05. MOTION CORE ================= */
+    const { scrollYProgress } = useScroll();
+    const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
 
-  return (
-    <div className="bg-black text-slate-100 selection:bg-red-600/30 selection:text-red-500 min-h-screen">
+    return (
+      <div className="bg-black text-slate-100 selection:bg-red-600/30 selection:text-red-500 min-h-screen">
+        
+        {/* 06. FIXED GLOBAL RED SCROLL BAR - FIXED LOGIC */}
+        <motion.div 
+          className="fixed top-0 left-0 right-0 h-1.5 bg-red-600 z-[300] origin-left shadow-[0_0_20px_rgba(220,38,38,0.7)]" 
+          style={{ scaleX }} 
+        />
+
+        <main ref={containerRef} className="relative w-full">
+          
+       <Hero />
+
+        {/* 09. TECHNICAL NARRATIVE - EDITORIAL HUD */}
+<section className="relative min-h-screen w-full flex items-center bg-[#050505] py-16 md:py-24 px-6 lg:px-24 overflow-hidden">
+  
+  {/* Subtly Textured Background */}
+  <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
+    style={{ backgroundImage: `radial-gradient(#fff 1px, transparent 1px)`, backgroundSize: '50px 50px' }} 
+  />
+
+  <div className="max-w-[1100px] mx-auto w-full relative">
+    
+    <div className="flex flex-col lg:grid lg:grid-cols-12 items-start gap-12 lg:gap-0">
       
-      {/* 06. FIXED GLOBAL RED SCROLL BAR - FIXED LOGIC */}
+      {/* LEFT: The Narrative Core */}
       <motion.div 
-        className="fixed top-0 left-0 right-0 h-1.5 bg-red-600 z-[300] origin-left shadow-[0_0_20px_rgba(220,38,38,0.7)]" 
-        style={{ scaleX }} 
-      />
-
-      {/* 07. HAMBURGER NAVIGATION PROTOCOL */}
-      <button 
-        onClick={() => setMenuOpen(!menuOpen)}
-        className="fixed top-10 right-10 z-[300] w-16 h-16 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full flex flex-col items-center justify-center gap-2 group hover:bg-red-600 transition-all duration-500"
+        initial={{ opacity: 0, x: -30 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
+        className="lg:col-span-7 z-20 space-y-8 md:space-y-12"
       >
-        <motion.span animate={menuOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }} className="w-7 h-[2px] bg-white block" />
-        <motion.span animate={menuOpen ? { opacity: 0 } : { opacity: 1 }} className="w-7 h-[2px] bg-white block" />
-        <motion.span animate={menuOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }} className="w-7 h-[2px] bg-white block" />
-      </button>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <span className="text-[9px] md:text-[10px] font-mono tracking-[0.4em] md:tracking-[0.6em] text-zinc-600 uppercase">Ref_Archive_2026</span>
+            <div className="h-[1px] w-12 md:w-16 bg-zinc-900" />
+          </div>
 
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.nav 
-            initial={{ opacity: 0, y: "-100%" }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: "-100%" }}
-            className="fixed inset-0 z-[250] bg-black/95 flex flex-col items-center justify-center"
-          >
-            <div className="flex flex-col gap-10">
-              {["Explore", "Simulation"].map((item, idx) => (
-                <motion.button
-                  key={item}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  onClick={() => { setMenuOpen(false); navigate(`/${item.toLowerCase()}`); }}
-                  className="text-6xl font-black uppercase italic tracking-tighter hover:text-red-600 transition-all text-left"
-                >
-                  {item}
-                </motion.button>
+          {/* FLUID TYPOGRAPHY: Adjusted for mobile visibility */}
+          <h2 className="text-6xl md:text-8xl lg:text-9xl font-serif text-white tracking-tight leading-[0.85] uppercase">
+            The <br />
+            <span className="text-red-600">Physics</span> <br />
+            Reset
+          </h2>
+        </div>
+
+        <div className="max-w-md space-y-8 md:space-y-10">
+          <p className="text-lg md:text-2xl text-zinc-400 font-serif leading-snug md:leading-relaxed tracking-tight">
+            A total technical departure. Modeling the interaction between 100% sustainable fuels and active aero in real-time.
+          </p>
+          
+          <div className="flex flex-wrap gap-10 md:gap-16 border-t border-white/5 pt-8 md:pt-10">
+            <div className="space-y-2">
+              <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">Protocol</p>
+              <p className="text-[11px] md:text-xs text-white font-mono uppercase tracking-tighter">Z-Active // 2026</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">Efficiency</p>
+              <p className="text-[11px] md:text-xs text-white font-mono uppercase tracking-tighter">Peak Stable</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* RIGHT: The Technical Index */}
+      <motion.div 
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.2 }}
+        className="lg:col-span-5 w-full mt-8 lg:mt-40"
+      >
+        {/* Adjusted padding for mobile (p-6) vs desktop (p-14) */}
+        <div className="relative bg-[#070707] border border-white/5 p-6 md:p-14 shadow-2xl">
+          
+          <div className="space-y-10 md:space-y-14">
+            {[
+              { label: "Minimum Weight", val: "798", unit: "kg" },
+              { label: "Turbo RPM Limit", val: "125", unit: "k" },
+              { label: "Peak G-Loading", val: "6.5", unit: "g" }
+            ].map((item, i) => (
+              <div key={i} className="group">
+                <div className="flex justify-between items-end mb-3 md:mb-4">
+                  <span className="text-[9px] md:text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
+                    {item.label}
+                  </span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl md:text-6xl font-serif text-white uppercase tracking-tighter group-hover:text-red-600 transition-colors duration-300">
+                      {item.val}
+                    </span>
+                    <span className="text-[9px] md:text-[10px] font-mono text-red-900 font-bold uppercase">
+                      {item.unit}
+                    </span>
+                  </div>
+                </div>
+                <div className="h-[1px] w-full bg-zinc-900" />
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 md:mt-14 flex justify-between items-center">
+            <div className="flex gap-1.5">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="w-1 h-1 bg-red-900/40" />
               ))}
             </div>
-          </motion.nav>
-        )}
-      </AnimatePresence>
-
-      <main ref={containerRef} className="relative w-full">
-        
-        {/* 08. HERO SECTION */}
-        <section className="relative h-[100vh] w-full flex items-center justify-center overflow-hidden border-b border-white/5">
-          <HeroCarousel />
-          
-          <motion.div style={{ opacity: opacityHero, y: yHero }} className="relative z-20 px-8 max-w-7xl w-full">
-            <div className="flex items-center gap-8 mb-12">
-              <motion.span initial={{ width: 0 }} animate={{ width: 100 }} transition={{ delay: 0.5, duration: 1 }} className="h-px bg-red-600" />
-              <span className="text-red-600 font-black text-sm tracking-[0.8em] uppercase">Technical Compliance 2026</span>
-            </div>
-            
-            <h1 className="text-[14vw] md:text-[10rem] font-black tracking-[-0.06em] leading-[0.75] uppercase italic flex flex-col">
-              <motion.span initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1 }}>F1 FOR</motion.span>
-              <motion.span initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1, delay: 0.3 }} className="text-red-600 not-italic">formula 1</motion.span>
-            </h1>
-
-            <div className="mt-20 flex flex-col md:flex-row gap-20 items-start md:items-center">
-              <p className="text-2xl md:text-1xl text-slate-300 font-serif max-w-3xl leading-relaxed">
-                Breaking down the grid through <span className="text-white font-bold underline decoration-red-600 decoration-4">Strategy</span> and <span className="text-white font-bold">Fluid Dynamics</span>.
-              </p>
-              <motion.button 
-                whileHover={{ scale: 1.1, backgroundColor: "#fff", color: "#000" }}
-                onClick={() => navigate("/explore")}
-                className="bg-red-600 text-white px-12 py-6 font-black uppercase tracking-widest text-lg italic shadow-2xl"
-              >
-                Explore Grids →
-              </motion.button>
-            </div>
-          </motion.div>
-        </section>
-
-        {/* 09. TECHNICAL NARRATIVE - HUD COMPACT MODE */}
-<section className="relative h-screen min-h-[600px] w-full flex items-center bg-black overflow-hidden px-6 md:px-20">
-  {/* Grid Background */}
-  <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
-       style={{ backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-
-  <div className="max-w-[1400px] mx-auto w-full grid lg:grid-cols-2 gap-8 md:gap-20 relative z-10">
-    
-    {/* LEFT SIDE: Shortened Narrative */}
-    <div className="flex flex-col justify-center">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="h-[2px] w-6 bg-red-600" />
-        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-red-600">Phase 01 // Tech</span>
-      </div>
-      
-      <h2 className="text-5xl md:text-8xl font-black uppercase italic tracking-tighter text-white leading-[0.8] mb-6">
-        Marginal <br /> <span className="text-red-600">Gains</span>
-      </h2>
-      
-      <p className="text-sm md:text-xl text-slate-400 font-serif italic border-l-2 border-red-600 pl-4 max-w-sm md:max-w-none">
-        The gap to pole is <span className="text-white">{"< 1%"}</span>. 
-        We analyze the <span className="text-white">Ground Effect</span>—where physics meets machine learning.
-      </p>
-
-      {/* Simulation Button - Tighter for Mobile */}
-      <motion.div 
-        onClick={() => navigate("/simulation")}
-        className="mt-8 flex items-center gap-4 cursor-pointer group"
-      >
-        <div className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-white/10 group-hover:border-red-600 transition-all">
-          <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+            <span className="text-[8px] md:text-[9px] font-mono text-zinc-700 tracking-[0.3em] md:tracking-[0.5em] uppercase">Tech_Spec_V.09</span>
+          </div>
         </div>
-        <span className="text-[10px] font-black uppercase tracking-widest text-white">Initialize Sim →</span>
       </motion.div>
-    </div>
 
-    {/* RIGHT SIDE: The Data Card - Flat Layout for Mobile */}
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      className="bg-zinc-900/20 p-6 md:p-10 border border-white/10 backdrop-blur-xl relative"
-    >
-      <div className="absolute top-0 right-0 p-3 text-[8px] font-mono text-zinc-600 uppercase">Archive_Ref: 26.0</div>
-      
-      <h3 className="text-xs font-black uppercase text-red-600 mb-6 flex items-center gap-2">
-        <div className="w-1 h-1 bg-red-600 animate-ping" /> Hardware Constraints
-      </h3>
-
-      <div className="grid grid-cols-1 gap-4 md:gap-8">
-        {[
-          {l:"Min Weight", v:"798KG"}, 
-          {l:"Turbo RPM", v:"125,000"}, 
-          {l:"Peak Load", v:"6.5G"}
-        ].map((stat, i) => (
-          <div key={i} className="flex justify-between items-end border-b border-white/5 pb-2">
-            <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">{stat.l}</span>
-            <span className="text-3xl md:text-5xl font-black italic text-white leading-none">{stat.v}</span>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-
-  </div>
-</section>
-        {/* 10. REGULATION TIMELINE - DENSE PRESENTATION */}
-        <section className="py-20 md:py-32 px-4 md:px-8 bg-[#020202] border-y border-white/5 relative overflow-hidden">
-  {/* Background Decoration to enhance the "Zoomed Out" tech feel */}
-  <div className="absolute top-0 left-0 w-full h-full opacity-[0.02] pointer-events-none select-none overflow-hidden text-[20vw] font-black italic text-white leading-none">
-    HISTORY_LOG_FILE_V4
-  </div>
-
-  <div className="max-w-6xl mx-auto relative">
-    {/* Heading for the section to anchor the "One Window" look */}
-    <div className="mb-16 md:mb-24 flex items-end justify-between border-b border-white/10 pb-6">
-      <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter">
-        Evolution <span className="text-red-600">Track</span>
-      </h2>
-      <span className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.5em] hidden md:block">
-        F1_REGULATION_ARCHIVE_S.01
-      </span>
-    </div>
-
-    <div className="relative">
-      {/* Central Line: Adjusted for mobile fallback */}
-      <div className="absolute left-[15px] md:left-1/2 md:-translate-x-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-red-600 via-zinc-800 to-transparent" />
-      
-      {/* space-y reduced from 40 to 24 for "Zoomed Out" density */}
-      <div className="space-y-24 md:space-y-28">
-        {timelineData.map((item, idx) => (
-          <TimelineItem key={idx} item={item} index={idx} />
-        ))}
-      </div>
     </div>
   </div>
 </section>
+{/* 09.5 THE PINNACLE - COMPACT OPTIMIZATION */}
+<section className="relative h-screen min-h-[650px] w-full flex items-center bg-[#050505] py-4 px-4 md:px-12 lg:px-24 border-b border-white/5 overflow-hidden">
+  
+  {/* Layer 1: Minimalist Texture */}
+  <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
+    style={{ backgroundImage: `radial-gradient(#fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }} 
+  />
 
-      {/* 11. CHAMPIONSHIP DATA GRID - PRODUCTION READY */}
-<section className="py-12 md:py-20 px-6 md:px-12 lg:px-24 bg-black select-none">
-  <div className="max-w-[1600px] mx-auto">
+  <div className="max-w-[1200px] mx-auto w-full h-full max-h-[850px] border border-white/5 relative z-10 bg-[#070707]/30 backdrop-blur-sm flex flex-col">
     
-    {/* Minimalist Header */}
-    <div className="flex items-center gap-6 mb-8 md:mb-12">
-      <h2 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase italic tracking-tighter leading-none">
-        Hall Of <span className="text-red-600">Power</span>
-      </h2>
-      <div className="hidden md:block h-px flex-1 bg-gradient-to-r from-red-600/40 to-transparent" />
-      <span className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.4em] whitespace-nowrap">
-        Archive // 2015 — 2025
-      </span>
+    {/* HEADER BLOCK - Optimized Height */}
+    <div className="border-b border-white/5 p-4 md:p-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <span className="w-1.5 h-1.5 bg-red-600" />
+          <span className="text-[8px] md:text-[10px] font-mono tracking-[0.4em] text-zinc-600 uppercase">Ref_09.5</span>
+        </div>
+        <h2 className="text-4xl md:text-7xl lg:text-8xl font-serif text-white uppercase leading-[0.8] tracking-tighter">
+          Engineering <br />
+          <span className="text-red-600">Marvel</span>
+        </h2>
+      </div>
+      <div className="font-mono text-[8px] text-zinc-700 uppercase tracking-widest hidden sm:block border-l border-white/5 pl-6 mb-1">
+        Maranello_HQ // 44.82° N
+      </div>
     </div>
 
-    {/* The Grid: 1 Column (Vertical) on Mobile, 4 Columns on Desktop */}
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
-      {champions.map((c, i) => (
-        <motion.div 
+    {/* CONTENT GRID - Flexible Growth */}
+    <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden">
+      
+      {/* LEFT: NARRATIVE (7 Columns) */}
+      <div className="lg:col-span-7 border-b lg:border-b-0 lg:border-r border-white/5 p-4 md:p-8 flex flex-col justify-between space-y-6">
+        <p className="text-lg md:text-3xl lg:text-4xl font-serif leading-tight text-zinc-300 tracking-tight">
+          "F1 is the world's fastest laboratory. A convergence of <span className="text-white underline decoration-red-600 decoration-1 underline-offset-4">sovereign wealth</span> and aerospace engineering."
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+          <div className="space-y-4">
+            <p className="text-[10px] md:text-xs text-zinc-500 font-mono leading-relaxed uppercase tracking-tighter max-w-[280px]">
+              Since 2021, focus shifted from "Who spends" to "Who optimizes." Every gram is a line item.
+            </p>
+            <div className="flex gap-4">
+              <div className="flex-1 border-l border-zinc-800 pl-3 py-1">
+                <span className="block text-[7px] font-mono text-zinc-600 uppercase mb-1">R&D Cap</span>
+                <span className="text-xl font-serif text-white">$135M</span>
+              </div>
+              <div className="flex-1 border-l border-zinc-800 pl-3 py-1">
+                <span className="block text-[7px] font-mono text-zinc-600 uppercase mb-1">Data/Sec</span>
+                <span className="text-xl font-serif text-white">1.1M</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT: DATA VISUAL (5 Columns) */}
+      <div className="lg:col-span-5 p-4 md:p-8 bg-black/20 flex flex-col justify-between gap-8">
+        <h3 className="font-mono text-[9px] uppercase tracking-[0.3em] text-zinc-600 flex items-center gap-3">
+          <span className="w-6 h-[1px] bg-red-900" /> Capital_Allocation
+        </h3>
+
+        <div className="space-y-6 md:space-y-8 lg:space-y-10">
+          {[
+            { label: "Constructor", val: 45, color: "bg-red-600" },
+            { label: "Partnerships", val: 35, color: "bg-zinc-200" },
+            { label: "Broadcast", val: 20, color: "bg-zinc-800" }
+          ].map((item, i) => (
+            <div key={i} className="group">
+              <div className="flex justify-between items-end mb-2">
+                <div className="space-y-1">
+                  <span className="block text-[7px] font-mono text-zinc-700 uppercase tracking-widest">Index_0{i+1}</span>
+                  <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-tighter group-hover:text-white transition-colors">{item.label}</span>
+                </div>
+                <span className="text-2xl md:text-3xl font-serif text-white tracking-tighter">{item.val}%</span>
+              </div>
+              <div className="h-[1px] w-full bg-zinc-900 overflow-hidden">
+                <motion.div 
+                  initial={{ x: "-100%" }} 
+                  whileInView={{ x: "0%" }} 
+                  transition={{ duration: 1, delay: i * 0.1 }}
+                  className={`h-full ${item.color}`} 
+                  style={{ width: `${item.val}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-between items-center pt-4">
+          <p className="text-[7px] font-mono text-zinc-800 uppercase tracking-[0.4em]">Terminal_Confirmed_2026</p>
+          <div className="flex gap-1">
+             <div className="w-1 h-1 bg-red-600/20" />
+             <div className="w-1 h-1 bg-red-600/40" />
+             <div className="w-1 h-1 bg-red-600/60" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{/* 11. CHAMPIONSHIP DATA CORE - REFINED WITH TITLE BADGES */}
+<section className="relative h-screen w-full bg-[#030303] flex flex-col justify-between overflow-hidden border-t border-white/5">
+  
+  <header className="pt-8 md:pt-12 px-8 md:px-16 z-30 shrink-0">
+    <div className="flex items-center gap-3 mb-2">
+      <div className="w-1.5 h-4 bg-red-600 shadow-[0_0_12px_#dc2626]" />
+      <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.5em] font-bold">Registry // Hall_Of_Fame</span>
+    </div>
+    <h2 className="text-5xl md:text-8xl font-black uppercase italic tracking-tighter text-white leading-[0.85]">
+      THE <span className="text-red-600">REIGN</span>
+    </h2>
+  </header>
+
+  <div className="flex-grow flex items-end justify-center px-4 md:px-10 pb-10 relative">
+    <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none">
+      <span className="text-[22vw] font-black italic text-white">DYNASTY</span>
+    </div>
+
+    {/* PODIUM GRID */}
+    <div className="flex items-end justify-center gap-2 md:gap-4 w-full max-w-6xl h-full max-h-[450px] md:max-h-[550px] z-10">
+      {[
+        { 
+          name: "Verstappen", 
+          titles: "4x", 
+          years: "2021, 2022, 2023, 2024",
+          img: "https://i.pinimg.com/736x/2e/1f/a3/2e1fa3c0cc232ed9c7b5a3cab31b12e6.jpg", 
+          h: "h-[80%]", 
+          pos: "P2", 
+          color: "from-zinc-900" 
+        },
+        { 
+          name: "Hamilton", 
+          titles: "7x", 
+          years: "2008, 2014, 2015, 2017, 2018, 2019, 2020",
+          img: "https://i.pinimg.com/736x/96/8a/4a/968a4a1ae6eff274e6c7f28e8565af20.jpg", 
+          h: "h-full", 
+          pos: "P1", 
+          color: "from-red-900/40" 
+        },
+        { 
+          name: "L. Norris", 
+          titles: "1x", 
+          years: "2025",
+          img: "https://i.pinimg.com/736x/86/70/18/867018263dcdc332666cfa0746a0a794.jpg", 
+          h: "h-[70%]", 
+          pos: "P3", 
+          color: "from-orange-900/30" 
+        }
+      ].map((driver, i) => (
+        <motion.div
           key={i}
-          initial={{ opacity: 0, x: -10 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          whileHover={{ 
-            backgroundColor: "#dc2626",
-            x: 5,
-            transition: { duration: 0.2 } 
-          }}
-          // FIX: Standard pointer for production UX
-          className="relative flex flex-row md:flex-col justify-between items-center md:items-start p-4 md:p-6 bg-zinc-900/40 border border-white/5 group transition-all duration-300 cursor-pointer overflow-hidden"
+          className={`relative flex-1 ${driver.h} min-w-[100px] bg-zinc-900/40 border border-white/10 group overflow-hidden`}
         >
-          {/* Year & Team Info */}
-          <div className="relative z-10 flex flex-col gap-1">
-            <span className="text-xl md:text-2xl font-black italic text-red-600 group-hover:text-white transition-colors leading-none">
-              {c.year}
-            </span>
-            <span className="text-[8px] md:text-[9px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-red-100 transition-colors">
-              {c.team}
-            </span>
+          {/* IMAGE LAYER */}
+          <div className="absolute inset-0 w-full h-full">
+            <img 
+              src={driver.img} 
+              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 object-[50%_15%]" 
+            />
+            <div className={`absolute inset-0 bg-gradient-to-t ${driver.color} via-black/20 to-transparent opacity-80`} />
           </div>
 
-          {/* Driver Name - Right aligned on mobile, Bottom-Right on desktop */}
-          <div className="relative z-10 md:mt-6 text-right w-full">
-            <span className={`text-lg md:text-xl font-black uppercase tracking-tighter ${c.bg} group-hover:text-black transition-colors block leading-tight`}>
-              {c.driver}
-            </span>
+          {/* 7x / 4x BADGE */}
+          <div className="absolute top-3 left-3 md:top-5 md:left-5 z-30">
+            <div className="backdrop-blur-md bg-white/5 border border-white/10 px-2 py-1 rounded-sm">
+              <span className="text-lg md:text-2xl font-black italic text-black group-hover:text-red-600 transition-colors">
+                {driver.titles}
+              </span>
+            </div>
           </div>
 
-          {/* Ghost Decal for Desktop only */}
-          <span className="absolute -bottom-1 -right-1 text-5xl font-black italic text-white/[0.02] group-hover:text-black/5 transition-colors hidden md:block">
-            {c.year.toString().slice(-2)}
-          </span>
+          {/* HOVER REVEAL: TITLE YEARS */}
+          <div className="absolute top-3 right-3 md:top-5 md:right-5 z-30 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
+            <p className="text-[10px] md:text-[9px] font-mono text-red-800 text-right uppercase leading-tight max-w-[80px]">
+              Championship_Years: <br/>
+              <span className="text-red-600 font-bold font-extrabold">{driver.years}</span>
+            </p>
+          </div>
+
+          {/* DATA OVERLAY */}
+          <div className="absolute bottom-4 left-4 right-4 z-20">
+            <span className="text-[8px] md:text-[10px] font-mono text-white/40 uppercase tracking-widest block mb-1">
+              Driver_Profile
+            </span>
+            <h3 className="text-[10px] md:text-3xl font-black uppercase italic text-white tracking-tighter leading-none group-hover:tracking-wider transition-all">
+              {driver.name}
+            </h3>
+          </div>
         </motion.div>
       ))}
-      
-      {/* Visual Filler Card - Desktop Only */}
-      <div className="hidden lg:flex items-center justify-center p-6 border border-dashed border-white/10 opacity-10">
-         <span className="text-[9px] font-black uppercase tracking-widest">Awaiting 2026 Data</span>
-      </div>
     </div>
-
   </div>
+
+  <footer className="pb-8 px-8 md:px-16 z-30 shrink-0">
+    <div className="flex justify-between items-end border-t border-white/10 pt-6">
+      <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Archive_System_Verified</span>
+      <span className="text-[10px] font-mono text-red-600 animate-pulse">● DATA_LIVE</span>
+    </div>
+  </footer>
 </section>
 
+       {/* 10. REGULATION TIMELINE - STATIC TECHNICAL GRID */}
+<section className="relative min-h-screen bg-[#050505] flex flex-col py-16 md:py-24 px-6 overflow-hidden border-t border-white/5">
+  
+  {/* SECTION HEADER */}
+  <div className="max-w-7xl mx-auto w-full mb-16 md:mb-24">
+    <div className="flex items-center gap-4 mb-4">
+      <div className="h-px w-12 bg-red-600" />
+      <span className="text-[10px] font-mono tracking-[0.4em] text-red-600 uppercase">Evolution_Registry.v2</span>
+    </div>
+    <h2 className="text-5xl md:text-8xl font-black italic tracking-tighter text-white uppercase leading-[0.8]">
+      TECH_<span className="text-red-600">HISTORY</span>
+    </h2>
+  </div>
+
+  {/* THE DATA GRID: No internal scroll, just clean layout */}
+  <div className="max-w-7xl mx-auto w-full relative">
+    
+    {/* VERTICAL SPINE (Desktop Only for clean look) */}
+    <div className="absolute left-[140px] top-0 bottom-0 w-px bg-white/10 hidden md:block" />
+
+    <div className="space-y-12 md:space-y-20">
+      {timelineData.map((item, idx) => (
+        <div key={idx} className="relative group grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4 md:gap-16 items-start">
+          
+          {/* YEAR - Large, Brutalist Typography */}
+          <div className="md:text-right md:pr-10 shrink-0">
+            <span className="text-4xl md:text-6xl font-black italic text-zinc-800 group-hover:text-white transition-colors duration-500 leading-none">
+              {item.year}
+            </span>
+            {/* Mobile-only accent line */}
+            <div className="h-px w-8 bg-red-600 mt-2 md:hidden" />
+          </div>
+
+          {/* CONTENT CARD */}
+          <div className="relative border-l border-white/10 md:border-l-0 pl-6 md:pl-0">
+            
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <span className="text-[9px] font-mono text-red-600 px-2 py-0.5 border border-red-600/30 uppercase tracking-widest">
+                  {item.tag}
+                </span>
+                <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">
+                  ID: {item.short}
+                </span>
+              </div>
+
+              <h3 className="text-2xl md:text-4xl font-black text-zinc-100 uppercase italic tracking-tighter leading-tight group-hover:text-red-600 transition-colors">
+                {item.t}
+              </h3>
+
+              <p className="text-sm md:text-lg text-zinc-500 font-serif italic leading-relaxed max-w-2xl">
+                "{item.d}"
+              </p>
+
+              {/* TECHNICAL ACCENT - Looks like a blueprint detail */}
+              <div className="pt-4 flex gap-8 opacity-40 group-hover:opacity-100 transition-opacity">
+                <div className="text-[8px] font-mono uppercase text-zinc-500">
+                  <span className="text-white block">Status</span> Verified_Entry
+                </div>
+                <div className="text-[8px] font-mono uppercase text-zinc-500">
+                  <span className="text-white block">Regulation</span> FIA_STD_{item.year}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {/* TERMINATOR LINE */}
+  <div className="max-w-7xl mx-auto w-full mt-32 border-t border-white/5 pt-8 flex justify-between items-center">
+    <span className="text-[10px] font-mono text-zinc-700 uppercase tracking-widest">Data_Stream_Terminated</span>
+    <div className="flex gap-2">
+      <div className="w-1 h-1 bg-red-600" />
+      <div className="w-1 h-1 bg-zinc-800" />
+      <div className="w-1 h-1 bg-zinc-800" />
+    </div>
+  </div>
+</section>
     
 
         {/* 12. DRIVER SPECIFICATIONS - REFINED BLADE MODE */}
@@ -335,7 +492,7 @@ export default function About() {
       <div className="flex flex-col gap-1">
         <span className="text-[10px] font-black text-red-600 uppercase tracking-[0.4em]">Archive_Access</span>
         <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter">
-          The <span className="text-red-600">Refiners</span>
+          The <span className="text-red-600">Hall of Fame</span>
         </h2>
       </div>
     </div>
@@ -427,7 +584,7 @@ export default function About() {
     <div className="mt-12 flex justify-between items-center md:hidden px-4">
        <span className="text-[8px] font-bold text-zinc-700 uppercase tracking-[0.3em]">Swipe to Decrypt</span>
        <div className="flex gap-1">
-          {[1,2,3,4].map(dot => <div key={dot} className="w-1 h-1 bg-zinc-800 rounded-full" />)}
+          {[1,2,3,4,5].map(dot => <div key={dot} className="w-1 h-1 bg-zinc-800 rounded-full" />)}
        </div>
     </div>
 
@@ -649,27 +806,5 @@ function RuleCard({ rule, index }: { rule: any, index: number }) {
       {/* 4. HOVER DECAL: Corner accent for Desktop */}
       <div className="absolute top-0 right-0 w-0 h-0 border-t-[3px] border-r-[3px] border-transparent group-hover:border-t-red-600 group-hover:border-r-red-600 transition-all duration-300" />
     </motion.div>
-  );
-}
-
-function HeroCarousel() {
-  const imgs = [
-    "https://media.formula1.com/image/upload/c_lfill,w_2560,q_auto,f_auto/v1740000000/fom-website/2026%20regulations/2026_Explainer_FIA_Front_3_4_1920x1080.webp",
-    "https://cdn-6.motorsport.com/images/amp/0R7wZ5E2/s1000/f1-2026-car-renders.jpg"
-  ];
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setIdx(p => (p + 1) % imgs.length), 5000);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <div className="absolute inset-0 z-0">
-      <AnimatePresence mode="wait">
-        <motion.div key={idx} initial={{ opacity: 0 }} animate={{ opacity: 0.4 }} exit={{ opacity: 0 }} transition={{ duration: 2 }} className="absolute inset-0">
-          <img src={imgs[idx]} className="w-full h-full object-cover grayscale" alt="F1" />
-        </motion.div>
-      </AnimatePresence>
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
-    </div>
   );
 }
