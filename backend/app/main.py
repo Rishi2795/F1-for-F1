@@ -11,29 +11,19 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# ---------------------------------------------------------------------
-# 🛡️ MIDDLEWARE STACK (Ordered Bottom-to-Top execution)
-# ---------------------------------------------------------------------
-
-# 1. CORS Middleware (Applied LAST on response, keeping headers intact)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # tighten later
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# 2. GZIP COMPRESSION (Applied FIRST on response payload > 500 bytes)
+# -----------------------------
+# ✅ GZIP COMPRESSION (KEY FIX)
+# -----------------------------
+# Compress responses > 500 bytes
+# This dramatically speeds up mobile & slow networks
 app.add_middleware(
     GZipMiddleware,
     minimum_size=500
 )
 
 # ---------------------------------------------------------------------
-# 🏁 GLOBAL SYSTEM ENDPOINTS (Root & Health Check)
+# 🏁 RENDER HEALTH CHECK FIX (The only thing your original was missing!)
 # ---------------------------------------------------------------------
-
 @app.get("/")
 @app.head("/")
 async def root_health_check():
@@ -43,30 +33,40 @@ async def root_health_check():
         "message": "F1 Analytics API Gateway Operational"
     }
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+# -----------------------------
+# CORS
+# -----------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # tighten later
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# ---------------------------------------------------------------------
-# 🗺️ ROUTER ROUTING (Explicit Dual-Routing Strategy)
-# ---------------------------------------------------------------------
+# with /api (keep this)
+app.include_router(races.router, prefix="/api")
+app.include_router(tracks.router, prefix="/api")
+app.include_router(seasons.router, prefix="/api")
 
-# Route Map 1: Standard API Gateway paths (Handles: /api/seasons, /api/races, etc.)
-app.include_router(races.router, prefix="/api/races")
-app.include_router(tracks.router, prefix="/api/tracks")
-app.include_router(seasons.router, prefix="/api/seasons")
+# without /api (ADD THIS)
+app.include_router(races.router)
+app.include_router(tracks.router)
+app.include_router(seasons.router)
 
-# Route Map 2: Production Frontend Fallback paths (Handles: /seasons, /races, etc.)
-app.include_router(races.router, prefix="/races")
-app.include_router(tracks.router, prefix="/tracks")
-app.include_router(seasons.router, prefix="/seasons")
-
-# ---------------------------------------------------------------------
-# ⚡ LIFECYCLE HOOKS (Cache Warming)
-# ---------------------------------------------------------------------
+# -----------------------------
+# Warm cache on startup
+# -----------------------------
 @app.on_event("startup")
 def warm_cache():
     try:
         list_seasons()
     except Exception:
         pass
+
+# -----------------------------
+# Health check
+# -----------------------------
+@app.get("/health")
+def health():
+    return {"status": "ok"}
