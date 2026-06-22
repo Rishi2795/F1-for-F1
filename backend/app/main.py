@@ -11,19 +11,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# -----------------------------
-# ✅ GZIP COMPRESSION (KEY FIX)
-# -----------------------------
-# Compress responses > 500 bytes
-# This dramatically speeds up mobile & slow networks
-app.add_middleware(
-    GZipMiddleware,
-    minimum_size=500
-)
+# ---------------------------------------------------------------------
+# 🛡️ MIDDLEWARE STACK (Ordered Bottom-to-Top execution)
+# ---------------------------------------------------------------------
 
-# -----------------------------
-# CORS
-# -----------------------------
+# 1. CORS Middleware (Applied LAST on response, keeping headers intact)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # tighten later
@@ -32,29 +24,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# with /api (keep this)
+# 2. GZIP COMPRESSION (Applied FIRST on response payload > 500 bytes)
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=500
+)
+
+# ---------------------------------------------------------------------
+# 🏁 GLOBAL SYSTEM ENDPOINTS (Root & Health Check)
+# ---------------------------------------------------------------------
+
+@app.get("/")
+@app.head("/")
+async def root_health_check():
+    return {
+        "status": "online",
+        "engine": "Specter Engine Active",
+        "message": "F1 Analytics API Gateway Operational"
+    }
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# ---------------------------------------------------------------------
+# 🗺️ ROUTER ROUTING (Prefixed API Gateway)
+# ---------------------------------------------------------------------
 app.include_router(races.router, prefix="/api")
 app.include_router(tracks.router, prefix="/api")
 app.include_router(seasons.router, prefix="/api")
 
-# without /api (ADD THIS)
-# app.include_router(races.router)
-# app.include_router(tracks.router)
-# app.include_router(seasons.router)
-
-# -----------------------------
-# Warm cache on startup
-# -----------------------------
+# ---------------------------------------------------------------------
+# ⚡ LIFECYCLE HOOKS (Cache Warming)
+# ---------------------------------------------------------------------
 @app.on_event("startup")
 def warm_cache():
     try:
         list_seasons()
     except Exception:
         pass
-
-# -----------------------------
-# Health check
-# -----------------------------
-@app.get("/health")
-def health():
-    return {"status": "ok"}
