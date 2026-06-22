@@ -54,6 +54,10 @@ app.include_router(races.router, prefix="/api")
 app.include_router(tracks.router, prefix="/api")
 app.include_router(seasons.router, prefix="/api")
 
+app.include_router(races.router)
+app.include_router(tracks.router)
+app.include_router(seasons.router)
+
 # ---------------------------------------------------------------------
 # ⚡ LIFECYCLE HOOKS (Cache Warming)
 # ---------------------------------------------------------------------
