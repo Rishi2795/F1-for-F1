@@ -48,15 +48,18 @@ def health():
     return {"status": "ok"}
 
 # ---------------------------------------------------------------------
-# 🗺️ ROUTER ROUTING (Prefixed API Gateway)
+# 🗺️ ROUTER ROUTING (Explicit Dual-Routing Strategy)
 # ---------------------------------------------------------------------
-app.include_router(races.router, prefix="/api")
-app.include_router(tracks.router, prefix="/api")
-app.include_router(seasons.router, prefix="/api")
 
-app.include_router(races.router)
-app.include_router(tracks.router)
-app.include_router(seasons.router)
+# Route Map 1: Standard API Gateway paths (Handles: /api/seasons, /api/races, etc.)
+app.include_router(races.router, prefix="/api/races")
+app.include_router(tracks.router, prefix="/api/tracks")
+app.include_router(seasons.router, prefix="/api/seasons")
+
+# Route Map 2: Production Frontend Fallback paths (Handles: /seasons, /races, etc.)
+app.include_router(races.router, prefix="/races")
+app.include_router(tracks.router, prefix="/tracks")
+app.include_router(seasons.router, prefix="/seasons")
 
 # ---------------------------------------------------------------------
 # ⚡ LIFECYCLE HOOKS (Cache Warming)
