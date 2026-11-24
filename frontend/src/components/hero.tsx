@@ -77,7 +77,7 @@ const Hero = () => {
             <motion.span className="text-[15vw] font-black italic tracking-tighter leading-[0.8] text-white">
               F1 FOR
             </motion.span>
-            <motion.span className="text-[15vw] font-black italic tracking-tighter leading-[0.8] text-red-600 [-webkit-text-stroke:1px_#dc2626]">
+            <motion.span className="text-[15vw] font-black italic tracking-tighter leading-[0.8] text-red-500 [-webkit-text-stroke:1px_#dc2626]">
               FORMULA 1
             </motion.span>
           </h2>
@@ -116,7 +116,7 @@ const Hero = () => {
               onClick={() => navigate("/explore")} // 3. Add the redirect path
               className="group flex flex-col items-center md:items-start gap-2 pointer-events-auto"
             >
-               <span className="text-[10px] font-black italic text-red-600 tracking-[0.5em] uppercase">
+               <span className="text-[10px] font-black italic text-red-500 tracking-[0.5em] uppercase">
                  Start_exploring
                </span>
                <div className="w-12 h-[1px] bg-red-600/40 group-hover:w-20 transition-all duration-300" />

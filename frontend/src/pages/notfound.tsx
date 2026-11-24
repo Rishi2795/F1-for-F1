@@ -5,7 +5,7 @@ export default function NotFound() {
   useDocumentTitle("Page not found");
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-5 bg-[#050505] px-6 text-center">
-      <p className="font-mono text-sm text-red-600">404</p>
+      <p className="font-mono text-sm text-red-500">404</p>
       <h1 className="text-3xl font-black italic text-white">Page not found</h1>
       <p className="max-w-md text-sm text-zinc-400">That address doesn&apos;t exist. Try the race calendar or the drivers list.</p>
       <div className="flex gap-3">

@@ -16,6 +16,7 @@ type Props = {
   mode: ChartMode;
   leaderId: string | null; // the only line that gets a direct label (selective labelling)
   highlight: string | null; // legend hover/focus: emphasise one line
+  marker: number | null; // index of the round selected with the slider (null = latest)
 };
 
 const SURFACE = "#050505";
@@ -30,7 +31,7 @@ function niceTop(max: number): { top: number; step: number } {
 const fmt = (v: number, mode: ChartMode) => (mode === "gap" ? (v === 0 ? "Leader" : `−${Math.abs(v)}`) : String(v));
 
 /** Championship points after each round. One axis, hairline grid, 2 px lines, ringed end dots. */
-export function ProgressionChart({ series, rounds, ariaLabel, mode, leaderId, highlight }: Props) {
+export function ProgressionChart({ series, rounds, ariaLabel, mode, leaderId, highlight, marker }: Props) {
   const [hover, setHover] = useState<number | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const clipId = `reveal-${useId().replace(/:/g, "")}`;
@@ -158,6 +159,14 @@ export function ProgressionChart({ series, rounds, ariaLabel, mode, leaderId, hi
           );
         })}
 
+        {marker !== null && marker < n && (
+          <g aria-hidden="true">
+            <line x1={x(marker)} x2={x(marker)} y1={M.t} y2={H - M.b} stroke="#ef4444" strokeWidth={1.5} />
+            <text x={x(marker)} y={M.t - 5} textAnchor="middle" fontSize="11" fontWeight="600" fill="#f87171">
+              R{rounds[marker].round}
+            </text>
+          </g>
+        )}
         {hover !== null && (
           <g>
             <line x1={x(hover)} x2={x(hover)} y1={M.t} y2={H - M.b} stroke="rgba(255,255,255,0.35)" />

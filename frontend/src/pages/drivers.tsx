@@ -4,6 +4,7 @@ import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { prefetch } from "../lib/api";
 import { ErrorState, Skeleton } from "../components/ui/states";
+import { ChampionBadge } from "../components/ui/championbadge";
 import type { DriverListEntry } from "../types/api";
 
 export default function Drivers() {
@@ -75,7 +76,7 @@ function DriverCard({ d }: { d: DriverListEntry }) {
         <p className="text-xs uppercase tracking-wide text-zinc-400">{d.team ?? "—"}</p>
         <div className="flex items-center justify-between text-[11px] text-zinc-400">
           <span>Last raced {d.latest_season}</span>
-          {d.titles !== null && d.titles > 0 && <span>🏆 {d.titles}</span>}
+          {d.titles !== null && d.titles > 0 && <ChampionBadge titles={d.titles} compact />}
         </div>
       </div>
       <div className="absolute inset-0 bg-red-600/10 opacity-0 transition group-hover:opacity-100" />

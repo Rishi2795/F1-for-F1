@@ -82,7 +82,7 @@ export default function StrategySim() {
       {/* HEADER */}
       <div className="flex justify-between items-end border-b border-white/10 pb-4 mb-6">
         <div>
-          <h1 className="text-3xl font-black italic tracking-tighter leading-none">PIT_WALL <span className="text-red-600">STRATEGY</span></h1>
+          <h1 className="text-3xl font-black italic tracking-tighter leading-none">PIT_WALL <span className="text-red-500">STRATEGY</span></h1>
           <p className="text-[9px] text-zinc-500 font-bold tracking-[0.4em] mt-1">REAL-TIME DATA ACQUISITION</p>
         </div>
         <div className="flex gap-4">
@@ -112,7 +112,7 @@ export default function StrategySim() {
       </div>
       <div className="bg-zinc-900/50 p-3 md:p-4 border-l-4 border-zinc-700">
         <span className="text-[8px] md:text-[9px] text-zinc-500 font-black tracking-widest">STINT_LAP</span>
-        <h2 className="text-xl md:text-4xl font-black italic">{currentLap > 25 ? 25 : currentLap} <span className="text-xs text-zinc-600">/ 25</span></h2>
+        <h2 className="text-xl md:text-4xl font-black italic">{currentLap > 25 ? 25 : currentLap} <span className="text-xs text-zinc-400">/ 25</span></h2>
       </div>
     </div>
 
@@ -182,7 +182,7 @@ export default function StrategySim() {
                   {pastRuns.map(run => (
                     <div key={run.id} className="flex justify-between items-center text-[10px] font-bold bg-zinc-50 p-3 border-r-4 border-red-600">
                       <span>{run.track.substring(0, 10)}</span>
-                      <span className={run.delta < 0 ? 'text-green-600' : 'text-red-600'}>{run.delta}s</span>
+                      <span className={run.delta < 0 ? 'text-green-600' : 'text-red-500'}>{run.delta}s</span>
                       <span className="text-[8px] bg-black text-white px-2 py-0.5">{run.rank}</span>
                     </div>
                   ))}
@@ -232,7 +232,7 @@ export default function StrategySim() {
               <h2 className="text-6xl font-black italic tracking-tighter mb-10">CLASSIFIED</h2>
               <div className="grid grid-cols-2 gap-1 mb-10">
                 <div className="bg-zinc-100 p-6"><p className="text-[9px] font-black text-zinc-400 mb-2 uppercase tracking-widest">Delta</p><p className="text-4xl font-black italic">{(playerTotalTime - aiState.total).toFixed(3)}s</p></div>
-                <div className="bg-zinc-100 p-6"><p className="text-[9px] font-black text-zinc-400 mb-2 uppercase tracking-widest">Rating</p><p className="text-4xl font-black italic text-red-600">{pastRuns[0]?.rank}</p></div>
+                <div className="bg-zinc-100 p-6"><p className="text-[9px] font-black text-zinc-400 mb-2 uppercase tracking-widest">Rating</p><p className="text-4xl font-black italic text-red-500">{pastRuns[0]?.rank}</p></div>
               </div>
               <button onClick={reset} className="w-full bg-black text-white font-black py-5 tracking-[0.3em] hover:bg-red-600 transition-colors">RETURN_TO_GARAGE</button>
             </motion.div>

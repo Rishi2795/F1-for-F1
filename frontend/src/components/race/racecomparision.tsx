@@ -48,7 +48,7 @@ export default function RaceComparison({ drivers = [], ai = {} }: Props) {
               <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-zinc-400 uppercase">Analysis_V4.2 // Performance</span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-black italic uppercase tracking-tighter leading-none">
-              Differential <span className="text-red-600">Analysis</span>
+              Differential <span className="text-red-500">Analysis</span>
             </h1>
           </div>
 
@@ -71,7 +71,7 @@ export default function RaceComparison({ drivers = [], ai = {} }: Props) {
                 <div className="flex-none bg-black rounded-[1.2rem] sm:rounded-[2rem] p-4 sm:p-8 relative overflow-hidden shadow-2xl border-b-4 border-red-600">
                   <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-12 text-white">
                     <div className="flex-none">
-                       <p className="text-[9px] font-mono text-red-600 font-bold tracking-widest mb-1 uppercase">Verdict_Establishment</p>
+                       <p className="text-[9px] font-mono text-red-500 font-bold tracking-widest mb-1 uppercase">Verdict_Establishment</p>
                        <p className="text-xl sm:text-3xl font-black italic leading-none uppercase">{verdict.winner.driver_code} Dominant</p>
                     </div>
                     <div className="h-px sm:h-12 w-full sm:w-px bg-white/10" />
@@ -114,7 +114,7 @@ function DriverModule({ driver, ai, side }: { driver: Driver; ai?: AIInsight; si
       <div className="relative z-10">
         <div className="flex justify-between items-start mb-6">
           <div className="flex flex-col">
-            <span className={`text-[10px] font-mono font-bold uppercase ${side === 'left' ? 'text-red-600' : 'text-zinc-500'}`}>Pilot_Telemetry</span>
+            <span className={`text-[10px] font-mono font-bold uppercase ${side === 'left' ? 'text-red-500' : 'text-zinc-500'}`}>Pilot_Telemetry</span>
             <h3 className="text-4xl sm:text-6xl font-black italic tracking-tighter uppercase leading-none">{driver.driver_code}</h3>
           </div>
           {ai?.rating && (
@@ -144,7 +144,7 @@ function DataRow({ label, value, unit, highlight }: { label: string; value: stri
     <div className="flex flex-col border-b border-black/5 pb-1">
       <span className="text-[8px] font-mono font-bold text-zinc-400 uppercase">{label}</span>
       <div className="flex items-baseline gap-1">
-        <span className={`text-xl sm:text-2xl font-black italic ${highlight && isPositive ? 'text-emerald-500' : highlight && isNegative ? 'text-red-600' : 'text-black'}`}>
+        <span className={`text-xl sm:text-2xl font-black italic ${highlight && isPositive ? 'text-emerald-500' : highlight && isNegative ? 'text-red-500' : 'text-black'}`}>
           {highlight && isPositive ? `+${value}` : value}
         </span>
         {unit && <span className="text-[8px] font-bold text-zinc-300">{unit}</span>}
@@ -190,7 +190,7 @@ function CustomSelect({ value, onChange, drivers, label }: { value: string; onCh
               <button 
                 key={d.driver_code} 
                 onClick={() => { onChange(d.driver_code); setIsOpen(false); }} 
-                className={`w-full text-left px-4 py-3 text-xs font-black uppercase rounded-xl hover:bg-zinc-100 ${value === d.driver_code ? 'bg-red-600 text-white' : 'text-zinc-600'}`}
+                className={`w-full text-left px-4 py-3 text-xs font-black uppercase rounded-xl hover:bg-zinc-100 ${value === d.driver_code ? 'bg-red-600 text-white' : 'text-zinc-400'}`}
               >
                 {d.driver_code}
               </button>

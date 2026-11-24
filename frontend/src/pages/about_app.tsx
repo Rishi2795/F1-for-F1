@@ -20,14 +20,14 @@ const AboutPage = () => {
 
         <div className="max-w-[1400px] mx-auto relative z-10">
 
-          <p className="text-red-600 font-mono text-xs tracking-[0.4em] mb-5">
+          <p className="text-red-500 font-mono text-xs tracking-[0.4em] mb-5">
             FORMULA 1 DATA SYSTEM
           </p>
 
           <h1 className="text-5xl md:text-8xl font-black uppercase italic leading-tight">
 
             Where Speed <br />
-            Meets <span className="text-red-600">Intelligence</span>
+            Meets <span className="text-red-500">Intelligence</span>
 
           </h1>
 
@@ -67,7 +67,7 @@ const AboutPage = () => {
 
               <div className="absolute bottom-6 left-6">
 
-                <p className="text-red-600 text-xs font-mono mb-1">
+                <p className="text-red-500 text-xs font-mono mb-1">
                   Developer
                 </p>
 
@@ -201,7 +201,7 @@ const AboutPage = () => {
             {/* Step 1 */}
             <div className="p-8 border border-white/5 bg-black/40">
 
-              <h3 className="text-xl font-bold mb-4 text-red-600">
+              <h3 className="text-xl font-bold mb-4 text-red-500">
                 1. Data Collection
               </h3>
 
@@ -222,7 +222,7 @@ const AboutPage = () => {
             {/* Step 2 */}
             <div className="p-8 border border-white/5 bg-black/40">
 
-              <h3 className="text-xl font-bold mb-4 text-red-600">
+              <h3 className="text-xl font-bold mb-4 text-red-500">
                 2. Processing Layer
               </h3>
 
@@ -240,7 +240,7 @@ const AboutPage = () => {
             {/* Step 3 */}
             <div className="p-8 border border-white/5 bg-black/40">
 
-              <h3 className="text-xl font-bold mb-4 text-red-600">
+              <h3 className="text-xl font-bold mb-4 text-red-500">
                 3. Visualization
               </h3>
 
@@ -267,7 +267,7 @@ const AboutPage = () => {
         <h2 className="text-4xl md:text-6xl font-black uppercase italic mb-10">
 
           Explore the Data.
-          <span className="text-red-600"> Understand the Race.</span>
+          <span className="text-red-500"> Understand the Race.</span>
 
         </h2>
 

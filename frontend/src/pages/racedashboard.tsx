@@ -6,6 +6,7 @@ import { ApiRequestError } from "../lib/api";
 import { ErrorState, RaceSkeleton } from "../components/ui/states";
 import { StintBar } from "../components/ui/stintbar";
 import { DASH, describeMissing, fmt, fmtFinish, fmtGrid, fmtSigned } from "../lib/format";
+import { raceStory } from "../lib/racestory";
 import type { DriverRace, RaceDoc } from "../types/api";
 
 /** Fallback colours when the data has no team colour. */
@@ -68,22 +69,22 @@ export default function RaceDashboard() {
       {/* SECTION 0: TOP GLOBAL NAV (ULTRA SMALL) */}
       <nav className="fixed top-0 left-0 w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/5 px-6 py-3 flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <Link to="/explore" className="text-[9px] font-black tracking-widest text-white hover:text-red-600 transition-colors uppercase">ALL RACES</Link>
+          <Link to="/explore" className="text-xs font-black tracking-widest text-white hover:text-red-500 transition-colors uppercase">ALL RACES</Link>
           <div className="w-px h-3 bg-white/10" />
-          <span className="text-[9px] font-mono text-zinc-500 uppercase">SYS_ACTIVE // {race.season}.R{race.round}</span>
+          <span className="text-xs font-mono text-zinc-500 uppercase">{race.season} · Round {race.round}</span>
         </div>
-        <div className="text-[9px] font-black text-zinc-400 tracking-tighter italic uppercase">Archive · {race.date}</div>
+        <div className="text-xs font-black text-zinc-400 tracking-tighter italic uppercase">Archive · {race.date}</div>
       </nav>
 
-      <main className="max-w-[1400px] mx-auto px-6 pt-24 pb-16 space-y-10 md:space-y-14">
+      <div className="max-w-[1400px] mx-auto px-6 pt-24 pb-16 space-y-10 md:space-y-14">
 
         {/* SECTION 1: HEADER & META */}
         <header className="opacity-100 translate-y-0">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end border-b border-white/10 pb-6">
             <div className="md:col-span-8">
               <div className="flex items-center gap-2 mb-4">
-                <span className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black uppercase rounded-sm">Season_{race.season}</span>
-                <span className="text-[9px] font-mono text-zinc-500 uppercase">Track_Position: {race.location}</span>
+                <span className="px-2 py-0.5 bg-red-600 text-white text-xs font-black uppercase rounded-sm">Season {race.season}</span>
+                <span className="text-xs font-mono text-zinc-500 uppercase">{race.location}</span>
               </div>
               <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter leading-none text-white">
                 {race.event_name}
@@ -91,7 +92,7 @@ export default function RaceDashboard() {
             </div>
             <div className="md:col-span-4 flex justify-end gap-12">
               <HeroMeta label="CIRCUIT" value={race.location} />
-              <HeroMeta label="RACE_ID" value={`GP_R${race.round}`} />
+              <HeroMeta label="ROUND" value={race.round} />
               <HeroMeta label="DATA" value={race.quality.status.toUpperCase()} />
             </div>
           </div>
@@ -110,20 +111,27 @@ export default function RaceDashboard() {
 
         {/* SECTION 2: TRACK INTEL & OPTIMA (BENTO GRID) */}
         <section className="space-y-4">
-          <SectionLabel id="01" title="CIRCUIT_ARCHITECTURE" />
+          <SectionLabel id="01" title="How the race went" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-sm overflow-hidden">
             <div className="lg:col-span-2 bg-black p-8 md:p-12">
-              <p className="font-serif text-xl md:text-2xl text-zinc-200 leading-relaxed italic max-w-2xl mb-12">
-                "{TRACK_HISTORY[race.event_name] ?? "High-speed aero stability and thermal management are the primary performance inhibitors here."}"
-              </p>
+              <ul className="max-w-2xl space-y-3 text-lg leading-relaxed text-zinc-200 md:text-xl">
+                {raceStory(race).map((line) => (
+                  <li key={line} className="flex gap-3">
+                    <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-600" />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+              {TRACK_HISTORY[race.event_name] && <p className="mt-6 max-w-2xl text-sm italic text-zinc-400">About the circuit: {TRACK_HISTORY[race.event_name]}</p>}
+              <div className="mb-8" />
               <div className="flex flex-wrap gap-2">
                 {race.derived.style_profile.map((tag: string) => (
-                  <span key={tag} className="px-3 py-1 bg-white/5 border border-white/10 text-[8px] font-bold text-zinc-400 uppercase tracking-widest rounded-sm">{tag}</span>
+                  <span key={tag} className="px-3 py-1 bg-white/5 border border-white/10 text-xs font-bold text-zinc-400 uppercase tracking-widest rounded-sm">{tag}</span>
                 ))}
               </div>
             </div>
             <div className="bg-white p-8 md:p-12">
-              <Label color="text-zinc-400">STRATEGY_WINDOW</Label>
+              <Label color="text-zinc-600">Winning strategy</Label>
               <div className="space-y-6 mt-8">
                 <MetricWhite label="Pit Stops" value={fmt(race.derived.winning_recipe.typical_stops)} />
                 <MetricWhite label="Compound" value={fmt(race.derived.winning_recipe.common_tyre_sequence)} />
@@ -141,18 +149,18 @@ export default function RaceDashboard() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
-                  <span className="text-red-600 font-mono text-[10px] font-bold border border-red-600/30 px-2 py-0.5 rounded-sm">CAL_02</span>
+                  <span className="text-red-500 font-mono text-xs font-bold border border-red-600/30 px-2 py-0.5 rounded-sm">Teams</span>
                   <h2 className="text-white font-serif italic tracking-tight text-3xl md:text-4xl leading-none">Constructor <span className="font-sans not-italic font-black text-xl md:text-2xl uppercase tracking-tighter opacity-70">Stability</span></h2>
                 </div>
-                <p className="text-zinc-500 text-[9px] font-mono uppercase tracking-[0.4em] pl-1">Unit_Efficiency_Protocol_v4.2</p>
+                <p className="text-zinc-500 text-xs font-mono uppercase tracking-[0.4em] pl-1">Average finish and places gained, per team</p>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="flex flex-col md:items-end">
-                  <span className="text-[7px] font-mono text-zinc-600 uppercase tracking-[0.2em]">System_Status</span>
-                  <span className="text-[10px] font-black text-green-500 italic flex items-center gap-2">
+                  <span className="text-xs font-mono text-zinc-400 uppercase tracking-[0.2em]">Source</span>
+                  <span className="text-xs font-black text-green-500 italic flex items-center gap-2">
                     <span className="w-1 h-1 bg-green-500 rounded-full" />
-                    OFFICIAL_RESULTS
+                    Official results
                   </span>
                 </div>
               </div>
@@ -181,26 +189,23 @@ export default function RaceDashboard() {
                       {/* CARD TOP: TEAM IDENTITY */}
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
-                          <p className="text-[10px] font-black text-black uppercase tracking-widest group-hover:md:text-white transition-colors">
+                          <p className="text-xs font-black text-black uppercase tracking-widest group-hover:md:text-white transition-colors">
                             {t.team}
                           </p>
                           <div className="h-[2px] w-6" style={{ backgroundColor: teamColor }} />
                         </div>
-                        <span className="text-[8px] font-mono text-zinc-400 uppercase italic">
-                          {t.team.substring(0, 3)}_SPEC
-                        </span>
                       </div>
 
                       {/* CENTER: PRIMARY METRIC */}
                       <div className="flex items-end justify-between">
                         <div className="flex flex-col">
-                          <span className="text-[7px] font-mono text-zinc-400 group-hover:md:text-zinc-600 uppercase mb-1 tracking-tighter italic transition-colors">Avg_Finish</span>
-                          <span className="text-5xl font-black italic text-black tracking-tighter leading-none group-hover:md:text-red-600 transition-colors duration-500">
+                          <span className="text-xs font-mono text-zinc-600 group-hover:md:text-zinc-300 uppercase mb-1 tracking-tighter italic transition-colors">Avg finish</span>
+                          <span className="text-5xl font-black italic text-black tracking-tighter leading-none group-hover:md:text-red-500 transition-colors duration-500">
                             {avgFinish === null ? DASH : avgFinish.toFixed(1)}
                           </span>
                         </div>
 
-                        <div className={`px-2 py-1 rounded-sm text-[11px] font-black italic ${t.gained >= 0 ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-600'
+                        <div className={`px-2 py-1 rounded-sm text-xs font-black italic ${t.gained >= 0 ? 'bg-green-500/10 text-green-700' : 'bg-red-500/10 text-red-700'
                           }`}>
                           {t.gained >= 0 ? `+${t.gained}` : t.gained}
                         </div>
@@ -208,8 +213,8 @@ export default function RaceDashboard() {
 
                       {/* BOTTOM: STABILITY COMPONENT */}
                       <div className="space-y-3 pt-4 border-t border-zinc-50 md:border-zinc-100 group-hover:md:border-white/5 transition-colors">
-                        <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-[0.2em]">
-                          <span className="text-zinc-400 group-hover:md:text-zinc-500">Stability</span>
+                        <div className="flex justify-between items-center text-xs font-black uppercase tracking-[0.2em]">
+                          <span className="text-zinc-600 group-hover:md:text-zinc-300" title="100 minus 4 times the team's average finishing position (minimum 10). A simple summary, not a measured quantity.">Finish score</span>
                           <span className="text-black font-mono group-hover:md:text-white">{score.toFixed(0)}%</span>
                         </div>
 
@@ -258,12 +263,12 @@ export default function RaceDashboard() {
             {/* COMPRESSED HEADER */}
             <div className="flex items-end justify-between px-2 mb-6">
               <div className="flex items-center gap-3">
-                <span className="text-red-600 font-mono text-[10px] font-bold border border-red-600/30 px-1.5 py-0.5">03</span>
-                <h2 className="text-white font-serif italic text-xl md:text-2xl tracking-tight">Driver <span className="font-sans not-italic font-black text-sm uppercase opacity-40">Standings</span></h2>
+                <span className="text-red-500 font-mono text-xs font-bold border border-red-600/30 px-1.5 py-0.5">03</span>
+                <h2 className="text-white font-serif italic text-xl md:text-2xl tracking-tight">Driver <span className="font-sans not-italic font-black text-sm uppercase text-zinc-400">Standings</span></h2>
               </div>
               <div className="hidden md:flex items-center gap-4">
                 <div className="h-[1px] w-24 bg-white/10" />
-                <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Feed_Status: <span className="text-green-500 animate-pulse">Click to expand</span></span>
+                <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest"><span className="text-zinc-400">Select a driver to expand</span></span>
               </div>
             </div>
 
@@ -279,7 +284,6 @@ export default function RaceDashboard() {
                     role="button"
                     tabIndex={0}
                     aria-expanded={isExpanded}
-                    aria-label={`${d.driver_name}, finished ${fmt(d.finish)}. ${isExpanded ? "Hide" : "Show"} strategy details`}
                     onClick={() => setExpandedDriver(isExpanded ? null : d.driver_code)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
@@ -300,7 +304,7 @@ export default function RaceDashboard() {
                       </span>
 
                       <div className="relative z-10 flex items-center gap-6">
-                        <span className={`text-[10px] font-mono font-black italic w-6 text-center ${isExpanded ? 'text-red-600' : 'text-zinc-600'}`}>
+                        <span className={`text-xs font-mono font-black italic w-6 text-center ${isExpanded ? 'text-red-500' : 'text-zinc-400'}`}>
                           {fmtFinish(d.finish)}
                         </span>
 
@@ -311,7 +315,7 @@ export default function RaceDashboard() {
                             }`}>
                             {d.driver_code}
                           </h4>
-                          <p className="text-[7px] uppercase tracking-widest font-bold text-zinc-500">
+                          <p className="text-xs uppercase tracking-widest font-bold text-zinc-500">
                             {d.team}
                           </p>
                         </div>
@@ -321,17 +325,17 @@ export default function RaceDashboard() {
                       <div className="relative z-10 flex items-center gap-10">
                         <div className="hidden lg:flex gap-8">
                           <div className="flex flex-col">
-                            <span className="text-[6px] text-zinc-500 font-mono uppercase">Grid</span>
-                            <span className={`text-[10px] font-bold ${isExpanded ? 'text-black' : 'text-white'}`}>{fmtGrid(d.grid, d.pit_lane_start)}</span>
+                            <span className="text-xs text-zinc-500 font-mono uppercase">Grid</span>
+                            <span className={`text-xs font-bold ${isExpanded ? 'text-black' : 'text-white'}`}>{fmtGrid(d.grid, d.pit_lane_start)}</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-[6px] text-zinc-500 font-mono uppercase">Longest stint</span>
-                            <span className={`text-[10px] font-bold ${isExpanded ? 'text-black' : 'text-white'}`}>{fmt(d.longest_stint)}</span>
+                            <span className="text-xs text-zinc-500 font-mono uppercase">Longest stint</span>
+                            <span className={`text-xs font-bold ${isExpanded ? 'text-black' : 'text-white'}`}>{fmt(d.longest_stint)}</span>
                           </div>
                         </div>
 
                         <div className="flex flex-col items-end w-12">
-                          <span className={`text-sm md:text-lg font-black italic ${d.positions_gained === null ? 'text-zinc-600' : d.positions_gained >= 0 ? 'text-green-500' : 'text-red-600'
+                          <span className={`text-sm md:text-lg font-black italic ${d.positions_gained === null ? 'text-zinc-400' : d.positions_gained >= 0 ? 'text-green-500' : 'text-red-500'
                             }`}>
                             {fmtSigned(d.positions_gained)}
                           </span>
@@ -350,15 +354,15 @@ export default function RaceDashboard() {
                         {/* 01: PERFORMANCE GRID (Takes 7 cols) */}
                         <div className="md:col-span-7 grid grid-cols-3 gap-4">
                           <div className="space-y-1">
-                            <span className="block text-[7px] text-zinc-400 font-mono uppercase border-b border-zinc-200 pb-1">Aggression</span>
+                            <span className="block text-xs text-zinc-400 font-mono uppercase border-b border-zinc-200 pb-1">Strategy risk</span>
                             <span className="text-sm font-black text-black">{d.strategy_risk ? `${d.strategy_risk.risk_score}%` : DASH}</span>
                           </div>
                           <div className="space-y-1">
-                            <span className="block text-[7px] text-zinc-400 font-mono uppercase border-b border-zinc-200 pb-1">Consistency</span>
+                            <span className="block text-xs text-zinc-400 font-mono uppercase border-b border-zinc-200 pb-1">Consistency</span>
                             <span className="text-sm font-black text-black">{fmt(d.consistency_index, "%")}</span>
                           </div>
                           <div className="space-y-1">
-                            <span className="block text-[7px] text-zinc-400 font-mono uppercase border-b border-zinc-200 pb-1">Pit stops</span>
+                            <span className="block text-xs text-zinc-400 font-mono uppercase border-b border-zinc-200 pb-1">Pit stops</span>
                             <span className="text-sm font-black text-black">{fmt(d.stops)}</span>
                           </div>
                           <div className="col-span-3 pt-2">
@@ -368,14 +372,14 @@ export default function RaceDashboard() {
 
                         {/* 02: VERDICT (Takes 5 cols) */}
                         <div className="md:col-span-5 border-l border-zinc-200 pl-8">
-                          <span className="block text-[7px] text-zinc-400 font-mono uppercase mb-2">Sim_Verdict</span>
-                          <p className="font-serif italic text-[11px] text-black leading-snug">
+                          <span className="block text-xs text-zinc-400 font-mono uppercase mb-2">Strategy note</span>
+                          <p className="font-serif italic text-xs text-black leading-snug">
                             {d.strategy_simulation ? `"${d.strategy_simulation.verdict}"` : "No strategy comparison available without lap data."}
                           </p>
                         </div>
                       </div>
 
-                      <div className="bg-black text-[6px] font-mono text-zinc-600 px-10 py-1 uppercase tracking-[0.5em] text-right">
+                      <div className="bg-black text-xs font-mono text-zinc-400 px-10 py-1 uppercase tracking-[0.5em] text-right">
                         {d.driver_name} · {d.status}
                       </div>
                     </div>
@@ -395,16 +399,16 @@ export default function RaceDashboard() {
               {/* LEFT BOX: DRIVER SELECTION (The Control Panel) */}
               <div className="w-full lg:w-[300px] shrink-0 space-y-1">
                 <div className="px-3 py-2 bg-red-600 rounded-t-sm">
-                  <h2 className="text-[10px] font-black tracking-[0.3em] uppercase text-white">Selection_Sync</h2>
+                  <h2 className="text-xs font-black tracking-[0.3em] uppercase text-white">Compare drivers</h2>
                 </div>
                 <div className="bg-[#050505] border border-white/5 p-4 rounded-b-sm space-y-4">
-                  <VSelector label="Alpha_Pilot" value={driverA} onChange={setDriverA} drivers={race.drivers} />
+                  <VSelector label="Driver A" value={driverA} onChange={setDriverA} drivers={race.drivers} />
                   <div className="h-px bg-white/5 w-full" />
-                  <VSelector label="Beta_Pilot" value={driverB} onChange={setDriverB} drivers={race.drivers} />
+                  <VSelector label="Driver B" value={driverB} onChange={setDriverB} drivers={race.drivers} />
 
                   <div className="pt-4 mt-4 border-t border-white/5">
-                    <p className="text-[8px] font-mono text-zinc-600 leading-tight uppercase tracking-widest">
-                      Status: {A && B ? "Simulation_Ready" : "Awaiting_Input"}
+                    <p className="text-xs font-mono text-zinc-400 leading-tight uppercase tracking-widest">
+                      {A && B ? "Comparing" : "Choose two drivers"}
                     </p>
                   </div>
                 </div>
@@ -433,14 +437,14 @@ export default function RaceDashboard() {
                     {/* MICRO VERDICTS */}
                     <div className="grid grid-cols-2 border-t border-white/5 divide-x divide-white/5">
                       <div className="p-5 bg-black/40 group hover:bg-black/60 transition-colors">
-                        <span className="text-[7px] font-black text-red-600 uppercase tracking-widest block mb-2">Alpha_Logic</span>
-                        <p className="font-serif text-[11px] text-zinc-400 leading-relaxed line-clamp-2 italic">
+                        <span className="text-xs font-black text-red-500 uppercase tracking-widest block mb-2">Driver A: strategy note</span>
+                        <p className="font-serif text-xs text-zinc-400 leading-relaxed line-clamp-2 italic">
                           {A.strategy_simulation ? `"${A.strategy_simulation.verdict}"` : DASH}
                         </p>
                       </div>
                       <div className="p-5 bg-black/40 group hover:bg-black/60 transition-colors">
-                        <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest block mb-2 text-right">Beta_Logic</span>
-                        <p className="font-serif italic text-[11px] text-zinc-400 leading-relaxed line-clamp-2 text-right">
+                        <span className="text-xs font-black text-zinc-500 uppercase tracking-widest block mb-2 text-right">Driver B: strategy note</span>
+                        <p className="font-serif italic text-xs text-zinc-400 leading-relaxed line-clamp-2 text-right">
                           {B.strategy_simulation ? `"${B.strategy_simulation.verdict}"` : DASH}
                         </p>
                       </div>
@@ -449,7 +453,7 @@ export default function RaceDashboard() {
                 ) : (
                   <div className="h-[340px] border border-dashed border-white/5 rounded-sm flex flex-col items-center justify-center space-y-4 bg-[#030303]">
                     <div className="w-4 h-4 border border-white/10 border-t-red-600 animate-spin rounded-full" />
-                    <span className="text-[9px] font-mono text-zinc-800 uppercase tracking-[0.6em]">Initialize_Simulation_Sequence</span>
+                    <span className="text-xs font-mono text-zinc-400 uppercase tracking-[0.4em]">Choose two drivers to compare</span>
                   </div>
                 )}
               </div>
@@ -457,11 +461,11 @@ export default function RaceDashboard() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
 
       {/* GLOBAL FOOTER */}
       <footer className="border-t border-white/5 py-12 px-10 text-center">
-        <p className="text-[10px] text-zinc-500 tracking-wide">Unofficial fan project, not affiliated with Formula 1 or the FIA. Data: Jolpica-F1, TracingInsights.</p>
+        <p className="text-xs text-zinc-500 tracking-wide">Unofficial fan project, not affiliated with Formula 1 or the FIA. Data: Jolpica-F1, TracingInsights.</p>
       </footer>
     </div>
   );
@@ -471,39 +475,42 @@ export default function RaceDashboard() {
 
 const SectionLabel = memo(({ id, title }: { id: string; title: string }) => (
   <div className="flex items-center gap-3">
-    <span className="text-[9px] font-black text-red-600 font-mono">[{id}]</span>
-    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white italic">{title}</h3>
+    <span className="text-xs font-black text-red-500 font-mono">[{id}]</span>
+    <h3 className="text-xs font-black uppercase tracking-[0.4em] text-white italic">{title}</h3>
     <div className="flex-1 h-px bg-white/5" />
   </div>
 ));
 
 const HeroMeta = memo(({ label, value }: { label: string; value: string | number }) => (
   <div className="flex flex-col items-end">
-    <span className="text-[8px] font-black text-zinc-600 mb-1 tracking-widest uppercase">{label}</span>
+    <span className="text-xs font-black text-zinc-400 mb-1 tracking-widest uppercase">{label}</span>
     <span className="text-xs font-black italic uppercase tracking-tighter text-white">{value}</span>
   </div>
 ));
 
-const Label = memo(({ children, color = "text-red-600" }: { children: ReactNode; color?: string }) => (
-  <p className={`text-[9px] font-black uppercase tracking-[0.3em] ${color} mb-4`}>{children}</p>
+const Label = memo(({ children, color = "text-red-500" }: { children: ReactNode; color?: string }) => (
+  <p className={`text-xs font-black uppercase tracking-[0.3em] ${color} mb-4`}>{children}</p>
 ));
 
 const MetricWhite = memo(({ label, value }: { label: string; value: string | number }) => (
   <div className="flex justify-between items-end border-b border-zinc-100 pb-2 hover:border-black transition-colors">
-    <span className="text-[8px] uppercase font-black text-zinc-400 tracking-widest">{label}</span>
+    <span className="text-xs uppercase font-black text-zinc-600 tracking-widest">{label}</span>
     <span className="text-xl font-black italic tracking-tighter uppercase leading-none text-black">{value}</span>
   </div>
 ));
 
 const VSelector = ({ label, value, onChange, drivers }: { label: string; value: string; onChange: (v: string) => void; drivers: DriverRace[] }) => (
   <div className="text-left">
-    <p className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-2 ml-2 ">{label}</p>
+    <label htmlFor={`vsel-${label.replace(/\s+/g, "-")}`} className="mb-2 ml-2 block text-xs font-black uppercase tracking-[0.3em] text-zinc-400">
+      {label}
+    </label>
     <select
+      id={`vsel-${label.replace(/\s+/g, "-")}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-[#111] border border-white/10 rounded-sm p-3 px-4 font-black italic uppercase text-[10px] text-white outline-none focus:border-red-600 transition-all cursor-pointer hover:bg-zinc-900"
+      className="w-full bg-[#111] border border-white/10 rounded-sm p-3 px-4 font-black italic uppercase text-xs text-white outline-none focus:border-red-600 transition-all cursor-pointer hover:bg-zinc-900"
     >
-      <option value="">Pilot_Select_NULL</option>
+      <option value="">Select a driver</option>
       {drivers.map((d) => <option key={d.driver_code} value={d.driver_code}>{d.driver_code} // {d.team}</option>)}
     </select>
   </div>
@@ -512,14 +519,14 @@ const VSelector = ({ label, value, onChange, drivers }: { label: string; value: 
 const VComparePilot = ({ d }: { d: DriverRace }) => (
   <div className="text-center">
     <p className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase mb-2 text-white">{d.driver_code}</p>
-    <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">{d.team}</p>
+    <p className="text-xs text-zinc-500 uppercase font-black tracking-widest">{d.team}</p>
   </div>
 );
 
 const VMetricRow = ({ label, a, b }: { label: string; a: string | number; b: string | number }) => (
   <div className="grid grid-cols-3 py-4 items-center border-b border-white/5 hover:bg-white/[0.02] transition-all px-4 group">
     <div className="text-xl md:text-2xl font-black italic tracking-tighter text-center text-white">{a}</div>
-    <div className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-700 text-center italic">{label}</div>
+    <div className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500 text-center italic">{label}</div>
     <div className="text-xl md:text-2xl font-black italic tracking-tighter text-center text-white">{b}</div>
   </div>
 );

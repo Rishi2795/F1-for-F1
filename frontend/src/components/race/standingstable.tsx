@@ -112,10 +112,10 @@ export default function StandingsTable({ drivers, tyreSequences = {} }: Props) {
                             <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">{d.team}</p>
                           </div>
                           <div className="text-right flex flex-col items-end gap-1">
-                            <div className={`text-sm font-black font-mono ${delta > 0 ? 'text-emerald-600' : delta < 0 ? 'text-red-600' : 'text-black/20'}`}>
+                            <div className={`text-sm font-black font-mono ${delta > 0 ? 'text-emerald-600' : delta < 0 ? 'text-red-500' : 'text-black/20'}`}>
                               {delta > 0 ? `▲ ${delta}` : delta < 0 ? `▼ ${Math.abs(delta)}` : "—"}
                             </div>
-                            <div className="text-[10px] font-black text-red-600 bg-red-50 px-2 py-0.5 rounded">{d.paceIndex} PACE</div>
+                            <div className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded">{d.paceIndex} PACE</div>
                           </div>
                         </div>
                       </div>
@@ -177,7 +177,7 @@ export default function StandingsTable({ drivers, tyreSequences = {} }: Props) {
                             </td>
 
                             <td className="px-6 py-6 text-center">
-                              <span className={`text-lg font-black font-mono ${isOpen ? (delta > 0 ? 'text-emerald-400' : 'text-red-400') : (delta > 0 ? 'text-emerald-600' : 'text-red-600')}`}>
+                              <span className={`text-lg font-black font-mono ${isOpen ? (delta > 0 ? 'text-emerald-400' : 'text-red-400') : (delta > 0 ? 'text-emerald-600' : 'text-red-500')}`}>
                                 {delta > 0 ? `+${delta}` : delta === 0 ? "—" : delta}
                               </span>
                             </td>
@@ -198,7 +198,7 @@ export default function StandingsTable({ drivers, tyreSequences = {} }: Props) {
                               </span>
                             </td>
 
-                            <td className="px-6 py-6 text-right font-black text-xl text-red-600">
+                            <td className="px-6 py-6 text-right font-black text-xl text-red-500">
                               <span className={isOpen ? 'text-red-400' : ''}>{d.paceIndex}</span>
                             </td>
                           </tr>

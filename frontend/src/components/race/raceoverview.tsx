@@ -157,7 +157,7 @@ export default function UniversalRaceVault({ race, insights }: Props) {
               <div className="w-1.5 h-1 sm:w-2 sm:h-2 bg-red-600 rounded-full animate-pulse shadow-[0_0_10px_rgba(220,38,38,0.6)]" />
               <span className="text-[9px] sm:text-[10px] font-black tracking-[0.25em] sm:tracking-[0.3em] uppercase text-white/80">RACE VAULT</span>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 text-[8px] sm:text-[15px] font-mono uppercase tracking-wider text-red-600">
+            <div className="flex items-center gap-2 sm:gap-3 text-[8px] sm:text-[15px] font-mono uppercase tracking-wider text-red-500">
               <span className="hidden sm:inline">ROUND {meta.round}</span>
               <span>{meta.season}</span>
             </div>
@@ -381,7 +381,7 @@ const StatCard = ({
     <div className="flex items-baseline gap-1">
       <p className={`font-black tracking-tight leading-none ${
         small ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-4xl lg:text-5xl'
-      } ${highlight ? 'text-red-600' : 'text-black'}`}>
+      } ${highlight ? 'text-red-500' : 'text-black'}`}>
         {value}
       </p>
       {unit && (

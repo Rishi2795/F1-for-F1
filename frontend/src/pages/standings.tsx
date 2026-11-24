@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { ApiRequestError, prefetch } from "../lib/api";
@@ -57,13 +57,32 @@ export default function Standings() {
   const valid = /^\d{4}$/.test(year);
   const seasons = useApi<{ seasons: number[] }>("/seasons").data?.seasons ?? [];
   const { data, error, reload } = useApi<SeasonStandings>(valid ? `/seasons/${year}/standings` : null);
-  const [tab, setTab] = useState<Tab>("drivers");
-  const [mode, setMode] = useState<ChartMode>("points");
   const [highlight, setHighlight] = useState<string | null>(null);
-  const [toggles, setToggles] = useState<{ key: string; ids: Set<string> }>({ key: "", ids: new Set() });
+  const [copied, setCopied] = useState(false);
   useDocumentTitle(`${year} championship standings`);
 
-  const view = useMemo(() => (data && data.rounds.length ? derive(data, tab) : null), [data, tab]);
+  // Everything the viewer can change lives in the URL, so any view can be shared as a link.
+  const [params, setParams] = useSearchParams();
+  const tab: Tab = params.get("tab") === "constructors" ? "constructors" : "drivers";
+  const mode: ChartMode = params.get("view") === "gap" ? "gap" : "points";
+  const flipped = useMemo(() => new Set((params.get("lines") ?? "").split(",").filter(Boolean)), [params]);
+  const roundCount = data?.rounds.length ?? 0;
+  const round = roundCount ? Math.min(roundCount, Math.max(1, Number(params.get("round")) || roundCount)) : 0;
+  const update = (changes: Record<string, string | null>) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const [key, value] of Object.entries(changes)) {
+          if (value === null || value === "") next.delete(key);
+          else next.set(key, value);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  const setTab = (t: Tab) => update({ tab: t === "drivers" ? null : t, lines: null }); // chosen lines belong to one tab
+
+  const view = useMemo(() => (data && roundCount ? derive(data, tab, round) : null), [data, tab, round, roundCount]);
 
   if (!valid) return <Bad />;
   if (error) {
@@ -76,22 +95,30 @@ export default function Standings() {
   if (!data) return <PageSkeleton />;
   if (!view) return <Bad missing />;
 
-  // A line is on if it is in the default top group, unless the user flipped it. Flips reset per season and tab.
-  const toggleKey = `${data.season}-${tab}`;
-  const flipped = toggles.key === toggleKey ? toggles.ids : new Set<string>();
+  // A line is on if it is in the default top group, unless the viewer flipped it (kept in the URL).
   const isOn = (id: string, index: number) => (index < CHART_DEFAULT) !== flipped.has(id);
   const toggle = (id: string) => {
     const next = new Set(flipped);
     if (next.has(id)) next.delete(id);
     else next.add(id);
-    setToggles({ key: toggleKey, ids: next });
+    update({ lines: [...next].join(",") });
   };
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard blocked: the address bar still holds the link */
+    }
+  };
+  const atLatest = round === roundCount;
   const chartSeries = mode === "points" ? view.pointSeries : view.gapSeries;
   const shown = chartSeries.filter((s, i) => isOn(s.id, i));
   const onTabKey = (e: KeyboardEvent) => {
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
       e.preventDefault();
-      setTab((t) => (t === "drivers" ? "constructors" : "drivers"));
+      setTab(tab === "drivers" ? "constructors" : "drivers");
     }
   };
   const leader = view.rows[0];
@@ -144,11 +171,22 @@ export default function Standings() {
               </button>
             ))}
           </div>
-          <label className="ml-auto text-sm text-zinc-400">
+          <button
+            onClick={copyLink}
+            className="ml-auto rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition-colors hover:text-white"
+          >
+            {copied ? "Link copied" : "Copy link to this view"}
+          </button>
+          <label className="text-sm text-zinc-400">
             Season
             <select
               value={data.season}
-              onChange={(e) => navigate(`/season/${e.target.value}`)}
+              onChange={(e) => {
+                // keep the viewer's tab and chart view; the round and chosen lines belong to the old season
+                const keep = new URLSearchParams();
+                for (const k of ["tab", "view"]) if (params.get(k)) keep.set(k, params.get(k) as string);
+                navigate({ pathname: `/season/${e.target.value}`, search: keep.toString() });
+              }}
               className="ml-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-white backdrop-blur"
             >
               {(seasons.length ? seasons : [data.season]).map((y) => (
@@ -160,12 +198,41 @@ export default function Standings() {
           </label>
         </div>
 
+        {roundCount > 1 && (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <label htmlFor="round" className="text-sm font-semibold text-white">
+                Standings after round {view.last.round} <span className="font-normal text-zinc-400">· {view.last.event_name}</span>
+              </label>
+              {!atLatest && (
+                <button onClick={() => update({ round: null })} className="text-xs font-semibold text-red-400 hover:text-red-300">
+                  Back to the latest round
+                </button>
+              )}
+            </div>
+            <input
+              id="round"
+              type="range"
+              min={1}
+              max={roundCount}
+              value={round}
+              onChange={(e) => update({ round: Number(e.target.value) === roundCount ? null : e.target.value })}
+              aria-valuetext={`Round ${view.last.round}, ${view.last.event_name}`}
+              className="mt-3 h-2 w-full cursor-pointer accent-red-600"
+            />
+            <div className="mt-1 flex justify-between text-xs text-zinc-500">
+              <span>Round 1</span>
+              <span>Round {roundCount}</span>
+            </div>
+          </div>
+        )}
+
         <Podium entries={view.podium} leaderPoints={leader.points} />
 
         <section aria-label="Summary" className="f1-rise grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-4" style={{ "--d": "380ms" } as CSSProperties}>
           <Stat label="Lead over 2nd" value={second ? `${leader.points - second.points} pts` : "—"} sub={second?.label} />
-          <Stat label="Lead changes" value={String(view.leadChanges)} sub={`across ${data.rounds.length} rounds`} />
-          <Stat label="Rounds scored" value={String(data.rounds.length)} sub={`through ${view.last.event_name.replace("Grand Prix", "GP")}`} />
+          <Stat label="Lead changes" value={String(view.leadChanges)} sub={`through round ${view.last.round}`} />
+          <Stat label="Rounds scored" value={String(view.last.round)} sub={`through ${view.last.event_name.replace("Grand Prix", "GP")}`} />
           <Stat label="Wins by leader" value={String(leader.wins)} sub="Grand Prix victories" />
         </section>
 
@@ -182,7 +249,7 @@ export default function Standings() {
                 <button
                   key={m}
                   aria-pressed={mode === m}
-                  onClick={() => setMode(m)}
+                  onClick={() => update({ view: m === "gap" ? "gap" : null })}
                   className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${mode === m ? "bg-white text-black" : "text-zinc-400 hover:text-white"}`}
                 >
                   {label}
@@ -222,6 +289,7 @@ export default function Standings() {
               mode={mode}
               leaderId={leader.id}
               highlight={highlight}
+              marker={atLatest ? null : round - 1}
               rounds={data.rounds.map((r) => ({ round: r.round, label: r.event_name.replace("Grand Prix", "GP").trim() }))}
               ariaLabel={`Line chart of ${tab} championship points ${mode === "gap" ? "behind the leader " : ""}after each of ${data.rounds.length} rounds in ${data.season}. ${leader.label} leads with ${leader.points} points.`}
             />
@@ -311,9 +379,9 @@ function shortTeam(name: string): string {
 }
 
 /** Turn the raw standings into table rows, podium, chart lines (points and gap) and a lead-change count for one tab. */
-function derive(data: SeasonStandings, tab: Tab) {
+function derive(data: SeasonStandings, tab: Tab, round: number) {
   const rounds = data.rounds;
-  const last = rounds[rounds.length - 1];
+  const last = rounds[round - 1];
   const finals = tab === "drivers" ? last.drivers : last.constructors;
   const keyOf = (r: StandingsDriver | StandingsConstructor) => (isDriver(r) ? r.code : r.name);
 
@@ -339,7 +407,8 @@ function derive(data: SeasonStandings, tab: Tab) {
       .sort((a, b) => (a.position ?? 99) - (b.position ?? 99))
       .map((d) => d.code)
       .join(" · ");
-  const podium: PodiumEntry[] = rows.slice(0, 3).map((r) => ({
+  const podium: PodiumEntry[] = rows.slice(0, 3).map((r, i) => ({
+    champion: data.complete && round === data.rounds.length && i === 0 ? (tab === "drivers" ? "World Champion" : "Constructors' Champion") : undefined,
     id: r.id, label: r.label, sublabel: tab === "drivers" ? r.team : driversOf(r.label) || null, color: r.color, points: r.points, wins: r.wins, position: r.position, number: r.number, href: r.href, prefetch: r.prefetch,
   }));
 
@@ -368,7 +437,7 @@ function derive(data: SeasonStandings, tab: Tab) {
   const pointSeries = make((i) => base[i].points);
   const gapSeries = make((i) => base[i].points.map((p, r) => (p === null ? null : -(leaderAt[r] - p))));
 
-  const leaders = rounds.map((rd) => (tab === "drivers" ? rd.drivers : rd.constructors).find((x) => x.position === 1)?.name ?? null);
+  const leaders = rounds.slice(0, round).map((rd) => (tab === "drivers" ? rd.drivers : rd.constructors).find((x) => x.position === 1)?.name ?? null);
   const leadChanges = leaders.reduce((n, cur, i) => (i > 0 && cur !== leaders[i - 1] ? n + 1 : n), 0);
   return { rows, podium, pointSeries, gapSeries, last, leadChanges };
 }

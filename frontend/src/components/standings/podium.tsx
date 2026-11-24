@@ -1,6 +1,7 @@
 import type { CSSProperties, PointerEvent } from "react";
 import { Link } from "react-router-dom";
 import { useCountUp } from "../../hooks/useCountUp";
+import { ChampionBadge } from "../ui/championbadge";
 import { prefetch } from "../../lib/api";
 
 export type PodiumEntry = {
@@ -12,6 +13,7 @@ export type PodiumEntry = {
   wins: number;
   position: number | null;
   number: number | null; // race number (drivers); teams use their position as the backdrop numeral
+  champion?: string; // e.g. "World Champion": set on P1 once the season is over
   href?: string;
   prefetch?: string;
 };
@@ -71,6 +73,7 @@ export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; lead
                 <span className="text-zinc-400">
                   {e.wins} {e.wins === 1 ? "win" : "wins"}
                 </span>
+                {e.champion && <ChampionBadge titles={1} label={e.champion} />}
               </div>
               <div className="mt-auto pt-10">
                 <h3 className={`truncate font-extrabold leading-tight tracking-tight text-white ${lead ? "text-2xl md:text-3xl" : "text-xl"}`}>{e.label}</h3>

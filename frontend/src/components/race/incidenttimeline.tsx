@@ -30,7 +30,7 @@ export default function IncidentTimeline({ incidents }: Props) {
               <span className="text-[9px] font-mono font-bold tracking-[0.4em] text-zinc-500 uppercase">Race_Control_v2.1</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black italic uppercase tracking-tighter leading-none">
-              Incident <span className="text-red-600">Report</span>
+              Incident <span className="text-red-500">Report</span>
             </h1>
           </div>
           <div className="hidden sm:flex items-center gap-3 bg-white/5 px-4 py-2 rounded-full border border-white/10">
@@ -43,7 +43,7 @@ export default function IncidentTimeline({ incidents }: Props) {
           {items.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-7 flex flex-col gap-2">
-                <p className="text-[10px] font-mono font-bold text-zinc-600 uppercase tracking-[0.2em] mb-2 px-1">Active_Interventions</p>
+                <p className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2 px-1">Active_Interventions</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {items.map((item, i) => (
                     <div key={i} className={`relative p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 border-l-[4px] ${item.border} hover:bg-white/[0.07] transition-all flex items-center justify-between group overflow-hidden`}>
@@ -95,11 +95,11 @@ export default function IncidentTimeline({ incidents }: Props) {
                    </div>
                    <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-end">
                       <div>
-                         <p className="text-[8px] font-mono font-bold text-zinc-600 uppercase mb-1">Total_Events</p>
+                         <p className="text-[8px] font-mono font-bold text-zinc-400 uppercase mb-1">Total_Events</p>
                          <p className="text-3xl font-black italic leading-none">{totalIncidents}</p>
                       </div>
                       <div className="text-right">
-                         <p className="text-[8px] font-mono font-bold text-zinc-600 uppercase mb-1">Risk_Level</p>
+                         <p className="text-[8px] font-mono font-bold text-zinc-400 uppercase mb-1">Risk_Level</p>
                          <p className={`text-sm font-black italic ${hasCritical ? 'text-red-500' : 'text-emerald-500'}`}>
                             {hasCritical ? 'ELEVATED' : 'STABLE'}
                          </p>
@@ -118,11 +118,11 @@ export default function IncidentTimeline({ incidents }: Props) {
         <footer className="flex justify-between items-center px-8 py-5 border-t border-white/5 bg-white/[0.01]">
             <div className="flex gap-6">
                <div className="flex flex-col">
-                  <span className="text-[7px] font-mono font-bold text-zinc-600 uppercase">Status</span>
+                  <span className="text-[7px] font-mono font-bold text-zinc-400 uppercase">Status</span>
                   <span className="text-[9px] font-bold text-emerald-500 uppercase">Secure</span>
                </div>
                <div className="flex flex-col">
-                  <span className="text-[7px] font-mono font-bold text-zinc-600 uppercase">Log_Node</span>
+                  <span className="text-[7px] font-mono font-bold text-zinc-400 uppercase">Log_Node</span>
                   <span className="text-[9px] font-bold text-white uppercase tracking-tighter">RC_00X_INC</span>
                </div>
             </div>

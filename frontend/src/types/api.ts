@@ -114,6 +114,9 @@ export type DriverProfile = {
   number: number | null;
   image: string | null;
   latest_season: number;
+  /** Drivers' world championships, all-time. */
+  titles: number;
+  title_years: number[];
   stats: SeasonSummary;
   seasons: SeasonSummary[];
 };
@@ -149,5 +152,31 @@ export type StandingsRound = {
 export type SeasonStandings = {
   season: number;
   source: string;
+  /** True once the final round is in: the leader is then the champion. */
+  complete: boolean;
   rounds: StandingsRound[];
 };
+
+export type CoverageRace = {
+  round: number;
+  event_name: string;
+  status: DataStatus;
+  missing: string[];
+  warnings: number;
+};
+
+export type SeasonCoverage = {
+  expected_rounds: number;
+  played: number;
+  ok: number;
+  partial: number;
+  missing: number;
+  scheduled: number;
+  races: CoverageRace[];
+};
+
+/** GET /api/coverage: what we have for every race, and why anything is missing. */
+export type Coverage = { generated_at: string; seasons: Record<string, SeasonCoverage> };
+
+/** GET /api/meta: when the published data was last built. */
+export type BundleMeta = { generated_at?: string; seasons: number[]; sources?: { upstream_commits?: Record<string, string | null> } };

@@ -80,7 +80,7 @@ export default function ConstructorTable({ drivers }: Props) {
 
             <div className="flex items-center gap-3">
 
-              <span className="text-red-600 font-mono text-[10px] font-bold border border-red-600/30 px-2 py-0.5 rounded-sm">
+              <span className="text-red-500 font-mono text-[10px] font-bold border border-red-600/30 px-2 py-0.5 rounded-sm">
                 CAL_02
               </span>
 
@@ -107,7 +107,7 @@ export default function ConstructorTable({ drivers }: Props) {
 
             <div className="flex flex-col md:items-end">
 
-              <span className="text-[7px] font-mono text-zinc-600 uppercase tracking-[0.2em]">
+              <span className="text-[7px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
                 System_Status
               </span>
 
@@ -199,7 +199,7 @@ export default function ConstructorTable({ drivers }: Props) {
                           Avg_Finish
                         </span>
 
-                        <span className="text-5xl font-black italic text-black tracking-tighter leading-none group-hover:md:text-red-600 transition-colors duration-500">
+                        <span className="text-5xl font-black italic text-black tracking-tighter leading-none group-hover:md:text-red-500 transition-colors duration-500">
                           {avgFinish.toFixed(1)}
                         </span>
 
@@ -210,7 +210,7 @@ export default function ConstructorTable({ drivers }: Props) {
                         className={`px-2 py-1 rounded-sm text-[11px] font-black italic ${
                           t.gained >= 0
                             ? "bg-green-500/10 text-green-500"
-                            : "bg-red-500/10 text-red-600"
+                            : "bg-red-500/10 text-red-500"
                         }`}
                       >
 

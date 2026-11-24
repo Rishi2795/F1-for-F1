@@ -50,7 +50,7 @@ export default function TrackIntel({ insights }: Props) {
                 </span>
               </header>
               <div className="space-y-1 sm:space-y-6 overflow-hidden">
-                <LogEntry label="Avg Gain" color="text-red-600" value={track?.avg_positions_gained !== undefined ? `+${track.avg_positions_gained.toFixed(1)}` : "—"} />
+                <LogEntry label="Avg Gain" color="text-red-500" value={track?.avg_positions_gained !== undefined ? `+${track.avg_positions_gained.toFixed(1)}` : "—"} />
                 <LogEntry label="Ease" value={track?.overtake_difficulty || "—"} />
                 <LogEntry label="Degradation" value={track?.degradation_level || "—"} />
                 <LogEntry label="Dirty Air" value={track?.dirty_air_penalty !== undefined ? track.dirty_air_penalty.toFixed(2) : "—"} />
@@ -131,7 +131,7 @@ const LogEntry = ({ label, value, unit, color = "text-black", invert = false }: 
 
 const InsightBox = ({ label, value }: any) => (
   <div className="bg-zinc-50 border border-zinc-100 rounded-lg sm:rounded-xl p-2 sm:p-4 text-center sm:text-left">
-    <span className="text-[7px] sm:text-[8px] font-mono font-black text-red-600 uppercase block mb-0 sm:mb-0.5 tracking-widest leading-none">
+    <span className="text-[7px] sm:text-[8px] font-mono font-black text-red-500 uppercase block mb-0 sm:mb-0.5 tracking-widest leading-none">
       {label}
     </span>
     <span className="text-[9px] sm:text-xs font-black uppercase text-black leading-none">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 const items = [
@@ -12,31 +12,34 @@ const items = [
 export default function FloatingDock() {
   const { pathname } = useLocation();
   const [isVisible, setIsVisible] = useState(true);
+  const root = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    // Fixed: Using ReturnType<typeof setTimeout> avoids the NodeJS error
     let timeout: ReturnType<typeof setTimeout>;
 
-    const handleActivity = () => {
+    // The dock fades after a few idle seconds, but never while someone is using it with a keyboard:
+    // a focused link inside a hidden dock is invisible, which makes keyboard navigation impossible.
+    const wake = () => {
       setIsVisible(true);
       clearTimeout(timeout);
-      // Hides the dock after 3 seconds of inactivity
-      timeout = setTimeout(() => setIsVisible(false), 3000);
+      timeout = setTimeout(() => {
+        if (!root.current?.contains(document.activeElement)) setIsVisible(false);
+      }, 3000);
     };
 
-    window.addEventListener("mousemove", handleActivity);
-    window.addEventListener("touchstart", handleActivity);
-    handleActivity();
-
+    const events = ["mousemove", "touchstart", "keydown", "focusin"] as const;
+    events.forEach((e) => window.addEventListener(e, wake));
+    wake();
     return () => {
-      window.removeEventListener("mousemove", handleActivity);
-      window.removeEventListener("touchstart", handleActivity);
+      events.forEach((e) => window.removeEventListener(e, wake));
       clearTimeout(timeout);
     };
   }, []);
 
   return (
-    <div
+    <nav
+      ref={root}
+      aria-label="Main"
       className={`
         fixed
         bottom-6 left-1/2
@@ -64,11 +67,13 @@ export default function FloatingDock() {
             <Link
               key={item.label}
               to={item.path}
+              aria-current={active ? "page" : undefined}
               className={`
                 relative
                 text-sm font-medium
                 transition-all
-                ${active ? "text-red-600" : "text-zinc-400 hover:text-white"}
+                rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-600
+                ${active ? "text-red-500" : "text-zinc-300 hover:text-white"}
               `}
             >
               {item.label}
@@ -90,6 +95,6 @@ export default function FloatingDock() {
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

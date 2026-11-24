@@ -44,7 +44,7 @@ test.describe("race page", () => {
   test("driver rows expand and collapse with mouse and keyboard; tyre bar is readable", async ({ page }) => {
     const errors = trackErrors(page);
     await page.goto("/race/2025/6");
-    const row = page.getByRole("button", { name: /Oscar Piastri/ });
+    const row = page.getByRole("button", { name: /\bPIA\b/ }).first();
     await row.scrollIntoViewIfNeeded();
     await expect(row).toHaveAttribute("aria-expanded", "false");
     await row.click();
@@ -181,7 +181,7 @@ test.describe("standings", () => {
     await expect(page.locator("tbody tr").first()).toContainText("McLaren");
     await expect(page.locator("tbody tr").first()).toContainText("666");
     await page.getByLabel("Season").selectOption("2023");
-    await expect(page).toHaveURL(/\/season\/2023$/);
+    await expect(page).toHaveURL(/\/season\/2023\?tab=constructors$/); // the tab is kept when switching season
     await expect(page.getByRole("heading", { name: "2023 standings" })).toBeVisible();
     await page.getByRole("tab", { name: "drivers" }).click();
     await expect(page.locator("tbody tr").first()).toContainText("575");
@@ -275,7 +275,7 @@ test.describe("standings", () => {
   test("/standings goes to the latest season; the dock highlights Standings", async ({ page }) => {
     await page.goto("/standings");
     await expect(page).toHaveURL(/\/season\/2026$/);
-    await expect(page.getByRole("link", { name: "Standings", exact: true })).toHaveClass(/text-red-600/);
+    await expect(page.getByRole("link", { name: "Standings", exact: true })).toHaveAttribute("aria-current", "page");
   });
 
   test("bad seasons explain themselves", async ({ page }) => {

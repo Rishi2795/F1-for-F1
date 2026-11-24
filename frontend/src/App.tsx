@@ -6,6 +6,7 @@ import FloatingDock from "./components/floatingdock";
 import CurveScrollRail from "./components/curvescroll";
 import { ErrorBoundary } from "./components/ui/errorboundary";
 import { PageLoader } from "./components/ui/states";
+import { ServerNotice } from "./components/ui/servernotice";
 
 // Route-level code splitting: each page's code (and its heavy deps) loads only when visited.
 const About = lazy(() => import("./pages/about"));
@@ -17,17 +18,30 @@ const DriversHub = lazy(() => import("./pages/drivers"));
 const AboutPage = lazy(() => import("./pages/about_app"));
 const NotFound = lazy(() => import("./pages/notfound"));
 const Standings = lazy(() => import("./pages/standings"));
+const Methodology = lazy(() => import("./pages/methodology"));
 const StandingsRedirect = lazy(() => import("./pages/standings").then((m) => ({ default: m.StandingsRedirect })));
 
 export default function App() {
   return (
     <div className="relative">
+      <a
+        href="#main"
+        onClick={(e) => {
+          // Move focus explicitly: browsers differ on focusing a fragment target inside a single-page app.
+          e.preventDefault();
+          document.getElementById("main")?.focus();
+        }}
+        className="sr-only z-[100] rounded bg-white px-4 py-2 text-sm font-semibold text-black focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Skip to main content
+      </a>
       {/* Global components (always visible) */}
       <CurveScrollRail />
       <FloatingDock />
+      <ServerNotice />
 
       <ErrorBoundary>
-        <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={<PageLoader />}>{/* only reached before the layout itself is ready */}
           <Routes>
             <Route element={<AppLayout />}>
               <Route path="/" element={<About />} />
@@ -36,6 +50,7 @@ export default function App() {
               <Route path="/explore" element={<Home />} />
               <Route path="/race/:year/:round" element={<RaceDashboard />} />
 
+              <Route path="/methodology" element={<Methodology />} />
               <Route path="/standings" element={<StandingsRedirect />} />
               <Route path="/season/:year" element={<Standings />} />
 

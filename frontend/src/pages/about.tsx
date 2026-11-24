@@ -94,7 +94,7 @@ export default function About() {
           style={{ scaleX }} 
         />
 
-        <main ref={containerRef} className="relative w-full">
+        <div ref={containerRef} className="relative w-full">
           
        <Hero />
 
@@ -119,14 +119,14 @@ export default function About() {
       >
         <div className="space-y-6">
           <div className="flex items-center gap-4">
-            <span className="text-[9px] md:text-[10px] font-mono tracking-[0.4em] md:tracking-[0.6em] text-zinc-600 uppercase">Ref_Archive_2026</span>
+            <span className="text-[9px] md:text-[10px] font-mono tracking-[0.4em] md:tracking-[0.6em] text-zinc-400 uppercase">Ref_Archive_2026</span>
             <div className="h-[1px] w-12 md:w-16 bg-zinc-900" />
           </div>
 
           {/* FLUID TYPOGRAPHY: Adjusted for mobile visibility */}
           <h2 className="text-6xl md:text-8xl lg:text-9xl font-serif text-white tracking-tight leading-[0.85] uppercase">
             The <br />
-            <span className="text-red-600">Physics</span> <br />
+            <span className="text-red-500">Physics</span> <br />
             Reset
           </h2>
         </div>
@@ -138,11 +138,11 @@ export default function About() {
           
           <div className="flex flex-wrap gap-10 md:gap-16 border-t border-white/5 pt-8 md:pt-10">
             <div className="space-y-2">
-              <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">Protocol</p>
+              <p className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">Protocol</p>
               <p className="text-[11px] md:text-xs text-white font-mono uppercase tracking-tighter">Z-Active // 2026</p>
             </div>
             <div className="space-y-2">
-              <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">Efficiency</p>
+              <p className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">Efficiency</p>
               <p className="text-[11px] md:text-xs text-white font-mono uppercase tracking-tighter">Peak Stable</p>
             </div>
           </div>
@@ -168,11 +168,11 @@ export default function About() {
             ].map((item, i) => (
               <div key={i} className="group">
                 <div className="flex justify-between items-end mb-3 md:mb-4">
-                  <span className="text-[9px] md:text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
+                  <span className="text-[9px] md:text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
                     {item.label}
                   </span>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl md:text-6xl font-serif text-white uppercase tracking-tighter group-hover:text-red-600 transition-colors duration-300">
+                    <span className="text-4xl md:text-6xl font-serif text-white uppercase tracking-tighter group-hover:text-red-500 transition-colors duration-300">
                       {item.val}
                     </span>
                     <span className="text-[9px] md:text-[10px] font-mono text-red-900 font-bold uppercase">
@@ -191,7 +191,7 @@ export default function About() {
                 <div key={i} className="w-1 h-1 bg-red-900/40" />
               ))}
             </div>
-            <span className="text-[8px] md:text-[9px] font-mono text-zinc-700 tracking-[0.3em] md:tracking-[0.5em] uppercase">Tech_Spec_V.09</span>
+            <span className="text-[8px] md:text-[9px] font-mono text-zinc-500 tracking-[0.3em] md:tracking-[0.5em] uppercase">Tech_Spec_V.09</span>
           </div>
         </div>
       </motion.div>
@@ -214,14 +214,14 @@ export default function About() {
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <span className="w-1.5 h-1.5 bg-red-600" />
-          <span className="text-[8px] md:text-[10px] font-mono tracking-[0.4em] text-zinc-600 uppercase">Ref_09.5</span>
+          <span className="text-[8px] md:text-[10px] font-mono tracking-[0.4em] text-zinc-400 uppercase">Ref_09.5</span>
         </div>
         <h2 className="text-4xl md:text-7xl lg:text-8xl font-serif text-white uppercase leading-[0.8] tracking-tighter">
           Engineering <br />
-          <span className="text-red-600">Marvel</span>
+          <span className="text-red-500">Marvel</span>
         </h2>
       </div>
-      <div className="font-mono text-[8px] text-zinc-700 uppercase tracking-widest hidden sm:block border-l border-white/5 pl-6 mb-1">
+      <div className="font-mono text-[8px] text-zinc-500 uppercase tracking-widest hidden sm:block border-l border-white/5 pl-6 mb-1">
         Maranello_HQ // 44.82° N
       </div>
     </div>
@@ -242,11 +242,11 @@ export default function About() {
             </p>
             <div className="flex gap-4">
               <div className="flex-1 border-l border-zinc-800 pl-3 py-1">
-                <span className="block text-[7px] font-mono text-zinc-600 uppercase mb-1">R&D Cap</span>
+                <span className="block text-[7px] font-mono text-zinc-400 uppercase mb-1">R&D Cap</span>
                 <span className="text-xl font-serif text-white">$135M</span>
               </div>
               <div className="flex-1 border-l border-zinc-800 pl-3 py-1">
-                <span className="block text-[7px] font-mono text-zinc-600 uppercase mb-1">Data/Sec</span>
+                <span className="block text-[7px] font-mono text-zinc-400 uppercase mb-1">Data/Sec</span>
                 <span className="text-xl font-serif text-white">1.1M</span>
               </div>
             </div>
@@ -256,7 +256,7 @@ export default function About() {
 
       {/* RIGHT: DATA VISUAL (5 Columns) */}
       <div className="lg:col-span-5 p-4 md:p-8 bg-black/20 flex flex-col justify-between gap-8">
-        <h3 className="font-mono text-[9px] uppercase tracking-[0.3em] text-zinc-600 flex items-center gap-3">
+        <h3 className="font-mono text-[9px] uppercase tracking-[0.3em] text-zinc-400 flex items-center gap-3">
           <span className="w-6 h-[1px] bg-red-900" /> Capital_Allocation
         </h3>
 
@@ -269,7 +269,7 @@ export default function About() {
             <div key={i} className="group">
               <div className="flex justify-between items-end mb-2">
                 <div className="space-y-1">
-                  <span className="block text-[7px] font-mono text-zinc-700 uppercase tracking-widest">Index_0{i+1}</span>
+                  <span className="block text-[7px] font-mono text-zinc-500 uppercase tracking-widest">Index_0{i+1}</span>
                   <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-tighter group-hover:text-white transition-colors">{item.label}</span>
                 </div>
                 <span className="text-2xl md:text-3xl font-serif text-white tracking-tighter">{item.val}%</span>
@@ -309,7 +309,7 @@ export default function About() {
       <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.5em] font-bold">Registry // Hall_Of_Fame</span>
     </div>
     <h2 className="text-5xl md:text-8xl font-black uppercase italic tracking-tighter text-white leading-[0.85]">
-      THE <span className="text-red-600">REIGN</span>
+      THE <span className="text-red-500">REIGN</span>
     </h2>
   </header>
 
@@ -369,7 +369,7 @@ export default function About() {
           {/* 7x / 4x BADGE */}
           <div className="absolute top-3 left-3 md:top-5 md:left-5 z-30">
             <div className="backdrop-blur-md bg-white/5 border border-white/10 px-2 py-1 rounded-sm">
-              <span className="text-lg md:text-2xl font-black italic text-black group-hover:text-red-600 transition-colors">
+              <span className="text-lg md:text-2xl font-black italic text-black group-hover:text-red-500 transition-colors">
                 {driver.titles}
               </span>
             </div>
@@ -379,7 +379,7 @@ export default function About() {
           <div className="absolute top-3 right-3 md:top-5 md:right-5 z-30 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
             <p className="text-[10px] md:text-[9px] font-mono text-red-800 text-right uppercase leading-tight max-w-[80px]">
               Championship_Years: <br/>
-              <span className="text-red-600 font-bold font-extrabold">{driver.years}</span>
+              <span className="text-red-500 font-bold font-extrabold">{driver.years}</span>
             </p>
           </div>
 
@@ -399,8 +399,8 @@ export default function About() {
 
   <footer className="pb-8 px-8 md:px-16 z-30 shrink-0">
     <div className="flex justify-between items-end border-t border-white/10 pt-6">
-      <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Archive_System_Verified</span>
-      <span className="text-[10px] font-mono text-red-600 animate-pulse">● DATA_LIVE</span>
+      <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">Archive_System_Verified</span>
+      <span className="text-[10px] font-mono text-red-500 animate-pulse">● DATA_LIVE</span>
     </div>
   </footer>
 </section>
@@ -412,10 +412,10 @@ export default function About() {
   <div className="max-w-7xl mx-auto w-full mb-16 md:mb-24">
     <div className="flex items-center gap-4 mb-4">
       <div className="h-px w-12 bg-red-600" />
-      <span className="text-[10px] font-mono tracking-[0.4em] text-red-600 uppercase">Evolution_Registry.v2</span>
+      <span className="text-[10px] font-mono tracking-[0.4em] text-red-500 uppercase">Evolution_Registry.v2</span>
     </div>
     <h2 className="text-5xl md:text-8xl font-black italic tracking-tighter text-white uppercase leading-[0.8]">
-      TECH_<span className="text-red-600">HISTORY</span>
+      TECH_<span className="text-red-500">HISTORY</span>
     </h2>
   </div>
 
@@ -444,15 +444,15 @@ export default function About() {
 
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <span className="text-[9px] font-mono text-red-600 px-2 py-0.5 border border-red-600/30 uppercase tracking-widest">
+                <span className="text-[9px] font-mono text-red-500 px-2 py-0.5 border border-red-600/30 uppercase tracking-widest">
                   {item.tag}
                 </span>
-                <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">
+                <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">
                   ID: {item.short}
                 </span>
               </div>
 
-              <h3 className="text-2xl md:text-4xl font-black text-zinc-100 uppercase italic tracking-tighter leading-tight group-hover:text-red-600 transition-colors">
+              <h3 className="text-2xl md:text-4xl font-black text-zinc-100 uppercase italic tracking-tighter leading-tight group-hover:text-red-500 transition-colors">
                 {item.t}
               </h3>
 
@@ -478,7 +478,7 @@ export default function About() {
 
   {/* TERMINATOR LINE */}
   <div className="max-w-7xl mx-auto w-full mt-32 border-t border-white/5 pt-8 flex justify-between items-center">
-    <span className="text-[10px] font-mono text-zinc-700 uppercase tracking-widest">Data_Stream_Terminated</span>
+    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Data_Stream_Terminated</span>
     <div className="flex gap-2">
       <div className="w-1 h-1 bg-red-600" />
       <div className="w-1 h-1 bg-zinc-800" />
@@ -495,9 +495,9 @@ export default function About() {
     {/* Header */}
     <div className="mb-12 md:mb-20 flex items-end justify-between border-b border-white/5 pb-6">
       <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-black text-red-600 uppercase tracking-[0.4em]">Archive_Access</span>
+        <span className="text-[10px] font-black text-red-500 uppercase tracking-[0.4em]">Archive_Access</span>
         <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter">
-          The <span className="text-red-600">Hall of Fame</span>
+          The <span className="text-red-500">Hall of Fame</span>
         </h2>
       </div>
     </div>
@@ -555,7 +555,7 @@ export default function About() {
           {/* Content Overlay */}
           <div className="relative h-full flex flex-col justify-end pl-14 md:pl-20 p-6 z-10">
             <div className="mb-2">
-              <span className="text-[8px] font-black text-red-600 uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-[8px] font-black text-red-500 uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-opacity">
                 {d.titles}
               </span>
               <h3 className="text-xl md:text-2xl font-black uppercase italic leading-none truncate">
@@ -575,7 +575,7 @@ export default function About() {
                 {d.impact}
               </p>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-tighter">{d.era}</span>
+                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">{d.era}</span>
                 <div className="h-[1px] flex-grow mx-4 bg-white/10" />
               </div>
             </motion.div>
@@ -591,7 +591,7 @@ export default function About() {
 
     {/* Footer spacing */}
     <div className="mt-12 flex justify-between items-center md:hidden px-4">
-       <span className="text-[8px] font-bold text-zinc-700 uppercase tracking-[0.3em]">Swipe to Decrypt</span>
+       <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-[0.3em]">Swipe to Decrypt</span>
        <div className="flex gap-1">
           {[1,2,3,4,5].map(dot => <div key={dot} className="w-1 h-1 bg-zinc-800 rounded-full" />)}
        </div>
@@ -611,7 +611,7 @@ export default function About() {
         <h2 className="text-3xl md:text-5xl font-serif italic tracking-tighter">
           The <span className="font-sans not-italic font-black text-2xl md:text-3xl uppercase opacity-20">Rules</span>
         </h2>
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-600 hidden md:block">
+        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-500 hidden md:block">
           Technical_Directive_v4.0.1
         </span>
       </div>
@@ -627,7 +627,7 @@ export default function About() {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-zinc-200 border border-zinc-200">
       {rules.map((rule, idx) => (
         <div key={idx} className="bg-white p-6 hover:bg-zinc-50 transition-colors group relative h-full">
-           <span className="text-[8px] font-mono text-zinc-300 group-hover:text-red-600 transition-colors">0{idx + 1}</span>
+           <span className="text-[8px] font-mono text-zinc-300 group-hover:text-red-500 transition-colors">0{idx + 1}</span>
            <RuleCard rule={rule} index={idx} />
         </div>
       ))}
@@ -658,7 +658,7 @@ export default function About() {
       {/* Brand Column */}
       <div className="md:col-span-6 space-y-6">
         <div className="text-4xl font-black italic text-white tracking-tighter">
-          F1<span className="text-red-600">4</span>
+          F1<span className="text-red-500">4</span>
         </div>
         <p className="text-zinc-500 font-serif italic text-sm md:text-base leading-relaxed max-w-sm">
           An independent technical review of the world's most sophisticated sports grid. 2026 Engine Specification Compliant.
@@ -668,10 +668,10 @@ export default function About() {
       {/* Links Columns */}
       {[{h:"Sitemap", l:["Sim","Grid","Specs","Docs"]}, {h:"Social", l:["Insta","Twitter","YT","Discord"]}].map((col, i) => (
         <div key={i} className="md:col-span-3">
-          <h4 className="text-[10px] font-black text-red-600 uppercase tracking-[0.4em] mb-6">{col.h}</h4>
+          <h4 className="text-[10px] font-black text-red-500 uppercase tracking-[0.4em] mb-6">{col.h}</h4>
           <ul className="space-y-3">
             {col.l.map((link, idx) => (
-              <li key={idx} className="text-zinc-600 uppercase font-bold text-[10px] hover:text-white cursor-pointer transition-colors flex items-center gap-2 group">
+              <li key={idx} className="text-zinc-400 uppercase font-bold text-[10px] hover:text-white cursor-pointer transition-colors flex items-center gap-2 group">
                 <span className="w-1 h-1 bg-zinc-800 group-hover:bg-red-600 rounded-full" />
                 {link}
               </li>
@@ -683,7 +683,7 @@ export default function About() {
 
     {/* Legal Bottom: No extra padding to prevent bottom gap */}
     <div className="mt-20 pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-      <p className="text-[9px] text-zinc-700 font-mono uppercase tracking-[0.5em]">
+      <p className="text-[9px] text-zinc-500 font-mono uppercase tracking-[0.5em]">
         © 2026 Circuit_Vault_Tech // Proprietary_Data
       </p>
       <div className="flex gap-4">
@@ -695,7 +695,7 @@ export default function About() {
     </div>
   </div>
 </footer>
-      </main>
+      </div>
     </div>
   );
 }
@@ -724,7 +724,7 @@ function TimelineItem({ item, index }: { item: any, index: number }) {
           <span className="md:hidden text-[10px] font-mono bg-red-600 text-white px-2 py-0.5 font-bold">
             {item.year}
           </span>
-          <span className="text-[7px] md:text-[8px] font-mono font-black text-red-600 tracking-[0.4em] uppercase">
+          <span className="text-[7px] md:text-[8px] font-mono font-black text-red-500 tracking-[0.4em] uppercase">
             {item.tag || "LOG_ENTRY"}
           </span>
         </div>
@@ -766,7 +766,7 @@ function RuleCard({ rule, index }: { rule: any, index: number }) {
     >
       {/* 1. TOP BAR: Category & Index */}
       <div className="flex justify-between items-start mb-3">
-        <span className="text-[7px] md:text-[8px] font-black px-1.5 py-0.5 border border-zinc-200 text-zinc-400 group-hover:border-red-600/20 group-hover:text-red-600 transition-colors uppercase tracking-widest">
+        <span className="text-[7px] md:text-[8px] font-black px-1.5 py-0.5 border border-zinc-200 text-zinc-400 group-hover:border-red-600/20 group-hover:text-red-500 transition-colors uppercase tracking-widest">
           {rule.category}
         </span>
         <span className="text-[10px] font-mono text-zinc-200 group-hover:text-black transition-colors">
@@ -784,7 +784,7 @@ function RuleCard({ rule, index }: { rule: any, index: number }) {
         {!isOpen && (
           <div className="flex items-center gap-2 mt-2 md:hidden">
             <span className="w-1 h-1 bg-red-600 rounded-full animate-pulse" />
-            <span className="text-[7px] font-black text-red-600/40 uppercase tracking-widest">Tap_to_Analyze</span>
+            <span className="text-[7px] font-black text-red-500/40 uppercase tracking-widest">Tap_to_Analyze</span>
           </div>
         )}
       </div>
@@ -795,7 +795,7 @@ function RuleCard({ rule, index }: { rule: any, index: number }) {
       }`}>
         <div className="pt-4 border-t border-zinc-100 space-y-4">
           {/* Rule Short - Serif Accent */}
-          <p className="text-[11px] md:text-xs text-zinc-600 font-serif italic leading-relaxed border-l-2 border-red-600 pl-4">
+          <p className="text-[11px] md:text-xs text-zinc-400 font-serif italic leading-relaxed border-l-2 border-red-600 pl-4">
             {rule.short}
           </p>
           
@@ -807,7 +807,7 @@ function RuleCard({ rule, index }: { rule: any, index: number }) {
           {/* Micro Footer inside card */}
           <div className="flex items-center justify-between pt-2">
             <span className="text-[6px] font-mono text-zinc-300 uppercase tracking-widest">Auth_Signal: Clear</span>
-            <motion.span animate={{ rotate: isOpen ? 45 : 0 }} className="text-lg font-light text-red-600 lg:hidden">+</motion.span>
+            <motion.span animate={{ rotate: isOpen ? 45 : 0 }} className="text-lg font-light text-red-500 lg:hidden">+</motion.span>
           </div>
         </div>
       </div>

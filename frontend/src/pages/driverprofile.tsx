@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { ErrorState, Skeleton } from "../components/ui/states";
+import { ChampionBadge } from "../components/ui/championbadge";
 import { fmt, fmtSigned } from "../lib/format";
 import type { DriverProfile } from "../types/api";
 
@@ -63,7 +64,7 @@ export default function DriverPage() {
         <Link to="/drivers" className="text-xs font-mono text-zinc-400 hover:text-white">
           ← ALL DRIVERS
         </Link>
-        <span className="text-xs font-mono text-red-600">DRIVER PROFILE</span>
+        <span className="text-xs font-mono text-red-500">DRIVER PROFILE</span>
       </div>
 
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 lg:grid-cols-12">
@@ -77,13 +78,14 @@ export default function DriverPage() {
             </div>
             <div className="space-y-3 p-6">
               <h1 className="text-3xl font-black italic text-white">{driver.name}</h1>
+              <ChampionBadge titles={driver.titles} years={driver.title_years} />
               <p className="text-sm text-zinc-400">
                 {driver.team ?? "—"}
                 {driver.number !== null && ` · #${driver.number}`}
               </p>
               {ai && (
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl font-black text-red-600">{ai.rating}</span>
+                  <span className="text-4xl font-black text-red-500">{ai.rating}</span>
                   <span className="text-xs font-mono uppercase text-zinc-500">{ai.tier}</span>
                 </div>
               )}
@@ -188,7 +190,7 @@ function Panel({ children, title }: { children: ReactNode; title?: string }) {
         <h3 className="
           text-xs
           font-mono
-          text-red-600
+          text-red-500
           mb-5
         ">
           {title}

@@ -50,7 +50,7 @@ export default function Home() {
     {/* LOGO */}
     <div onClick={() => navigate("/")} className="cursor-pointer shrink-0">
       <h1 className="font-serif italic text-2xl sm:text-3xl tracking-tight leading-none">
-        F1<span className="hidden xs:inline text-red-600 font-sans not-italic font-black text-[10px] tracking-[0.3em] ml-2 uppercase">FOR FORMULA 1</span>
+        F1<span className="hidden xs:inline text-red-500 font-sans not-italic font-black text-[10px] tracking-[0.3em] ml-2 uppercase">FOR FORMULA 1</span>
       </h1>
     </div>
 
@@ -80,13 +80,13 @@ export default function Home() {
   </div>
 </header>
 
-      <main className="max-w-[1400px] mx-auto px-6 py-16">
+      <div className="max-w-[1400px] mx-auto px-6 py-16">
         
         {/* EDITORIAL HEADING */}
         <div className="mb-14 space-y-2">
           <div className="flex items-center gap-3">
             <div className="h-[1px] w-12 bg-red-600" />
-            <span className="text-[10px] font-black tracking-[0.5em] uppercase text-red-600">The Calendar</span>
+            <span className="text-[10px] font-black tracking-[0.5em] uppercase text-red-500">The Calendar</span>
           </div>
           <h2 className="text-5xl md:text-6xl font-serif italic tracking-tighter opacity-90 leading-none">
             Race <span className="font-sans not-italic font-black text-4xl md:text-5xl tracking-tighter">LISTING</span>
@@ -111,7 +111,7 @@ export default function Home() {
                   onFocus={() => !disabled && prefetch(`/seasons/${race.season}/races/${race.round}`)}
                   className="group relative flex flex-col bg-[#0A0A0A] border border-white/[0.05] rounded-2xl p-6 text-left transition-all duration-500 enabled:hover:bg-white enabled:hover:text-black enabled:active:scale-[0.96] disabled:opacity-50 shadow-xl"
                 >
-                  <span className="text-[11px] font-mono font-bold opacity-50 group-enabled:group-hover:text-red-600 group-enabled:group-hover:opacity-100 transition-all mb-8">
+                  <span className="text-[11px] font-mono font-bold opacity-50 group-enabled:group-hover:text-red-500 group-enabled:group-hover:opacity-100 transition-all mb-8">
                     R{race.round.toString().padStart(2, "0")} · {race.date}
                   </span>
 
@@ -146,7 +146,7 @@ export default function Home() {
             </div>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
