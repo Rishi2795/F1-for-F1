@@ -1,0 +1,176 @@
+"""Jolpica-F1 (Ergast successor): schedule, results, pit stops. Free, no key."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+from .. import config
+from ..errors import SourceFormatError
+from ..http import HttpClient
+from ..logging_setup import get_logger
+from ..normalize import clean, to_float, to_int, to_str
+
+log = get_logger("jolpica")
+
+_PAGE = 100
+
+
+@dataclass(frozen=True)
+class ScheduleEntry:
+    season: int
+    round: int
+    event_name: str
+    location: str
+    country: str | None
+    date: str  # YYYY-MM-DD
+
+
+@dataclass(frozen=True)
+class ResultRow:
+    driver_id: str
+    driver_code: str
+    driver_number: int | None
+    driver_name: str
+    nationality: str | None
+    constructor: str
+    grid: int | None  # None = unknown; see pit_lane_start
+    pit_lane_start: bool
+    finish: int | None
+    classified: bool
+    status: str
+    points: float
+    laps: int | None
+
+
+@dataclass(frozen=True)
+class PitStopRow:
+    driver_id: str
+    stop: int
+    lap: int | None
+    duration_s: float | None
+
+
+class JolpicaSource:
+    name = "jolpica"
+
+    def __init__(self, http: HttpClient | None = None) -> None:
+        self.http = http or HttpClient("jolpica", config.JOLPICA_BASE, min_interval=0.7)
+
+    # -- helpers ---------------------------------------------------------------
+    def _paged(self, path: str, table: str, ttl: float | None, refresh: bool) -> list[dict[str, Any]]:
+        """Fetch every page and merge races split across page boundaries (by round)."""
+        merged: dict[str, dict[str, Any]] = {}
+        offset = 0
+        while True:
+            data = self.http.get_json(path, {"limit": _PAGE, "offset": offset}, ttl=ttl, refresh=refresh)
+            try:
+                mr = data["MRData"]
+                total = int(mr["total"])
+                races = mr[table]["Races"]
+            except (KeyError, TypeError, ValueError) as exc:
+                raise SourceFormatError(f"jolpica: unexpected payload for {path}") from exc
+            for race in races:
+                key = str(race.get("round"))
+                if key in merged:
+                    for field in ("Results", "PitStops"):
+                        if field in race:
+                            merged[key].setdefault(field, []).extend(race[field])
+                else:
+                    merged[key] = race
+            offset += _PAGE
+            if offset >= total or not races:
+                break
+        return list(merged.values())
+
+    # -- public ----------------------------------------------------------------
+    def schedule(self, season: int, *, ttl: float | None = None, refresh: bool = False) -> list[ScheduleEntry]:
+        races = self._paged(f"{season}.json", "RaceTable", ttl, refresh)
+        out: list[ScheduleEntry] = []
+        for race in races:
+            rnd = to_int(race.get("round"))
+            date = to_str(race.get("date"))
+            if rnd is None or date is None:
+                log.warning("skipping schedule row without round/date in %s", season)
+                continue
+            loc = race.get("Circuit", {}).get("Location", {})
+            out.append(
+                ScheduleEntry(
+                    season=season,
+                    round=rnd,
+                    event_name=to_str(race.get("raceName")) or f"Round {rnd}",
+                    location=to_str(loc.get("locality")) or "Unknown",
+                    country=to_str(loc.get("country")),
+                    date=date,
+                )
+            )
+        return sorted(out, key=lambda e: e.round)
+
+    def results(self, season: int, *, ttl: float | None = None, refresh: bool = False) -> dict[int, list[ResultRow]]:
+        races = self._paged(f"{season}/results.json", "RaceTable", ttl, refresh)
+        out: dict[int, list[ResultRow]] = {}
+        for race in races:
+            rnd = to_int(race.get("round"))
+            if rnd is None:
+                continue
+            rows = [r for r in (_parse_result(item) for item in race.get("Results", [])) if r is not None]
+            out[rnd] = rows
+        return out
+
+    def pit_stops(
+        self, season: int, round_number: int, *, ttl: float | None = None, refresh: bool = False
+    ) -> list[PitStopRow]:
+        races = self._paged(f"{season}/{round_number}/pitstops.json", "RaceTable", ttl, refresh)
+        rows: list[PitStopRow] = []
+        for race in races:
+            for item in race.get("PitStops", []):
+                stop = to_int(item.get("stop"))
+                driver_id = to_str(item.get("driverId"))
+                if stop is None or driver_id is None:
+                    continue
+                rows.append(
+                    PitStopRow(
+                        driver_id=driver_id,
+                        stop=stop,
+                        lap=to_int(item.get("lap")),
+                        duration_s=to_float(item.get("duration")),
+                    )
+                )
+        return rows
+
+
+def _parse_result(item: dict[str, Any]) -> ResultRow | None:
+    driver = item.get("Driver", {})
+    code = to_str(driver.get("code"))
+    if code is None:
+        # Ergast-era rows without a 3-letter code: derive from family name, flag via log.
+        family = to_str(driver.get("familyName"))
+        if family is None:
+            return None
+        code = family[:3].upper()
+        log.warning("driver %s has no code upstream; using %s", driver.get("driverId"), code)
+    given, family_name = to_str(driver.get("givenName")) or "", to_str(driver.get("familyName")) or ""
+    grid_raw = to_int(item.get("grid"))
+    pit_lane = grid_raw == 0
+    position_text = to_str(item.get("positionText")) or ""
+    return ResultRow(
+        driver_id=to_str(driver.get("driverId")) or code.lower(),
+        driver_code=code.upper(),
+        # The number used IN THIS RACE. Driver.permanentNumber is the driver's *current* number
+        # (e.g. a past champion shows the number they carry today), which is wrong for history.
+        driver_number=to_int(item.get("number")) or to_int(driver.get("permanentNumber")),
+        driver_name=f"{given} {family_name}".strip() or code,
+        nationality=to_str(driver.get("nationality")),
+        constructor=to_str(item.get("Constructor", {}).get("name")) or "Unknown",
+        grid=None if pit_lane else grid_raw,
+        pit_lane_start=pit_lane,
+        finish=to_int(item.get("position")),
+        classified=position_text.isdigit(),
+        status=to_str(item.get("status")) or "Unknown",
+        points=to_float(item.get("points")) or 0.0,
+        laps=to_int(item.get("laps")),
+    )
+
+
+def season_has_results(rows: dict[int, list[ResultRow]], round_number: int) -> bool:
+    return bool(clean(rows.get(round_number)))
