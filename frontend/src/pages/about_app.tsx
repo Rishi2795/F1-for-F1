@@ -1,6 +1,8 @@
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { motion } from "framer-motion";
 
 const AboutPage = () => {
+  useDocumentTitle("About");
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden">
 
@@ -119,9 +121,9 @@ const AboutPage = () => {
               {[
                 "React",
                 "Tailwind CSS",
-                "FastF1 API",
+                "Python data pipeline",
                 "Node.js",
-                "MongoDB",
+                "FastAPI",
                 "Data Visualization",
                 "Analytics",
                 "System Design"
@@ -205,9 +207,12 @@ const AboutPage = () => {
 
               <p className="text-zinc-400 text-sm leading-relaxed">
 
-                Race telemetry, lap data, weather conditions, and timing
-                information are fetched using the FastF1 API and
-                validated against FIA sources.
+                Results and pit stops come from Jolpica-F1; lap times, tyre
+                stints and weather from the open TracingInsights archive, with
+                OpenF1 used to cross-check (and, where needed, fill) tyre
+                compounds. Where sources cannot confirm a value it is left
+                blank rather than estimated, and every value&apos;s origin is
+                recorded.
 
               </p>
 

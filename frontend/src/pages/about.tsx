@@ -1,3 +1,4 @@
+import { hideBroken } from "../lib/images";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
 import { motion, useScroll, useSpring } from "framer-motion";
@@ -355,7 +356,11 @@ export default function About() {
           {/* IMAGE LAYER */}
           <div className="absolute inset-0 w-full h-full">
             <img 
-              src={driver.img} 
+              src={driver.img}
+              alt={driver.name}
+              referrerPolicy="no-referrer"
+              onError={hideBroken}
+              loading="lazy" 
               className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 object-[50%_15%]" 
             />
             <div className={`absolute inset-0 bg-gradient-to-t ${driver.color} via-black/20 to-transparent opacity-80`} />
@@ -529,7 +534,11 @@ export default function About() {
                 hover: { scale: 1.08, filter: "brightness(0.8)" },
                 rest: { scale: 1, filter: "brightness(0.4)" }
               }}
-              src={d.img} 
+              src={d.img}
+              alt={d.name}
+              referrerPolicy="no-referrer"
+              onError={hideBroken}
+              loading="lazy"
               className="w-full h-full object-cover object-top" /* object-top keeps faces visible */
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent" />

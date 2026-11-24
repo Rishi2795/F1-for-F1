@@ -1,67 +1,44 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useApi } from "../hooks/useApi";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { prefetch } from "../lib/api";
+import { ErrorState, Skeleton } from "../components/ui/states";
+import type { DataStatus, RaceIndexEntry } from "../types/api";
 
-
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
-
-type RaceIndexItem = {
-  round: number;
-  event_name: string;
-  location: string;
+const STATUS_LABEL: Record<DataStatus, string | null> = {
+  ok: null,
+  partial: "Partial data",
+  missing: "Data unavailable",
+  scheduled: "Upcoming",
 };
 
 export default function Home() {
   const navigate = useNavigate();
-  const [season, setSeason] = useState(2025);
-  const [races, setRaces] = useState<RaceIndexItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const seasonsApi = useApi<{ seasons: number[] }>("/seasons");
+  const seasons = seasonsApi.data?.seasons ?? [];
+  const [picked, setSeason] = useState<number | null>(null);
+  const season = picked ?? seasons[0] ?? null;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [seasons, setSeasons] = useState<number[]>([]);
-
+  useDocumentTitle("Race calendar");
   useEffect(() => {
-  const fetchSeasons = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/seasons`);
-      setSeasons(res.data?.seasons || []);
-      
-      // Auto-select latest if not set
-      if (res.data?.seasons?.length) {
-        setSeason(res.data.seasons[0]);
-      }
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
-    } catch (err) {
-      console.error("Failed to load seasons", err);
-    }
-  };
+  const racesApi = useApi<{ races: RaceIndexEntry[] }>(season ? `/seasons/${season}/races` : null);
+  const loading = seasonsApi.loading || racesApi.loading;
+  const error = seasonsApi.error ?? racesApi.error;
 
-  fetchSeasons();
-}, []);
-
-  useEffect(() => {
-    const fetchRaces = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get(`${API_URL}/seasons/${season}/races`);
-        const data = res.data?.races ?? res.data ?? [];
-        setRaces(data);
-      } catch (error) { setRaces([]); } finally { setLoading(false); }
-    };
-    fetchRaces();
-  }, [season]);
-
- const filteredRaces = useMemo(() => {
-  const q = search.toLowerCase();
-
-  return races.filter((race) => {
-    const name = race?.event_name?.toLowerCase() || "";
-    const loc = race?.location?.toLowerCase() || "";
-
-    return name.includes(q) || loc.includes(q);
-  });
-
-}, [races, search]);
+  const filteredRaces = useMemo(() => {
+    const q = search.toLowerCase();
+    return (racesApi.data?.races ?? []).filter(
+      (race) => race.event_name.toLowerCase().includes(q) || race.location.toLowerCase().includes(q),
+    );
+  }, [racesApi.data, search]);
 
   return (
     <div className="min-h-screen bg-[#020202] text-white antialiased selection:bg-red-600/30">
@@ -83,6 +60,7 @@ export default function Home() {
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
+        aria-label="Search races"
         placeholder="Search..."
         className="w-full bg-white text-black rounded-full py-2 px-4 sm:px-6 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase outline-none ring-4 ring-white/5 focus:ring-red-600/20 transition-all placeholder:text-black/40 shadow-lg"
       />
@@ -90,11 +68,14 @@ export default function Home() {
     
     {/* SEASON PICKER (Now Visible on Mobile) */}
     <button 
-      onClick={() => setOpen(!open)} 
+      onClick={() => setOpen(!open)}
+      aria-label={`Season ${season ?? ""}. Change season`}
+      aria-haspopup="dialog"
+      aria-expanded={open} 
       className="flex items-center gap-2 sm:gap-4 px-1 sm:px-2 py-1 border-b-2 border-white/10 hover:border-red-600 transition-all group shrink-0"
     >
       <span className="hidden xs:block text-[9px] font-black tracking-[0.2em] uppercase opacity-40 group-hover:opacity-100 transition-opacity">Season</span>
-      <span className="text-xs sm:text-sm font-bold">{season}</span>
+      <span className="text-xs sm:text-sm font-bold">{season ?? "—"}</span>
     </button>
   </div>
 </header>
@@ -113,47 +94,51 @@ export default function Home() {
         </div>
 
         {/* DATA GRID */}
+        {error && <ErrorState error={error} onRetry={() => { seasonsApi.reload(); racesApi.reload(); }} />}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5">
           {loading ? (
-            [...Array(10)].map((_, i) => <div key={i} className="h-36 bg-white/[0.02] rounded-2xl animate-pulse" />)
+            [...Array(10)].map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)
           ) : (
-            filteredRaces.map((race) => (
-              <button
-                key={race.round}
-                onClick={() => navigate(`/race/${season}/${race.round}`)}
-                className="group relative flex flex-col bg-[#0A0A0A] border border-white/[0.05] rounded-2xl p-6 text-left transition-all duration-500 hover:bg-white hover:text-black active:scale-[0.96] shadow-xl"
-              >
-                <span className="text-[10px] font-mono font-bold opacity-30 group-hover:text-red-600 group-hover:opacity-100 transition-all mb-8">
-                  R_{race.round.toString().padStart(2, '0')}
-                </span>
+            filteredRaces.map((race) => {
+              const note = STATUS_LABEL[race.data_status];
+              const disabled = race.data_status === "scheduled" || race.data_status === "missing";
+              return (
+                <button
+                  key={race.round}
+                  disabled={disabled}
+                  onClick={() => navigate(`/race/${race.season}/${race.round}`)}
+                  onMouseEnter={() => !disabled && prefetch(`/seasons/${race.season}/races/${race.round}`)}
+                  onFocus={() => !disabled && prefetch(`/seasons/${race.season}/races/${race.round}`)}
+                  className="group relative flex flex-col bg-[#0A0A0A] border border-white/[0.05] rounded-2xl p-6 text-left transition-all duration-500 enabled:hover:bg-white enabled:hover:text-black enabled:active:scale-[0.96] disabled:opacity-50 shadow-xl"
+                >
+                  <span className="text-[11px] font-mono font-bold opacity-50 group-enabled:group-hover:text-red-600 group-enabled:group-hover:opacity-100 transition-all mb-8">
+                    R{race.round.toString().padStart(2, "0")} · {race.date}
+                  </span>
 
-                <div className="mt-auto">
-                  <h3 className="text-xs font-black uppercase tracking-tight leading-[1.1] mb-1 group-hover:translate-x-1 transition-transform">
-  {(race.event_name || "Unknown Race")
-    .replace("Grand Prix", "")
-    .trim()}
-</h3>
-
-<p className="text-[9px] font-medium opacity-30 uppercase tracking-[0.2em] truncate group-hover:opacity-60 transition-opacity">
-  {(race.location || "Unknown").split(",")[0]}
-</p>
-                </div>
-
-                {/* INVERTED ICON ON HOVER */}
-                <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-xs">→</span>
-                </div>
-              </button>
-            ))
+                  <div className="mt-auto">
+                    <h3 className="text-xs font-black uppercase tracking-tight leading-[1.1] mb-1 group-enabled:group-hover:translate-x-1 transition-transform">
+                      {race.event_name.replace("Grand Prix", "").trim()}
+                    </h3>
+                    <p className="text-[10px] font-medium opacity-50 uppercase tracking-[0.2em] truncate">
+                      {race.location}
+                    </p>
+                    {note && <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-amber-500">{note}</p>}
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
+        {!loading && !error && filteredRaces.length === 0 && (
+          <p className="text-sm text-zinc-500">No races match “{search}”.</p>
+        )}
 
         {/* DROPDOWN MENU FOR SEASON (Absolute positioned) */}
         {open && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-in fade-in">
+          <div role="dialog" aria-modal="true" aria-label="Choose a season" className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-in fade-in">
             <div className="max-w-xs w-full grid grid-cols-2 gap-2">
               {seasons.map(y => (
-                <button key={y} onClick={() => {setSeason(y); setOpen(false); setSearch("");}} className={`px-6 py-4 rounded-xl text-xs font-black tracking-widest transition-all ${season === y ? 'bg-red-600 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}>
+                <button key={y} onClick={() => { setSeason(y); setOpen(false); setSearch(""); }} className={`px-6 py-4 rounded-xl text-xs font-black tracking-widest transition-all ${season === y ? 'bg-red-600 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}>
                   {y}
                 </button>
               ))}

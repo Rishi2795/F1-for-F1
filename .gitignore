@@ -52,3 +52,13 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Pipeline raw cache (HTTP responses + sparse TracingInsights copies). Published JSON in
+# backend/data/published and the audit log in audit/ ARE committed on purpose.
+pipeline/.cache/
+.ruff_cache/
+.pytest_cache/
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/

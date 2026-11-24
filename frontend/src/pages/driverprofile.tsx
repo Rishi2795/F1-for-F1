@@ -1,35 +1,13 @@
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import axios from "axios";
+import type { ReactNode } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useApi } from "../hooks/useApi";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { ErrorState, Skeleton } from "../components/ui/states";
+import { fmt, fmtSigned } from "../lib/format";
+import type { DriverProfile } from "../types/api";
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-
-
-/* ================= TYPES ================= */
-
-type DriverStats = {
-  code: string;
-
-  // Meta
-  name?: string;
-  team?: string;
-  country?: string;
-  image?: string;
-
-  // Stats
-  races: number;
-  best_finish: number;
-  avg_finish: number;
-  avg_grid: number;
-  positions_gained: number;
-  consistency: number;
-  avg_risk: number;
-  avg_degradation: number;
-  recent_form: number;
-};
-
-
+/* DNA and AI insight arrive with the ratings model (see plan.md). The API answers 404
+   "not_available" for them today, so the panels are only drawn when data exists. */
 type DriverDNA = {
   pace: number;
   racecraft: number;
@@ -49,275 +27,144 @@ type AIInsight = {
   summary: string;
 };
 
+export default function DriverPage() {
+  const { code = "" } = useParams();
+  const stats = useApi<DriverProfile>(code ? `/drivers/${code}` : null);
+  // Not built yet: only request them once the ratings model ships (VITE_FEATURE_DRIVER_AI=true).
+  const withAi = import.meta.env.VITE_FEATURE_DRIVER_AI === "true" && code !== "";
+  const dna = useApi<DriverDNA>(withAi ? `/drivers/${code}/dna` : null).data;
+  const ai = useApi<AIInsight>(withAi ? `/ai/driver/${code}` : null).data;
 
-/* ================= MAIN ================= */
+  useDocumentTitle(stats.data?.name ?? "Driver");
 
-export default function DriverProfile() {
-
-  const { code } = useParams();
-
-  const [stats, setStats] = useState<DriverStats | null>(null);
-  const [dna, setDNA] = useState<DriverDNA | null>(null);
-  const [ai, setAI] = useState<AIInsight | null>(null);
-
-  const [loading, setLoading] = useState(true);
-
-
-  /* ================= LOAD ================= */
-
-  useEffect(() => {
-  if (!code) return;
-
-  setLoading(true);
-
-  async function load() {
-    try {
-      const s = await axios.get(`${API_URL}/drivers/${code}`);
-      setStats(s.data);
-    } catch (e) {
-      console.error("Stats failed", e);
-    }
-
-    try {
-      const d = await axios.get(`${API_URL}/drivers/${code}/dna`);
-      setDNA(d.data);
-    } catch (e) {
-      console.error("DNA failed", e);
-    }
-
-    try {
-      const a = await axios.get(`${API_URL}/ai/driver/${code}`);
-      setAI(a.data);
-    } catch (e) {
-      console.error("AI failed", e);
-    }
-
-    setLoading(false);
-  }
-
-  load();
-
-}, [code]);
-
-
-
-  /* ================= LOADING ================= */
-
-  if (loading) {
+  if (stats.loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="font-mono text-zinc-500 text-xs animate-pulse">
-          LOADING_DRIVER_DOSSIER
-        </span>
+      <div className="min-h-screen bg-[#050505] px-4 py-14 md:px-8">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-12">
+          <Skeleton className="h-[420px] lg:col-span-4" />
+          <Skeleton className="h-[420px] lg:col-span-8" />
+        </div>
       </div>
     );
   }
-
-
-  if (!stats) {
+  if (!stats.data) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-white">
-        Driver Not Found
+      <div className="min-h-screen bg-[#050505]">
+        <ErrorState error={stats.error} onRetry={stats.reload} subject="driver" backTo={{ href: "/drivers", label: "All drivers" }} />
       </div>
     );
   }
-
-
-  /* ================= UI ================= */
+  const driver = stats.data;
+  const s = driver.stats;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-200 px-4 md:px-8 py-14">
-
-
-      {/* TOP */}
-      <div className="max-w-7xl mx-auto mb-10 flex justify-between">
-
-        <Link
-          to="/drivers"
-          className="text-xs font-mono text-zinc-500 hover:text-white"
-        >
-          ← BACK
+    <div className="min-h-screen bg-[#050505] px-4 py-14 text-zinc-200 md:px-8">
+      <div className="mx-auto mb-10 flex max-w-7xl justify-between">
+        <Link to="/drivers" className="text-xs font-mono text-zinc-400 hover:text-white">
+          ← ALL DRIVERS
         </Link>
-
-        <span className="text-xs font-mono text-red-600">
-          DRIVER_DOSSIER
-        </span>
-
+        <span className="text-xs font-mono text-red-600">DRIVER PROFILE</span>
       </div>
 
-
-      {/* ================= GRID ================= */}
-
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-
-        {/* ================= LEFT ================= */}
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 lg:grid-cols-12">
         <div className="lg:col-span-4">
-
-          <div className="
-            bg-[#080808]
-            border border-white/10
-            rounded-xl
-            overflow-hidden
-          ">
-
-
-                {/* IMAGE */}
-                {/* IMAGE */}
-    <div className="relative h-[420px] overflow-hidden bg-black/40">
-
-    <img
-        src={stats.image || "/placeholder.png"}
-        alt={stats.name || stats.code}
-        className="
-        w-full h-full object-cover
-        transition-transform duration-500
-        hover:scale-105
-        "
-        onError={(e) => {
-        e.currentTarget.src = "/placeholder.png";
-        }}
-    />
-
-    {/* Gradient Overlay */}
-    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-    </div>
-
-
-            {/* META */}
-            <div className="p-6 space-y-4">
-
-
-              <h1 className="text-4xl font-black italic text-white">
-                {stats.code}
-              </h1>
-
-
-              {/* RATING */}
+          <div className="overflow-hidden rounded-xl border border-white/10 bg-[#080808]">
+            <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-gradient-to-br from-zinc-800 to-black">
+              <span aria-hidden="true" className="text-9xl font-black italic text-white/10">
+                {driver.code}
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            </div>
+            <div className="space-y-3 p-6">
+              <h1 className="text-3xl font-black italic text-white">{driver.name}</h1>
+              <p className="text-sm text-zinc-400">
+                {driver.team ?? "—"}
+                {driver.number !== null && ` · #${driver.number}`}
+              </p>
               {ai && (
                 <div className="flex items-center gap-3">
-
-                  <span className="text-4xl font-black text-red-600">
-                    {ai.rating}
-                  </span>
-
-                  <span className="text-xs font-mono uppercase text-zinc-500">
-                    {ai.tier}
-                  </span>
-
+                  <span className="text-4xl font-black text-red-600">{ai.rating}</span>
+                  <span className="text-xs font-mono uppercase text-zinc-500">{ai.tier}</span>
                 </div>
               )}
-
-
-              {/* TAGS */}
               {ai && (
                 <div className="flex flex-wrap gap-2 text-[10px]">
-
                   <Tag text={ai.strength} />
-
                   <Tag text={ai.trend} />
-
                   <Tag text={`${ai.risk} Risk`} />
-
                 </div>
               )}
-
             </div>
-
           </div>
-
         </div>
 
-
-
-        {/* ================= RIGHT ================= */}
-        <div className="lg:col-span-8 space-y-8">
-
-
-          {/* QUICK STATS */}
-          <Panel>
-
+        <div className="space-y-8 lg:col-span-8">
+          <Panel title={`${driver.latest_season} SEASON`}>
             <Grid4>
-
-              <Mini label="Races" value={stats.races} />
-
-              <Mini label="Best" value={`P${stats.best_finish}`} />
-
-              <Mini label="Avg Finish" value={stats.avg_finish} />
-
-              <Mini label="Avg Grid" value={stats.avg_grid} />
-
-              <Mini
-                label="Gain"
-                value={stats.positions_gained}
-                signed
-              />
-
-              <Mini
-                label="Consistency"
-                value={`${stats.consistency}%`}
-              />
-
-              <Mini
-                label="Tyre Deg"
-                value={`${stats.avg_degradation}%`}
-              />
-
-              <Mini
-                label="Recent"
-                value={stats.recent_form}
-              />
-
+              <Mini label="Races" value={s.races} />
+              <Mini label="Wins" value={s.wins} />
+              <Mini label="Podiums" value={s.podiums} />
+              <Mini label="Race points (excl. sprints)" value={s.points} />
+              <Mini label="Best finish" value={s.best_finish === null ? "—" : `P${s.best_finish}`} />
+              <Mini label="Avg finish" value={fmt(s.avg_finish)} />
+              <Mini label="Avg grid" value={fmt(s.avg_grid)} />
+              <Mini label="Positions gained" value={fmtSigned(s.positions_gained)} signed={s.positions_gained} />
+              <Mini label="Consistency" value={fmt(s.consistency, "%")} />
+              <Mini label="Avg longest stint" value={fmt(s.avg_longest_stint, " laps")} />
+              <Mini label="Recent form (avg finish, last 5)" value={fmt(s.recent_form)} />
             </Grid4>
-
           </Panel>
 
+          <Panel title="BY SEASON">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <caption className="sr-only">Season-by-season results for {driver.name}</caption>
+                <thead className="text-xs uppercase text-zinc-500">
+                  <tr>
+                    <th scope="col" className="py-2 pr-4">Season</th>
+                    <th scope="col" className="pr-4">Team</th>
+                    <th scope="col" className="pr-4">Races</th>
+                    <th scope="col" className="pr-4">Wins</th>
+                    <th scope="col" className="pr-4">Podiums</th>
+                    <th scope="col">Race pts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {driver.seasons.map((row) => (
+                    <tr key={row.season} className="border-t border-white/5">
+                      <td className="py-2 pr-4 font-semibold text-white">{row.season}</td>
+                      <td className="pr-4">{row.team ?? "—"}</td>
+                      <td className="pr-4">{row.races}</td>
+                      <td className="pr-4">{row.wins}</td>
+                      <td className="pr-4">{row.podiums}</td>
+                      <td>{row.points}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
 
-          {/* DNA */}
           {dna && (
             <Panel title="PERFORMANCE_DNA">
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-
+              <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
                 <Bar label="Pace" value={dna.pace} />
-
                 <Bar label="Racecraft" value={dna.racecraft} />
-
                 <Bar label="Tyres" value={dna.tyres} />
-
                 <Bar label="Consistency" value={dna.consistency} />
-
                 <Bar label="Wet" value={dna.wet} />
-
                 <Bar label="Risk Ctrl" value={dna.risk_management} />
-
               </div>
-
             </Panel>
           )}
 
-
-          {/* AI */}
           {ai && (
-            <Panel title="AI_INTELLIGENCE">
-
-              <p className="
-                italic
-                text-lg
-                text-zinc-300
-                leading-relaxed
-              ">
-                "{ai.summary}"
-              </p>
-
+            <Panel title="INSIGHT">
+              <p className="text-lg italic leading-relaxed text-zinc-300">"{ai.summary}"</p>
             </Panel>
           )}
-
         </div>
-
       </div>
-
     </div>
   );
 }
@@ -327,10 +174,7 @@ export default function DriverProfile() {
 /* ================= UI ================= */
 
 
-function Panel({
-  children,
-  title
-}: any) {
+function Panel({ children, title }: { children: ReactNode; title?: string }) {
 
   return (
     <div className="
@@ -358,7 +202,7 @@ function Panel({
 }
 
 
-function Grid4({ children }: any) {
+function Grid4({ children }: { children: ReactNode }) {
   return (
     <div className="
       grid grid-cols-2 md:grid-cols-4 gap-4
@@ -369,16 +213,14 @@ function Grid4({ children }: any) {
 }
 
 
-function Mini({ label, value, signed = false }: any) {
-
-  const num = typeof value === "number" ? value : null;
+function Mini({ label, value, signed }: { label: string; value: string | number; signed?: number | null }) {
 
   const color =
-    signed && num !== null
-      ? num >= 0
+    signed === undefined || signed === null
+      ? "text-white"
+      : signed >= 0
         ? "text-green-500"
-        : "text-red-500"
-      : "text-white";
+        : "text-red-500";
 
   return (
     <div className="bg-white/5 border border-white/10 p-4 rounded">
@@ -396,7 +238,7 @@ function Mini({ label, value, signed = false }: any) {
 }
 
 
-function Bar({ label, value }: any) {
+function Bar({ label, value }: { label: string; value: number }) {
 
   const v = Math.max(0, Math.min(100, value));
 

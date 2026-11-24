@@ -1,7 +1,2 @@
-fastapi
-uvicorn
-pymongo
-python-dotenv
-fastf1
-pandas
-numpy
+fastapi==0.165.0
+uvicorn[standard]==0.54.0

@@ -19,5 +19,9 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Use reportError() from src/lib/report.ts instead.
+      'no-console': 'error',
+    },
   },
 ])
