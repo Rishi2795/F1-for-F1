@@ -144,3 +144,13 @@ def test_rate_limit_uses_real_client_only_when_proxy_is_trusted(data_dir):
 
     assert codes(trust=True) == [200, 200, 200, 429]   # client 1.1.1.1 is limited, 2.2.2.2 is not
     assert codes(trust=False) == [200, 200, 429, 429]  # without trust, everyone shares the proxy address
+
+
+def test_conditional_get_accepts_weak_etags_lists_and_star(client):
+    # Render's proxy turns "abc" into W/"abc" when it compresses the response
+    etag = client.get("/api/seasons/2024/races/1").headers["etag"]
+    for header in (f"W/{etag}", f'"nope", {etag}', f'W/"nope", W/{etag}', "*"):
+        response = client.get("/api/seasons/2024/races/1", headers={"If-None-Match": header})
+        assert response.status_code == 304, header
+    for header in ('"something-else"', 'W/"something-else"', ""):
+        assert client.get("/api/seasons/2024/races/1", headers={"If-None-Match": header}).status_code == 200, header

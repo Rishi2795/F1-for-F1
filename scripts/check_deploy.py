@@ -149,6 +149,13 @@ def run(base: str, origin: str | None, expect_season: int | None) -> int:
         r.check("access-control-allow-credentials" not in pre.headers, "CORS does not allow credentials")
         evil = request(f"{api}/seasons", headers={"Origin": "https://evil.example"})
         r.check("access-control-allow-origin" not in evil.headers, "CORS refuses unknown origins")
+        # Without ALLOWED_ORIGINS the API falls back to allowing every *.vercel.app site.
+        stranger = request(f"{api}/seasons", headers={"Origin": "https://some-other-project.vercel.app"})
+        r.check(
+            "access-control-allow-origin" not in stranger.headers,
+            "CORS refuses other *.vercel.app sites",
+            "set ALLOWED_ORIGINS on the host" if "access-control-allow-origin" in stranger.headers else "",
+        )
 
     failed = [x for x in r.results if not x[0]]
     sys.stdout.write(f"\n{len(r.results) - len(failed)}/{len(r.results)} checks passed\n")

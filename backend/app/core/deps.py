@@ -15,10 +15,24 @@ def get_store(request: Request) -> PublishedStore:
     return request.app.state.store
 
 
+def etag_matches(if_none_match: str | None, etag: str) -> bool:
+    """RFC 9110 weak comparison for If-None-Match: `*`, a list of tags, and W/ prefixes all count.
+
+    Proxies and CDNs (Render's included) often turn a strong ETag into a weak one when they compress
+    the response, so an exact string comparison never matches and clients re-download every time.
+    """
+    if not if_none_match:
+        return False
+    if if_none_match.strip() == "*":
+        return True
+    wanted = etag.removeprefix("W/")
+    return any(tag.strip().removeprefix("W/") == wanted for tag in if_none_match.split(","))
+
+
 def json_response(request: Request, blob: Blob) -> Response:
     """Serve pre-built JSON bytes with ETag / conditional GET support."""
     headers = {"ETag": blob.etag, "Cache-Control": CACHE_CONTROL}
-    if request.headers.get("if-none-match") == blob.etag:
+    if etag_matches(request.headers.get("if-none-match"), blob.etag):
         return Response(status_code=304, headers=headers)
     return Response(content=blob.content, media_type="application/json", headers=headers)
 
