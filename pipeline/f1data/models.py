@@ -176,3 +176,37 @@ class DriverListEntry(_Model):
     rating: float | None = None
     titles: int | None = None
     latest_season: int
+
+
+class StandingsDriver(_Model):
+    code: str
+    name: str
+    team: str | None
+    team_color: str | None
+    position: int | None
+    points: float
+    wins: int
+
+
+class StandingsConstructor(_Model):
+    name: str
+    team_color: str | None
+    position: int | None
+    points: float
+    wins: int
+
+
+class StandingsRound(_Model):
+    round: int
+    event_name: str
+    drivers: list[StandingsDriver]
+    constructors: list[StandingsConstructor]
+
+
+class SeasonStandings(_Model):
+    """Official championship standings after every played round (sprint points included)."""
+
+    schema_version: int = SCHEMA_VERSION
+    season: int
+    source: str = "jolpica"
+    rounds: list[StandingsRound]

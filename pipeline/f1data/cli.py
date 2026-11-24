@@ -17,19 +17,32 @@ from .coverage import build_coverage, race_row, regressions, season_block
 from .errors import F1DataError, SourceUnavailable
 from .export import Publisher
 from .logging_setup import get_logger, setup_logging
-from .models import RaceIndex, RaceIndexEntry
+from .models import RaceIndex, RaceIndexEntry, SeasonStandings
 from .sources.jolpica import JolpicaSource, ScheduleEntry
 from .sources.openf1 import OpenF1Source
 from .sources.tracinginsights import RaceLaps, TracingInsightsSource
+from .standings import build_season_standings
 
 log = get_logger("cli")
 
 
 def _parse_seasons(text: str) -> list[int]:
-    if "-" in text:
-        a, b = text.split("-", 1)
-        return list(range(int(a), int(b) + 1))
-    return [int(x) for x in text.split(",") if x.strip()]
+    """'2024', '2020-2023', '2020,2024' and mixes like '2020-2023,2025-2026'."""
+    seasons: set[int] = set()
+    for part in (p.strip() for p in text.split(",") if p.strip()):
+        try:
+            if "-" in part:
+                a, b = (int(x) for x in part.split("-", 1))
+                if a > b:
+                    raise ValueError
+                seasons.update(range(a, b + 1))
+            else:
+                seasons.add(int(part))
+        except ValueError:
+            raise SystemExit(f"invalid --seasons value {part!r}: use e.g. 2024, 2020-2023 or 2020-2023,2025") from None
+    if not seasons:
+        raise SystemExit("--seasons is empty")
+    return sorted(seasons)
 
 
 def _match_event(entry: ScheduleEntry, events: dict[str, str]) -> str | None:
@@ -106,6 +119,10 @@ def run_ingest(
             )
             rows.append(race_row(season, entry.round, entry.event_name, status, doc))
         publisher.publish_index(RaceIndex(season=season, races=entries))
+        standings_rounds = _ingest_standings(season, schedule, entries, rounds, jolpica, publisher, ttl, refresh, today)
+        for row in rows:
+            if row["status"] in ("ok", "partial"):
+                row["standings"] = "ok" if row["round"] in standings_rounds else "missing"
         blocks[season] = season_block(rows)
         b = blocks[season]
         log.info("season %d: %d rounds | ok=%d partial=%d missing=%d scheduled=%d | %s",
@@ -113,7 +130,7 @@ def run_ingest(
         audit.record(
             "ingest.season", f"season/{season}", "success" if not b["missing"] else "partial",
             details={"upstream_commit": sha, "ok": b["ok"], "partial": b["partial"], "missing": b["missing"],
-                     "scheduled": b["scheduled"], **tally},
+                     "scheduled": b["scheduled"], "standings_rounds": len(standings_rounds), **tally},
         )
 
     # Merge with seasons we did not touch this run, so coverage.json always covers everything.
@@ -130,6 +147,36 @@ def run_ingest(
     audit.record("publish.bundle", str(config.PUBLISHED_DIR.name), "success",
                  details={"content_sha256": digest, "drivers": drivers, "seasons": sorted(blocks)})
     return 1 if failures else 0
+
+
+def _ingest_standings(season, schedule, entries, rounds, jolpica, publisher, ttl, refresh, today) -> set[int]:
+    """Fetch official standings for every played round and publish them. Returns the rounds we have."""
+    status = {e.round: e.data_status for e in entries}
+    existing = publisher.load_standings(season)
+    kept = {r.round: r for r in existing.rounds} if existing else {}
+    race_docs = {}
+    per_round = {}
+    for entry in schedule:
+        if status.get(entry.round) not in ("ok", "partial"):
+            continue
+        doc = publisher.load_race(season, entry.round)
+        if doc:
+            race_docs[entry.round] = doc
+        if rounds is not None and entry.round not in rounds:
+            continue
+        try:
+            drivers = jolpica.driver_standings(season, entry.round, ttl=ttl, refresh=refresh)
+            constructors = jolpica.constructor_standings(season, entry.round, ttl=ttl, refresh=refresh)
+        except F1DataError as exc:
+            log.warning("%d R%d: standings unavailable (%s)", season, entry.round, exc)
+            continue
+        if drivers:
+            per_round[entry.round] = (entry.event_name, drivers, constructors)
+    built = build_season_standings(season, per_round, race_docs)
+    merged = {**kept, **{r.round: r for r in built.rounds}}
+    outcome = publisher.publish_standings(SeasonStandings(season=season, rounds=[merged[k] for k in sorted(merged)]))
+    log.info("season %d standings: %d rounds (%s)", season, len(merged), outcome)
+    return set(merged)
 
 
 def _build_one(entry, rows, jolpica, tracing, openf1, events, season, ttl, refresh, use_openf1):

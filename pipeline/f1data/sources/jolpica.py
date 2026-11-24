@@ -51,6 +51,24 @@ class PitStopRow:
     duration_s: float | None
 
 
+@dataclass(frozen=True)
+class DriverStandingRow:
+    driver_code: str
+    driver_name: str
+    position: int | None
+    points: float
+    wins: int
+    constructors: tuple[str, ...]  # Jolpica constructor names (a driver can have changed team)
+
+
+@dataclass(frozen=True)
+class ConstructorStandingRow:
+    name: str
+    position: int | None
+    points: float
+    wins: int
+
+
 class JolpicaSource:
     name = "jolpica"
 
@@ -117,6 +135,23 @@ class JolpicaSource:
             out[rnd] = rows
         return out
 
+    def driver_standings(
+        self, season: int, round_number: int, *, ttl: float | None = None, refresh: bool = False
+    ) -> list[DriverStandingRow]:
+        """Official drivers' championship standing after ``round_number`` (sprint points included)."""
+        path = f"{season}/{round_number}/driverstandings.json"
+        data = self.http.get_json(path, {"limit": _PAGE}, ttl=ttl, refresh=refresh)
+        rows = (_parse_driver_standing(i) for i in _standings_list(data, "DriverStandings"))
+        return [r for r in rows if r is not None]
+
+    def constructor_standings(
+        self, season: int, round_number: int, *, ttl: float | None = None, refresh: bool = False
+    ) -> list[ConstructorStandingRow]:
+        path = f"{season}/{round_number}/constructorstandings.json"
+        data = self.http.get_json(path, {"limit": _PAGE}, ttl=ttl, refresh=refresh)
+        rows = (_parse_constructor_standing(i) for i in _standings_list(data, "ConstructorStandings"))
+        return [r for r in rows if r is not None]
+
     def pit_stops(
         self, season: int, round_number: int, *, ttl: float | None = None, refresh: bool = False
     ) -> list[PitStopRow]:
@@ -137,6 +172,43 @@ class JolpicaSource:
                     )
                 )
         return rows
+
+
+def _standings_list(data: Any, key: str) -> list[dict[str, Any]]:
+    try:
+        lists = data["MRData"]["StandingsTable"]["StandingsLists"]
+    except (KeyError, TypeError) as exc:
+        raise SourceFormatError("jolpica: unexpected standings payload") from exc
+    return lists[0].get(key, []) if lists else []
+
+
+def _parse_driver_standing(item: dict[str, Any]) -> DriverStandingRow | None:
+    driver = item.get("Driver", {})
+    family = to_str(driver.get("familyName"))
+    code = to_str(driver.get("code")) or (family[:3] if family else None)
+    if code is None:
+        return None
+    given = to_str(driver.get("givenName")) or ""
+    return DriverStandingRow(
+        driver_code=code.upper(),
+        driver_name=f"{given} {family or ''}".strip() or code.upper(),
+        position=to_int(item.get("position")),
+        points=to_float(item.get("points")) or 0.0,
+        wins=to_int(item.get("wins")) or 0,
+        constructors=tuple(n for n in (to_str(c.get("name")) for c in item.get("Constructors", [])) if n),
+    )
+
+
+def _parse_constructor_standing(item: dict[str, Any]) -> ConstructorStandingRow | None:
+    name = to_str(item.get("Constructor", {}).get("name"))
+    if name is None:
+        return None
+    return ConstructorStandingRow(
+        name=name,
+        position=to_int(item.get("position")),
+        points=to_float(item.get("points")) or 0.0,
+        wins=to_int(item.get("wins")) or 0,
+    )
 
 
 def _parse_result(item: dict[str, Any]) -> ResultRow | None:

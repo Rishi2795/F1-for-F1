@@ -20,6 +20,7 @@ from .models import (
     DriverProfile,
     RaceDoc,
     RaceIndex,
+    SeasonStandings,
     SeasonSummary,
 )
 
@@ -76,6 +77,33 @@ class Publisher:
 
     def publish_index(self, index: RaceIndex) -> None:
         write_if_changed(self.root / "seasons" / str(index.season) / "races.json", dumps(index))
+
+    # -- standings -------------------------------------------------------------
+    def standings_path(self, season: int) -> Path:
+        return self.root / "seasons" / str(season) / "standings.json"
+
+    def load_standings(self, season: int) -> SeasonStandings | None:
+        path = self.standings_path(season)
+        if not path.exists():
+            return None
+        try:
+            return SeasonStandings.model_validate_json(path.read_text(encoding="utf-8"))
+        except ValueError:
+            log.warning("existing standings for %d failed validation; will be replaced", season)
+            return None
+
+    def publish_standings(self, standings: SeasonStandings) -> str:
+        """Never replace a longer standings history with a shorter one (e.g. after a partial upstream failure)."""
+        existing = self.load_standings(standings.season)
+        if existing and len(existing.rounds) > len(standings.rounds):
+            log.warning(
+                "keeping previous %d standings (%d rounds): new build only has %d",
+                standings.season, len(existing.rounds), len(standings.rounds),
+            )
+            return "kept_previous"
+        if not standings.rounds:
+            return "unchanged"
+        return "written" if write_if_changed(self.standings_path(standings.season), dumps(standings)) else "unchanged"
 
     def published_seasons(self) -> list[int]:
         base = self.root / "seasons"
@@ -148,12 +176,46 @@ class Publisher:
                     if len(finishes) != len(set(finishes)):
                         problems.append(f"{season} R{entry.round}: duplicate finishing positions")
                     problems.extend(_structural_problems(season, entry.round, doc))
+        for season in seasons:
+            problems.extend(self._standings_problems(season))
         manifest = self.root / "manifest.json"
         if not manifest.exists():
             problems.append("manifest.json missing")
         elif json.loads(manifest.read_text(encoding="utf-8")).get("content_sha256") != self.content_hash():
             problems.append("manifest content_sha256 does not match files (data edited without re-publishing?)")
         return problems
+
+    def _standings_problems(self, season: int) -> list[str]:
+        """Standings must be internally consistent and agree with the race results we publish."""
+        standings = self.load_standings(season)
+        if standings is None:
+            return []
+        found: list[str] = []
+        where = f"{season} standings"
+        previous: dict[str, float] = {}
+        for rnd in standings.rounds:
+            positions = [d.position for d in rnd.drivers if d.position is not None]
+            if len(positions) != len(set(positions)):
+                found.append(f"{where} R{rnd.round}: duplicate driver positions")
+            for d in rnd.drivers:
+                if d.points < previous.get(d.code, 0.0):
+                    found.append(f"{where} R{rnd.round} {d.code}: points went down")
+                previous[d.code] = d.points
+        if not standings.rounds:
+            return found
+        final = standings.rounds[-1]
+        # Official points include sprints, so they can never be LOWER than the race points we publish.
+        race_points: dict[str, float] = {}
+        for path in sorted((self.root / "seasons" / str(season)).glob("race_*.json")):
+            doc = RaceDoc.model_validate_json(path.read_text(encoding="utf-8"))
+            if doc.round > final.round:
+                continue
+            for drv in doc.drivers:
+                race_points[drv.driver_code] = race_points.get(drv.driver_code, 0.0) + drv.points
+        for d in final.drivers:
+            if d.points + 1e-6 < race_points.get(d.code, 0.0):
+                found.append(f"{where} {d.code}: standings points {d.points} < race points {race_points[d.code]}")
+        return found
 
     def content_hash(self) -> str:
         digest = hashlib.sha256()
