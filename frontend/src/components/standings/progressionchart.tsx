@@ -16,7 +16,8 @@ type Props = {
   mode: ChartMode;
   leaderId: string | null; // the only line that gets a direct label (selective labelling)
   highlight: string | null; // legend hover/focus: emphasise one line
-  marker: number | null; // index of the round selected with the slider (null = latest)
+  marker: number | null; // index of the round selected on the chart (null = latest)
+  onSelect: (index: number) => void; // click, or Enter while a round is highlighted
 };
 
 const SURFACE = "#050505";
@@ -31,7 +32,7 @@ function niceTop(max: number): { top: number; step: number } {
 const fmt = (v: number, mode: ChartMode) => (mode === "gap" ? (v === 0 ? "Leader" : `−${Math.abs(v)}`) : String(v));
 
 /** Championship points after each round. One axis, hairline grid, 2 px lines, ringed end dots. */
-export function ProgressionChart({ series, rounds, ariaLabel, mode, leaderId, highlight, marker }: Props) {
+export function ProgressionChart({ series, rounds, ariaLabel, mode, leaderId, highlight, marker, onSelect }: Props) {
   const [hover, setHover] = useState<number | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const clipId = `reveal-${useId().replace(/:/g, "")}`;
@@ -70,6 +71,7 @@ export function ProgressionChart({ series, rounds, ariaLabel, mode, leaderId, hi
     if (e.key === "ArrowRight") setHover((h) => Math.min(n - 1, (h ?? -1) + 1));
     else if (e.key === "ArrowLeft") setHover((h) => Math.max(0, (h ?? n) - 1));
     else if (e.key === "Escape") setHover(null);
+    else if (e.key === "Enter" && hover !== null) onSelect(hover);
     else return;
     e.preventDefault();
   };
@@ -92,6 +94,10 @@ export function ProgressionChart({ series, rounds, ariaLabel, mode, leaderId, hi
       onKeyDown={onKey}
       onPointerMove={(e: PointerEvent) => setHover(indexAt(e.clientX))}
       onPointerLeave={() => setHover(null)}
+      onClick={(e) => {
+        const i = indexAt(e.clientX);
+        if (i !== null) onSelect(i);
+      }}
       onBlur={() => setHover(null)}
     >
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={ariaLabel} className="block h-auto w-full">

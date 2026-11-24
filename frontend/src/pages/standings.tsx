@@ -198,35 +198,6 @@ export default function Standings() {
           </label>
         </div>
 
-        {roundCount > 1 && (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <label htmlFor="round" className="text-sm font-semibold text-white">
-                Standings after round {view.last.round} <span className="font-normal text-zinc-400">· {view.last.event_name}</span>
-              </label>
-              {!atLatest && (
-                <button onClick={() => update({ round: null })} className="text-xs font-semibold text-red-400 hover:text-red-300">
-                  Back to the latest round
-                </button>
-              )}
-            </div>
-            <input
-              id="round"
-              type="range"
-              min={1}
-              max={roundCount}
-              value={round}
-              onChange={(e) => update({ round: Number(e.target.value) === roundCount ? null : e.target.value })}
-              aria-valuetext={`Round ${view.last.round}, ${view.last.event_name}`}
-              className="mt-3 h-2 w-full cursor-pointer accent-red-600"
-            />
-            <div className="mt-1 flex justify-between text-xs text-zinc-500">
-              <span>Round 1</span>
-              <span>Round {roundCount}</span>
-            </div>
-          </div>
-        )}
-
         <Podium entries={view.podium} leaderPoints={leader.points} />
 
         <section aria-label="Summary" className="f1-rise grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-4" style={{ "--d": "380ms" } as CSSProperties}>
@@ -242,7 +213,14 @@ export default function Standings() {
               <h2 id="progress-h" className="text-2xl font-extrabold tracking-tight text-white">
                 {mode === "points" ? "Points after each round" : "Points behind the leader"}
               </h2>
-              <p className="text-sm text-zinc-400">{mode === "points" ? "How the championship was built, round by round." : "Where the title fight was won and lost."}</p>
+              <p className="text-sm text-zinc-400">
+                {mode === "points" ? "How the championship was built, round by round." : "Where the title fight was won and lost."} Click a round to see the standings as they were.
+                {!atLatest && (
+                  <button onClick={() => update({ round: null })} className="ml-2 font-semibold text-red-400 hover:text-red-300">
+                    Back to the latest round
+                  </button>
+                )}
+              </p>
             </div>
             <div role="group" aria-label="Chart view" className="inline-flex rounded-full border border-white/15 bg-white/[0.04] p-1 backdrop-blur">
               {([["points", "Total points"], ["gap", "Gap to leader"]] as const).map(([m, label]) => (
@@ -290,6 +268,7 @@ export default function Standings() {
               leaderId={leader.id}
               highlight={highlight}
               marker={atLatest ? null : round - 1}
+              onSelect={(i) => update({ round: i + 1 === roundCount ? null : String(i + 1) })}
               rounds={data.rounds.map((r) => ({ round: r.round, label: r.event_name.replace("Grand Prix", "GP").trim() }))}
               ariaLabel={`Line chart of ${tab} championship points ${mode === "gap" ? "behind the leader " : ""}after each of ${data.rounds.length} rounds in ${data.season}. ${leader.label} leads with ${leader.points} points.`}
             />

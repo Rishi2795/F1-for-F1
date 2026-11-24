@@ -19,14 +19,19 @@ test.describe("world champions", () => {
   });
 });
 
-test.describe("standings: round slider and shareable links", () => {
-  test("scrubbing back in time changes everything and lives in the URL", async ({ page }) => {
+test.describe("standings: pick a round on the chart, shareable links", () => {
+  test("clicking a round on the chart changes everything and lives in the URL", async ({ page }) => {
     await page.goto("/season/2024");
     const podium = page.getByRole("list", { name: "Top three" }).getByRole("listitem").first();
     await expect(podium).toContainText("437");
-    await page.locator("#round").fill("12");
+    await expect(page.locator("#round")).toHaveCount(0); // no slider: the chart is the control
+    const chart = page.getByRole("img", { name: /Line chart of drivers/ });
+    await chart.focus(); // keyboard path: highlight a round with the arrows, Enter selects it
+    await page.locator("div[tabindex='0']").filter({ has: chart }).focus();
+    for (let i = 0; i < 12; i++) await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/round=12/);
-    await expect(page.locator("label[for=round]")).toContainText("Standings after round 12");
+    await expect(page.getByText(/Standings after round 12|After round 12/).first()).toBeVisible();
     await expect(podium).toContainText("255");
     await expect(podium).not.toContainText("World Champion"); // only the final round is a champion
     await page.getByRole("button", { name: "Back to the latest round" }).click();
@@ -38,7 +43,7 @@ test.describe("standings: round slider and shareable links", () => {
     await page.goto("/season/2024?tab=constructors&view=gap&round=12&lines=Williams");
     await expect(page.getByRole("tab", { name: "constructors" })).toHaveAttribute("aria-selected", "true");
     await expect(page.getByRole("heading", { name: "Points behind the leader" })).toBeVisible();
-    await expect(page.locator("#round")).toHaveValue("12");
+    await expect(page.getByText(/After round 12/).first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Williams", exact: true })).toHaveAttribute("aria-pressed", "true"); // flipped on
   });
 
