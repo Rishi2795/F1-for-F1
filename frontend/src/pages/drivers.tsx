@@ -1,179 +1,84 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
-
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-
-type Driver = {
-  code: string;
-  name: string;
-  team: string;
-  country: string;
-  image: string | null;
-  rating: number;
-  titles: number;
-};
+import { useApi } from "../hooks/useApi";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { prefetch } from "../lib/api";
+import { ErrorState, Skeleton } from "../components/ui/states";
+import type { DriverListEntry } from "../types/api";
 
 export default function Drivers() {
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const { data, error, loading, reload } = useApi<DriverListEntry[]>("/drivers");
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
+  useDocumentTitle("Drivers");
 
-  useEffect(() => {
-    axios
-      .get(`${API_URL}/drivers`)
-      .then((res) => {
-        setDrivers(res.data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  const filtered = drivers.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase()) ||
-    d.code.toLowerCase().includes(search.toLowerCase())
-  );
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="text-zinc-500 font-mono text-xs animate-pulse">
-          LOADING_DRIVER_DATABASE
-        </span>
-      </div>
-    );
-  }
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (data ?? []).filter((d) => d.name.toLowerCase().includes(q) || d.code.toLowerCase().includes(q));
+  }, [data, search]);
 
   return (
-    <div className="min-h-screen bg-[#050505] px-4 md:px-8 py-14 text-zinc-200">
-
-      {/* HEADER */}
-      <div className="max-w-7xl mx-auto mb-10 space-y-4 text-center">
-
-        <h1 className="text-5xl md:text-6xl font-black italic text-white">
-          Driver Ratings
-        </h1>
-
-        <p className="text-zinc-500 text-sm">
-          AI-powered performance intelligence
-        </p>
-
+    <div className="min-h-screen bg-[#050505] px-4 py-14 text-zinc-200 md:px-8">
+      <div className="mx-auto mb-10 max-w-7xl space-y-4 text-center">
+        <h1 className="text-5xl font-black italic text-white md:text-6xl">Drivers</h1>
+        <p className="text-sm text-zinc-400">Every driver on the grid since 2020, from official results and timing data.</p>
+        <label className="sr-only" htmlFor="driver-search">
+          Search drivers
+        </label>
         <input
+          id="driver-search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search driver..."
-          className="
-            w-full max-w-md mx-auto
-            bg-black border border-white/10
-            px-4 py-3 rounded
-            text-sm
-            outline-none
-            focus:border-red-600
-          "
+          placeholder="Search driver…"
+          className="mx-auto w-full max-w-md rounded border border-white/10 bg-black px-4 py-3 text-sm outline-none focus:border-red-600"
         />
-
       </div>
 
-      {/* GRID */}
-      <div className="
-        max-w-7xl mx-auto
-        grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5
-        gap-5
-      ">
+      {error && <ErrorState error={error} onRetry={reload} />}
 
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        {loading && Array.from({ length: 10 }, (_, i) => <Skeleton key={i} className="h-[320px] rounded-2xl" />)}
         {filtered.map((d) => (
           <DriverCard key={d.code} d={d} />
         ))}
-
       </div>
+      {!loading && !error && filtered.length === 0 && (
+        <p className="text-center text-sm text-zinc-500">No driver matches “{search}”.</p>
+      )}
     </div>
   );
 }
 
-
-/* ================= CARD ================= */
-
-function DriverCard({ d }: { d: Driver }) {
+function DriverCard({ d }: { d: DriverListEntry }) {
   return (
     <Link
       to={`/driver/${d.code}`}
-      className="
-        group relative
-        h-[320px]
-        rounded-2xl
-        overflow-hidden
-        bg-black
-        shadow-xl
-        hover:scale-[1.02]
-        transition-all
-      "
+      onMouseEnter={() => prefetch(`/drivers/${d.code}`)}
+      className="group relative h-[320px] overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-800 to-black shadow-xl transition-all hover:scale-[1.02]"
     >
-      {/* IMAGE */}
-      <img
-        src={d.image || "/drivers/default.png"}
-        alt={d.name}
-        className="
-          absolute inset-0
-          w-full h-full
-          object-cover
-          transition-transform
-          duration-700
-          group-hover:scale-110
-        "
-        onError={(e) => {
-          e.currentTarget.src = "/drivers/default.png";
-        }}
-      />
-
-      {/* DARK OVERLAY */}
+      {/* No photo is shipped (rights + hotlinks); the code is the avatar. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 flex items-center justify-center text-8xl font-black italic text-white/10"
+      >
+        {d.code}
+      </span>
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
-      {/* RATING BADGE */}
-      <div className="
-        absolute top-3 left-3 z-20
-        bg-black/80 backdrop-blur
-        px-3 py-1
-        rounded-full
-        text-sm font-black text-white
-      ">
-        {d.rating}
-      </div>
+      {d.rating !== null && (
+        <div className="absolute left-3 top-3 z-20 rounded-full bg-black/80 px-3 py-1 text-sm font-black text-white">
+          {d.rating}
+        </div>
+      )}
 
-      {/* CONTENT */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 z-20 space-y-2">
-
-        {/* NAME */}
-        <h2 className="text-xl font-black text-white leading-tight">
-          {d.name}
-        </h2>
-
-        {/* TEAM */}
-        <p className="text-xs text-zinc-400 uppercase tracking-wide">
-          {d.team}
-        </p>
-
-        {/* META */}
-        <div className="flex justify-between items-center text-[11px] text-zinc-500">
-
-          <span>{d.country}</span>
-
-          {d.titles > 0 && (
-            <span className="flex items-center gap-1">
-              🏆 {d.titles}
-            </span>
-          )}
-
+      <div className="absolute bottom-0 left-0 right-0 z-20 space-y-2 p-4">
+        <h2 className="text-xl font-black leading-tight text-white">{d.name}</h2>
+        <p className="text-xs uppercase tracking-wide text-zinc-400">{d.team ?? "—"}</p>
+        <div className="flex items-center justify-between text-[11px] text-zinc-400">
+          <span>Last raced {d.latest_season}</span>
+          {d.titles !== null && d.titles > 0 && <span>🏆 {d.titles}</span>}
         </div>
       </div>
-
-      {/* HOVER GLOW */}
-      <div className="
-        absolute inset-0
-        opacity-0 group-hover:opacity-100
-        bg-red-600/10
-        transition
-      " />
+      <div className="absolute inset-0 bg-red-600/10 opacity-0 transition group-hover:opacity-100" />
     </Link>
   );
 }

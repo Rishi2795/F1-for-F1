@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ const TIRE_DATA = {
 
 export default function StrategySim() {
   const navigate = useNavigate();
+  useDocumentTitle("Strategy simulator");
   const [track, setTrack] = useState<keyof typeof TRACKS>("SILVERSTONE");
   const [currentLap, setCurrentLap] = useState(1);
   const [grip, setGrip] = useState(100);

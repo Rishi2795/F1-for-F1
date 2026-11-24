@@ -1,9 +1,14 @@
-import { useEffect, useState, useMemo, memo } from "react";
+import { useState, useMemo, memo, type ReactNode } from "react";
 import { useParams, Link } from "react-router-dom";
-import axios from "axios";
+import { useApi } from "../hooks/useApi";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { ApiRequestError } from "../lib/api";
+import { ErrorState, RaceSkeleton } from "../components/ui/states";
+import { StintBar } from "../components/ui/stintbar";
+import { DASH, describeMissing, fmt, fmtFinish, fmtGrid, fmtSigned } from "../lib/format";
+import type { DriverRace, RaceDoc } from "../types/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-
+/** Fallback colours when the data has no team colour. */
 const TEAM_COLORS: Record<string, string> = {
   "Red Bull Racing": "#0038FF", Ferrari: "#FF0000", Mercedes: "#00FFD1",
   McLaren: "#FF8A00", "Aston Martin": "#00FF57", Alpine: "#FF00E5",
@@ -16,58 +21,42 @@ const TRACK_HISTORY: Record<string, string> = {
   "Monaco Grand Prix": "Overtaking is nearly impossible. Strategy revolves entirely around track control.",
 };
 
-/* ================= TYPES ================= */
-
-type Driver = {
-  driver_code: string; team: string; grid: number; finish: number;
-  positions_gained: number; stops: number; tyre_sequence: string[];
-  longest_stint: number; strategy_risk: { risk_score: number; risk_label: string };
-  strategy_simulation: { verdict: string }; tyre_degradation_index: number;
-  pit_efficiency: string; consistency_index: number | null;
-};
-
-type RaceData = {
-  season: number; round: number; event_name: string; location: string;
-  drivers: Driver[]; derived: { winning_recipe: { typical_stops: number; common_tyre_sequence: string; avg_longest_stint: number; }; style_profile: string[]; };
-};
-
 /* ================= MAIN DASHBOARD ================= */
 
 export default function RaceDashboard() {
-  const { year = "2023", round } = useParams();
-  const [race, setRace] = useState<RaceData | null>(null);
+  const { year = "", round = "" } = useParams();
+  const validLink = /^\d{4}$/.test(year) && /^\d{1,2}$/.test(round);
+  const { data: race, error: apiError, reload } = useApi<RaceDoc>(
+    validLink ? `/seasons/${year}/races/${round}` : null,
+  );
+  // A malformed address must show an explanation, not a loading skeleton forever.
+  const error = validLink ? apiError : new ApiRequestError("Invalid link", 422, "invalid_request", null, null);
+  useDocumentTitle(race ? `${race.event_name} ${race.season}` : "Race");
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
   const [driverA, setDriverA] = useState("");
   const [driverB, setDriverB] = useState("");
-  const [, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    axios.get(`${API_URL}/seasons/${year}/races/${round}`)
-      .then((res) => {
-        setRace(res.data);
-        setTimeout(() => setIsLoaded(true), 150);
-      })
-      .catch(console.error);
-  }, [year, round]);
 
   const teamStats = useMemo(() => {
     if (!race) return [];
-    const stats = race.drivers.reduce((acc: any, d) => {
-      acc[d.team] ??= { team: d.team, count: 0, finish: 0, gained: 0 };
-      acc[d.team].count++;
-      acc[d.team].finish += d.finish;
-      acc[d.team].gained += d.positions_gained;
-      return acc;
-    }, {});
+    type Stat = { team: string; color: string | null; count: number; finish: number; finishN: number; gained: number };
+    const stats: Record<string, Stat> = {};
+    for (const d of race.drivers) {
+      const t = (stats[d.team] ??= { team: d.team, color: d.team_color, count: 0, finish: 0, finishN: 0, gained: 0 });
+      t.count++;
+      if (d.finish !== null) { t.finish += d.finish; t.finishN++; }
+      t.gained += d.positions_gained ?? 0;
+    }
     return Object.values(stats);
   }, [race]);
 
-  if (!race) return (
-    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center">
-      <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin mb-4" />
-      <div className="font-mono text-[8px] tracking-[0.8em] text-white italic uppercase">Initialising_Core_Uplink</div>
-    </div>
-  );
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#050505]">
+        <ErrorState error={error} onRetry={reload} subject="race" backTo={{ href: "/explore", label: "All races" }} />
+      </div>
+    );
+  }
+  if (!race) return <RaceSkeleton />;
 
   const driverMap = Object.fromEntries(race.drivers.map((d) => [d.driver_code, d]));
   const A = driverA ? driverMap[driverA] : null;
@@ -79,14 +68,14 @@ export default function RaceDashboard() {
       {/* SECTION 0: TOP GLOBAL NAV (ULTRA SMALL) */}
       <nav className="fixed top-0 left-0 w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/5 px-6 py-3 flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <Link to="/" className="text-[9px] font-black tracking-widest text-white hover:text-red-600 transition-colors uppercase">VAULT_HOME</Link>
+          <Link to="/explore" className="text-[9px] font-black tracking-widest text-white hover:text-red-600 transition-colors uppercase">ALL RACES</Link>
           <div className="w-px h-3 bg-white/10" />
           <span className="text-[9px] font-mono text-zinc-500 uppercase">SYS_ACTIVE // {race.season}.R{race.round}</span>
         </div>
-        <div className="text-[9px] font-black text-red-600 animate-pulse tracking-tighter italic uppercase">Live_Telemetry_Feed</div>
+        <div className="text-[9px] font-black text-zinc-400 tracking-tighter italic uppercase">Archive · {race.date}</div>
       </nav>
 
-      <main className="max-w-[1400px] mx-auto px-6 pt-24 pb-32 space-y-24 md:space-y-32">
+      <main className="max-w-[1400px] mx-auto px-6 pt-24 pb-16 space-y-10 md:space-y-14">
 
         {/* SECTION 1: HEADER & META */}
         <header className="opacity-100 translate-y-0">
@@ -103,10 +92,21 @@ export default function RaceDashboard() {
             <div className="md:col-span-4 flex justify-end gap-12">
               <HeroMeta label="CIRCUIT" value={race.location} />
               <HeroMeta label="RACE_ID" value={`GP_R${race.round}`} />
-              <HeroMeta label="STATUS" value="OFFICIAL" />
+              <HeroMeta label="DATA" value={race.quality.status.toUpperCase()} />
             </div>
           </div>
         </header>
+
+        {race.quality.status !== "ok" && (
+          <div role="note" className="rounded border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Some data is unavailable for this race: {describeMissing(race.quality.missing) || "see the coverage report"}.
+            Missing values are shown as “{DASH}” rather than estimated.
+          </div>
+        )}
+
+        {race.quality.status === "ok" && race.quality.notes.length > 0 && (
+          <p className="text-xs text-zinc-500">Data notes: {race.quality.notes.join(" · ")}.</p>
+        )}
 
         {/* SECTION 2: TRACK INTEL & OPTIMA (BENTO GRID) */}
         <section className="space-y-4">
@@ -125,16 +125,16 @@ export default function RaceDashboard() {
             <div className="bg-white p-8 md:p-12">
               <Label color="text-zinc-400">STRATEGY_WINDOW</Label>
               <div className="space-y-6 mt-8">
-                <MetricWhite label="Pit Stops" value={race.derived.winning_recipe.typical_stops} />
-                <MetricWhite label="Compound" value={race.derived.winning_recipe.common_tyre_sequence} />
-                <MetricWhite label="Max Stint" value={`${race.derived.winning_recipe.avg_longest_stint} Laps`} />
+                <MetricWhite label="Pit Stops" value={fmt(race.derived.winning_recipe.typical_stops)} />
+                <MetricWhite label="Compound" value={fmt(race.derived.winning_recipe.common_tyre_sequence)} />
+                <MetricWhite label="Max Stint" value={race.derived.winning_recipe.avg_longest_stint === null ? DASH : `${race.derived.winning_recipe.avg_longest_stint} Laps`} />
               </div>
             </div>
           </div>
         </section>
 
         {/* ================= SECTION 3: CONSTRUCTOR INTELLIGENCE ================= */}
-        <section className="py-12 md:py-20 px-4 md:px-12 bg-[#050505] flex flex-col items-center overflow-hidden">
+        <section className="py-6 md:py-8 px-4 md:px-12 bg-[#050505] flex flex-col items-center overflow-hidden">
           <div className="w-full max-w-6xl space-y-10">
 
             {/* HEADER */}
@@ -151,23 +151,24 @@ export default function RaceDashboard() {
                 <div className="flex flex-col md:items-end">
                   <span className="text-[7px] font-mono text-zinc-600 uppercase tracking-[0.2em]">System_Status</span>
                   <span className="text-[10px] font-black text-green-500 italic flex items-center gap-2">
-                    <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
-                    LIVE_DATA_SYNC
+                    <span className="w-1 h-1 bg-green-500 rounded-full" />
+                    OFFICIAL_RESULTS
                   </span>
                 </div>
               </div>
             </div>
 
             {/* THE GRID: White Cards on all devices */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-3 md:gap-px bg-white/5 md:bg-white/10 md:border md:border-white/10 overflow-hidden shadow-2xl">
-              {teamStats.sort((a: any, b: any) => (a.finish / a.count) - (b.finish / b.count)).map((t: any) => {
-                const teamColor = TEAM_COLORS[t.team] || '#444';
-                const score = Math.max(10, 100 - (t.finish / t.count) * 4);
+            <div className="flex flex-wrap gap-3 md:gap-px overflow-hidden shadow-2xl">
+              {[...teamStats].sort((a, b) => (a.finishN ? a.finish / a.finishN : 99) - (b.finishN ? b.finish / b.finishN : 99)).map((t) => {
+                const teamColor = t.color ?? TEAM_COLORS[t.team] ?? '#444';
+                const avgFinish = t.finishN ? t.finish / t.finishN : null;
+                const score = avgFinish === null ? 0 : Math.max(10, 100 - avgFinish * 4);
 
                 return (
                   <div
                     key={t.team}
-                    className="group relative p-6 bg-white transition-all duration-500 md:hover:bg-[#060606] border-b border-zinc-100 md:border-none last:border-none"
+                    className="group relative p-6 bg-white transition-all duration-500 md:hover:bg-[#060606] flex-1 basis-[calc(50%-0.375rem)] md:basis-[calc(20%-1px)] min-w-0"
                   >
                     {/* HOVER/TAP ACCENT */}
                     <div
@@ -195,7 +196,7 @@ export default function RaceDashboard() {
                         <div className="flex flex-col">
                           <span className="text-[7px] font-mono text-zinc-400 group-hover:md:text-zinc-600 uppercase mb-1 tracking-tighter italic transition-colors">Avg_Finish</span>
                           <span className="text-5xl font-black italic text-black tracking-tighter leading-none group-hover:md:text-red-600 transition-colors duration-500">
-                            {(t.finish / t.count).toFixed(1)}
+                            {avgFinish === null ? DASH : avgFinish.toFixed(1)}
                           </span>
                         </div>
 
@@ -250,7 +251,7 @@ export default function RaceDashboard() {
           </div>
         </section>
         {/* ================= SECTION 4: PERSONNEL LOGS ================= */}
-        <section className="py-12 px-4 md:px-12 bg-black flex flex-col items-center">
+        <section className="py-6 px-4 md:px-12 bg-black flex flex-col items-center">
           {/* Maintain the wide desktop presence with consistent 2-3 finger gap */}
           <div className="w-full max-w-7xl space-y-4">
 
@@ -268,15 +269,25 @@ export default function RaceDashboard() {
 
             {/* DATA FEED: Slimmer rows, denser information */}
             <div className="flex flex-col gap-px bg-white/5 border border-white/5 rounded-sm overflow-hidden">
-              {race.drivers.map((d: any) => {
-                const teamColor = TEAM_COLORS[d.team] || '#444';
+              {race.drivers.map((d) => {
+                const teamColor = d.team_color ?? TEAM_COLORS[d.team] ?? '#444';
                 const isExpanded = expandedDriver === d.driver_code;
 
                 return (
                   <div
                     key={d.driver_code}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isExpanded}
+                    aria-label={`${d.driver_name}, finished ${fmt(d.finish)}. ${isExpanded ? "Hide" : "Show"} strategy details`}
                     onClick={() => setExpandedDriver(isExpanded ? null : d.driver_code)}
-                    className={`group relative flex flex-col transition-all duration-300 cursor-pointer ${isExpanded ? 'bg-white z-20' : 'bg-[#080808] hover:bg-[#0c0c0c]'
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setExpandedDriver(isExpanded ? null : d.driver_code);
+                      }
+                    }}
+                    className={`group relative flex flex-col transition-all duration-300 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600 ${isExpanded ? 'bg-white z-20' : 'bg-[#080808] hover:bg-[#0c0c0c]'
                       }`}
                   >
                     {/* --- COMPRESSED STRIP VIEW --- */}
@@ -290,7 +301,7 @@ export default function RaceDashboard() {
 
                       <div className="relative z-10 flex items-center gap-6">
                         <span className={`text-[10px] font-mono font-black italic w-6 text-center ${isExpanded ? 'text-red-600' : 'text-zinc-600'}`}>
-                          {d.finish.toString().padStart(2, '0')}
+                          {fmtFinish(d.finish)}
                         </span>
 
                         <div className="w-[2px] h-6" style={{ backgroundColor: teamColor }} />
@@ -301,7 +312,7 @@ export default function RaceDashboard() {
                             {d.driver_code}
                           </h4>
                           <p className="text-[7px] uppercase tracking-widest font-bold text-zinc-500">
-                            {d.team.split(' ')[0]}
+                            {d.team}
                           </p>
                         </div>
                       </div>
@@ -311,18 +322,18 @@ export default function RaceDashboard() {
                         <div className="hidden lg:flex gap-8">
                           <div className="flex flex-col">
                             <span className="text-[6px] text-zinc-500 font-mono uppercase">Grid</span>
-                            <span className={`text-[10px] font-bold ${isExpanded ? 'text-black' : 'text-white'}`}>P{d.grid}</span>
+                            <span className={`text-[10px] font-bold ${isExpanded ? 'text-black' : 'text-white'}`}>{fmtGrid(d.grid, d.pit_lane_start)}</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-[6px] text-zinc-500 font-mono uppercase">T_Life</span>
-                            <span className={`text-[10px] font-bold ${isExpanded ? 'text-black' : 'text-white'}`}>{d.tyre_degradation_index}</span>
+                            <span className="text-[6px] text-zinc-500 font-mono uppercase">Longest stint</span>
+                            <span className={`text-[10px] font-bold ${isExpanded ? 'text-black' : 'text-white'}`}>{fmt(d.longest_stint)}</span>
                           </div>
                         </div>
 
                         <div className="flex flex-col items-end w-12">
-                          <span className={`text-sm md:text-lg font-black italic ${d.positions_gained >= 0 ? 'text-green-500' : 'text-red-600'
+                          <span className={`text-sm md:text-lg font-black italic ${d.positions_gained === null ? 'text-zinc-600' : d.positions_gained >= 0 ? 'text-green-500' : 'text-red-600'
                             }`}>
-                            {d.positions_gained > 0 ? `+${d.positions_gained}` : d.positions_gained}
+                            {fmtSigned(d.positions_gained)}
                           </span>
                         </div>
 
@@ -332,7 +343,7 @@ export default function RaceDashboard() {
                     </div>
 
                     {/* --- DENSE TECH EXPANSION --- */}
-                    <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[300px]' : 'max-h-0'
+                    <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[360px]' : 'max-h-0'
                       }`}>
                       <div className="px-10 py-6 border-t border-zinc-100 bg-zinc-50 grid grid-cols-1 md:grid-cols-12 gap-8">
 
@@ -340,20 +351,18 @@ export default function RaceDashboard() {
                         <div className="md:col-span-7 grid grid-cols-3 gap-4">
                           <div className="space-y-1">
                             <span className="block text-[7px] text-zinc-400 font-mono uppercase border-b border-zinc-200 pb-1">Aggression</span>
-                            <span className="text-sm font-black text-black">{d.strategy_risk.risk_score}%</span>
+                            <span className="text-sm font-black text-black">{d.strategy_risk ? `${d.strategy_risk.risk_score}%` : DASH}</span>
                           </div>
                           <div className="space-y-1">
                             <span className="block text-[7px] text-zinc-400 font-mono uppercase border-b border-zinc-200 pb-1">Consistency</span>
-                            <span className="text-sm font-black text-black">{d.consistency_index}%</span>
+                            <span className="text-sm font-black text-black">{fmt(d.consistency_index, "%")}</span>
                           </div>
                           <div className="space-y-1">
-                            <span className="block text-[7px] text-zinc-400 font-mono uppercase border-b border-zinc-200 pb-1">Telemetry</span>
-                            <span className="text-[9px] font-bold text-red-600 italic">ACTIVE_LINK</span>
+                            <span className="block text-[7px] text-zinc-400 font-mono uppercase border-b border-zinc-200 pb-1">Pit stops</span>
+                            <span className="text-sm font-black text-black">{fmt(d.stops)}</span>
                           </div>
                           <div className="col-span-3 pt-2">
-                            <div className="h-0.5 bg-zinc-200 w-full relative">
-                              <div className="absolute top-0 left-0 h-full bg-black" style={{ width: `${d.consistency_index}%` }} />
-                            </div>
+                            <StintBar stints={d.stints} />
                           </div>
                         </div>
 
@@ -361,13 +370,13 @@ export default function RaceDashboard() {
                         <div className="md:col-span-5 border-l border-zinc-200 pl-8">
                           <span className="block text-[7px] text-zinc-400 font-mono uppercase mb-2">Sim_Verdict</span>
                           <p className="font-serif italic text-[11px] text-black leading-snug">
-                            "{d.strategy_simulation.verdict}"
+                            {d.strategy_simulation ? `"${d.strategy_simulation.verdict}"` : "No strategy comparison available without lap data."}
                           </p>
                         </div>
                       </div>
 
                       <div className="bg-black text-[6px] font-mono text-zinc-600 px-10 py-1 uppercase tracking-[0.5em] text-right">
-                        ID: {d.driver_code}_XMT_LOG_03
+                        {d.driver_name} · {d.status}
                       </div>
                     </div>
                   </div>
@@ -378,7 +387,7 @@ export default function RaceDashboard() {
         </section>
 
         {/* ================= SECTION 5: VS COMPARISON ENGINE ================= */}
-        <section className="py-10 border-t border-white/5 bg-black">
+        <section className="py-6 border-t border-white/5 bg-black">
           <div className="max-w-[1200px] mx-auto px-6">
 
             <div className="flex flex-col lg:flex-row gap-4 items-start">
@@ -415,10 +424,10 @@ export default function RaceDashboard() {
 
                     {/* DATA STRIPS */}
                     <div className="p-2 space-y-0.5">
-                      <VMetricRow label="F_POS" a={A.finish} b={B.finish} />
-                      <VMetricRow label="G_POS" a={A.grid} b={B.grid} />
-                      <VMetricRow label="RISK" a={`${A.strategy_risk.risk_score}%`} b={`${B.strategy_risk.risk_score}%`} />
-                      <VMetricRow label="DEGR" a={A.tyre_degradation_index} b={B.tyre_degradation_index} />
+                      <VMetricRow label="FINISH" a={fmt(A.finish)} b={fmt(B.finish)} />
+                      <VMetricRow label="GRID" a={fmtGrid(A.grid, A.pit_lane_start)} b={fmtGrid(B.grid, B.pit_lane_start)} />
+                      <VMetricRow label="RISK" a={A.strategy_risk ? `${A.strategy_risk.risk_score}%` : DASH} b={B.strategy_risk ? `${B.strategy_risk.risk_score}%` : DASH} />
+                      <VMetricRow label="LONGEST STINT" a={fmt(A.longest_stint)} b={fmt(B.longest_stint)} />
                     </div>
 
                     {/* MICRO VERDICTS */}
@@ -426,13 +435,13 @@ export default function RaceDashboard() {
                       <div className="p-5 bg-black/40 group hover:bg-black/60 transition-colors">
                         <span className="text-[7px] font-black text-red-600 uppercase tracking-widest block mb-2">Alpha_Logic</span>
                         <p className="font-serif text-[11px] text-zinc-400 leading-relaxed line-clamp-2 italic">
-                          "{A.strategy_simulation.verdict}"
+                          {A.strategy_simulation ? `"${A.strategy_simulation.verdict}"` : DASH}
                         </p>
                       </div>
                       <div className="p-5 bg-black/40 group hover:bg-black/60 transition-colors">
                         <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest block mb-2 text-right">Beta_Logic</span>
                         <p className="font-serif italic text-[11px] text-zinc-400 leading-relaxed line-clamp-2 text-right">
-                          "{B.strategy_simulation.verdict}"
+                          {B.strategy_simulation ? `"${B.strategy_simulation.verdict}"` : DASH}
                         </p>
                       </div>
                     </div>
@@ -452,7 +461,7 @@ export default function RaceDashboard() {
 
       {/* GLOBAL FOOTER */}
       <footer className="border-t border-white/5 py-12 px-10 text-center">
-        <p className="text-[8px] text-zinc-700 font-mono tracking-widest uppercase">© 2026 Circuit_Vault_Technologies // Data_Proprietary</p>
+        <p className="text-[10px] text-zinc-500 tracking-wide">Unofficial fan project, not affiliated with Formula 1 or the FIA. Data: Jolpica-F1, TracingInsights.</p>
       </footer>
     </div>
   );
@@ -460,7 +469,7 @@ export default function RaceDashboard() {
 
 /* ================= ATOMIC COMPONENTS ================= */
 
-const SectionLabel = memo(({ id, title }: any) => (
+const SectionLabel = memo(({ id, title }: { id: string; title: string }) => (
   <div className="flex items-center gap-3">
     <span className="text-[9px] font-black text-red-600 font-mono">[{id}]</span>
     <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white italic">{title}</h3>
@@ -468,25 +477,25 @@ const SectionLabel = memo(({ id, title }: any) => (
   </div>
 ));
 
-const HeroMeta = memo(({ label, value }: any) => (
+const HeroMeta = memo(({ label, value }: { label: string; value: string | number }) => (
   <div className="flex flex-col items-end">
     <span className="text-[8px] font-black text-zinc-600 mb-1 tracking-widest uppercase">{label}</span>
     <span className="text-xs font-black italic uppercase tracking-tighter text-white">{value}</span>
   </div>
 ));
 
-const Label = memo(({ children, color = "text-red-600" }: any) => (
+const Label = memo(({ children, color = "text-red-600" }: { children: ReactNode; color?: string }) => (
   <p className={`text-[9px] font-black uppercase tracking-[0.3em] ${color} mb-4`}>{children}</p>
 ));
 
-const MetricWhite = memo(({ label, value }: any) => (
+const MetricWhite = memo(({ label, value }: { label: string; value: string | number }) => (
   <div className="flex justify-between items-end border-b border-zinc-100 pb-2 hover:border-black transition-colors">
     <span className="text-[8px] uppercase font-black text-zinc-400 tracking-widest">{label}</span>
     <span className="text-xl font-black italic tracking-tighter uppercase leading-none text-black">{value}</span>
   </div>
 ));
 
-const VSelector = ({ label, value, onChange, drivers }: any) => (
+const VSelector = ({ label, value, onChange, drivers }: { label: string; value: string; onChange: (v: string) => void; drivers: DriverRace[] }) => (
   <div className="text-left">
     <p className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-2 ml-2 ">{label}</p>
     <select
@@ -495,19 +504,19 @@ const VSelector = ({ label, value, onChange, drivers }: any) => (
       className="w-full bg-[#111] border border-white/10 rounded-sm p-3 px-4 font-black italic uppercase text-[10px] text-white outline-none focus:border-red-600 transition-all cursor-pointer hover:bg-zinc-900"
     >
       <option value="">Pilot_Select_NULL</option>
-      {drivers.map((d: any) => <option key={d.driver_code} value={d.driver_code}>{d.driver_code} // {d.team}</option>)}
+      {drivers.map((d) => <option key={d.driver_code} value={d.driver_code}>{d.driver_code} // {d.team}</option>)}
     </select>
   </div>
 );
 
-const VComparePilot = ({ d }: any) => (
+const VComparePilot = ({ d }: { d: DriverRace }) => (
   <div className="text-center">
     <p className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase mb-2 text-white">{d.driver_code}</p>
     <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">{d.team}</p>
   </div>
 );
 
-const VMetricRow = ({ label, a, b }: any) => (
+const VMetricRow = ({ label, a, b }: { label: string; a: string | number; b: string | number }) => (
   <div className="grid grid-cols-3 py-4 items-center border-b border-white/5 hover:bg-white/[0.02] transition-all px-4 group">
     <div className="text-xl md:text-2xl font-black italic tracking-tighter text-center text-white">{a}</div>
     <div className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-700 text-center italic">{label}</div>

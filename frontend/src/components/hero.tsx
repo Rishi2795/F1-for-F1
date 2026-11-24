@@ -1,13 +1,14 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { hideBroken } from "../lib/images";
 
 const Hero = () => {
   const navigate = useNavigate();
   const assets = {
     desktopBg: "https://media.formula1.com/image/upload/c_lfill,w_3392/q_auto/v1740000000/fom-website/2026%20regulations/2026_Explainer_FIA_Front_3_4_1920x1080.webp",
-    desktopCutout: "/f1_new-hd.png",
+    desktopCutout: "/f1_new-hd.webp",
     mobileBg: "https://www.autohebdo.fr/app/uploads/2025/12/G8X2yH-WAAAtXkx.jpg",
-    mobileCutout: "/top_down-f1.png",
+    mobileCutout: "/top_down-f1.webp",
   };
 
   return (
@@ -27,7 +28,9 @@ const Hero = () => {
         y: 100 // MATCHED: Sync with car
       }}
       transition={{ duration: 1.5 }}
-      src={assets.desktopBg} 
+      src={assets.desktopBg}
+      referrerPolicy="no-referrer"
+      onError={hideBroken} 
       className="w-full h-full object-cover object-center brightness-[0.25] scale-110" 
       alt="Background"
     />
@@ -66,7 +69,7 @@ const Hero = () => {
       ========================================== */}
       <div className="block md:hidden absolute inset-0">
         {/* Top-Down BG */}
-        <img src={assets.mobileBg} className="w-full h-full object-cover brightness-[0.4]" alt="F1 Mobile" />
+        <img src={assets.mobileBg} referrerPolicy="no-referrer" onError={hideBroken} className="w-full h-full object-cover brightness-[0.4]" alt="" />
         
         {/* MOBILE TEXT: Centered and High */}
         <div className="absolute inset-0 z-20 flex flex-col justify-start pt-[12dvh] px-6 text-center pointer-events-none">
