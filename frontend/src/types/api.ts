@@ -117,6 +117,7 @@ export type DriverProfile = {
   /** Drivers' world championships, all-time. */
   titles: number;
   title_years: number[];
+  rating: RatingSummary | null;
   stats: SeasonSummary;
   seasons: SeasonSummary[];
 };
@@ -180,3 +181,50 @@ export type Coverage = { generated_at: string; seasons: Record<string, SeasonCov
 
 /** GET /api/meta: when the published data was last built. */
 export type BundleMeta = { generated_at?: string; seasons: number[]; sources?: { upstream_commits?: Record<string, string | null> } };
+
+/** Driver-and-car rating (Elo scale, 1500 = average). overall = driver + car - 1500. */
+export type RatingSummary = {
+  overall: number;
+  driver: number;
+  car: number;
+  rank: number;
+  races: number;
+  provisional: boolean;
+  as_of: string;
+};
+
+export type RatingEntry = {
+  code: string;
+  name: string;
+  team: string | null;
+  overall: number;
+  driver: number;
+  car: number;
+  rank: number;
+  races: number;
+  provisional: boolean;
+};
+
+export type RatingsCurrent = {
+  version: string;
+  season: number;
+  round: number;
+  ratings: RatingEntry[];
+};
+
+/** [season, round, driver, car] per race. */
+export type RatingHistory = { code: string; history: [number, number, number, number][] };
+
+export type ModelScore = { log_loss: number; accuracy: number; pairs: number };
+
+export type RatingModelCard = {
+  version: string;
+  as_of: { season: number; round: number };
+  method: string[];
+  tuning: { seasons: number[] };
+  test: { seasons: number[]; pairs: number; races: number };
+  metrics: Record<string, ModelScore>;
+  winner_pick: Record<string, { correct: number; races: number; accuracy: number }>;
+  calibration: { bin: string; predicted: number; observed: number | null; n: number }[];
+  limitations: string[];
+};

@@ -163,3 +163,14 @@ def test_standings(client):
     missing = client.get("/api/seasons/2023/standings")
     assert missing.status_code == 404 and missing.json()["error"] == "not_available"
     assert client.get("/api/seasons/1900/standings").status_code == 422
+
+
+def test_ratings_endpoints(client):
+    assert client.get("/api/ratings").json()["ratings"][0]["code"] == "VER"
+    assert client.get("/api/ratings/model").json()["version"] == "ratings-v1"
+    assert client.get("/api/ratings/ver").json()["history"] == [[2024, 1, 1500, 1500]]
+    assert client.head("/api/ratings").headers["etag"]
+    missing = client.get("/api/ratings/HAM")
+    assert missing.status_code == 404 and missing.json()["error"] == "not_available"
+    assert client.get("/api/ratings/TOOLONG").status_code == 422
+    assert client.get("/api/ratings/model").headers["cache-control"].startswith("public")

@@ -124,6 +124,12 @@ def run(base: str, origin: str | None, expect_season: int | None) -> int:
     srounds = (standings.data() or {}).get("rounds", []) if standings.status == 200 else []
     r.check(bool(srounds), f"{latest} standings are served", f"{len(srounds)} rounds")
 
+    ratings = request(f"{api}/ratings")
+    rated = (ratings.data() or {}).get("ratings", []) if ratings.status == 200 else []
+    r.check(len(rated) >= 10, "driver and car ratings are served", f"{len(rated)} drivers")
+    card = request(f"{api}/ratings/model")
+    r.check(card.status == 200 and "metrics" in (card.data() or {}), "the ratings model card (accuracy report) is served")
+
     drivers = request(f"{api}/drivers")
     listed = drivers.data() if drivers.status == 200 else None
     r.check(isinstance(listed, list) and len(listed) >= 20, "/api/drivers is served", f"{len(listed) if isinstance(listed, list) else 'HTTP ' + str(drivers.status)} drivers")

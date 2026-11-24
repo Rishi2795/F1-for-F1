@@ -3,6 +3,7 @@ import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { describeMissing } from "../lib/format";
 import { ErrorState, Skeleton } from "../components/ui/states";
+import { RatingModelSection } from "../components/ratings/modelcard";
 import type { BundleMeta, Coverage } from "../types/api";
 
 const SOURCES = [
@@ -20,7 +21,7 @@ const RULES = [
 
 const LIMITS = [
   "Race pages show race points only; the standings pages use the official totals, which include sprint points.",
-  "“Strategy risk” and “verdict” are simple rules, not predictions or machine-learning output.",
+  "“Strategy risk” and “verdict” are simple rules. Only the driver and car ratings are machine-learned.",
   "Lap numbering can differ by a lap between sources after red flags; stints are compared in order, not by lap number.",
   "A few races have partial tyre data because no free source has it (listed above).",
 ];
@@ -127,6 +128,8 @@ export default function Methodology() {
             </>
           )}
         </section>
+
+        <RatingModelSection />
 
         <section aria-labelledby="limits-h" className="space-y-3">
           <h2 id="limits-h" className="text-2xl font-extrabold text-white">Things to keep in mind</h2>

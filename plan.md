@@ -60,6 +60,7 @@
 | Date | Feature | Notes |
 |---|---|---|
 | 2026-11-25 | **Season standings + championship progression chart** (`/season/:year`, `/standings`, `GET /api/seasons/{year}/standings`) | Official Jolpica standings after every round, so **sprint points are now included**. Drivers and constructors tabs, points-after-each-round chart (dependency-free SVG, 4 KB gzipped page), gap and lead changes. Validation: official points are never lower than the race points we publish, points never decrease between rounds, positions are unique. All 2020–2026 seasons published. |
+| 2026-11-25 | **Driver & car ratings** (Model A v0; `/ratings`, `GET /api/ratings`, `/api/ratings/model`, `/api/ratings/{code}`; rating panel on driver profiles; model card on `/methodology#ratings`) | Pairwise-logistic Elo: pace = driver skill + car strength; teammate duels move only the driver, results against other teams move only the car; online update after every race, season shrinkage (harder in 2022 and 2026). Tuned on 2021-2023, **scored on unseen 2024-2026** (69 races, 10,506 pairs) against coin flip / grid / recent-form baselines. **Honest result:** once the grid is known, ratings (log loss 0.401) are about as good as grid + recent form (0.398), not better. Their value is the driver-vs-car split and a pre-qualifying forecast; the methodology page says so. Also shipped: titles badge, "waking the server" notice, keyboard-visible dock, standings round slider, shareable links, footer + methodology page, axe accessibility tests. |
 
 Also fixed on the way: weak-ETag conditional requests (found by running the deploy check against the live service), and the deploy check now detects a missing `ALLOWED_ORIGINS` / `APP_ENV`.
 
@@ -344,7 +345,7 @@ pipeline/sources/
 
 *Question it answers: how much of a result is the driver, how much is the car?*
 
-- **v0**: Elo/Glicko on race finishing order, separate driver and constructor ratings, updated per race.
+- **v0 (shipped 2026-11-25)**: Elo/Glicko on race finishing order, separate driver and constructor ratings, updated per race. See the feature log (0c) for the held-out result.
 - **v1**: Bayesian hierarchical model (PyMC/NumPyro): `performance(driver, race) = car(team, season[, race trend]) + driver(skill) + track-affinity + noise`. **Teammates share the car**, which is what makes driver skill identifiable; drivers moving teams link the graph across years. Output posterior means **with uncertainty**.
 - **Outputs**: driver skill, car strength over a season (development trend), qualifying vs race split, track affinity per driver.
 - **Eval**: held-out predictive likelihood of next-race order; stability (rankings shouldn't whiplash); sanity vs. known teammate comparisons.

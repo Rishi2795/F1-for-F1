@@ -36,6 +36,11 @@ export function Footer() {
           <p className="font-semibold text-white">About the numbers</p>
           <ul className="mt-2 space-y-1">
             <li>
+              <Link to="/ratings" className="text-zinc-300 underline-offset-4 hover:text-white hover:underline">
+                Driver &amp; car ratings
+              </Link>
+            </li>
+            <li>
               <Link to="/methodology" className="text-zinc-300 underline-offset-4 hover:text-white hover:underline">
                 Methodology and data coverage
               </Link>

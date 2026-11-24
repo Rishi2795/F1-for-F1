@@ -66,7 +66,7 @@ function DriverCard({ d }: { d: DriverListEntry }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
       {d.rating !== null && (
-        <div className="absolute left-3 top-3 z-20 rounded-full bg-black/80 px-3 py-1 text-sm font-black text-white">
+        <div title="Driver & car rating (1500 = average)" className="absolute left-3 top-3 z-20 rounded-full bg-black/80 px-3 py-1 text-sm font-black text-white">
           {d.rating}
         </div>
       )}

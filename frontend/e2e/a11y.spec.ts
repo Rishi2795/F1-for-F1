@@ -12,6 +12,7 @@ const PAGES = [
   "/season/2024",
   "/season/2021?tab=constructors",
   "/methodology",
+  "/ratings",
   "/definitely-not-a-page",
 ];
 

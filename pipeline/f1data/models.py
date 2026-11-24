@@ -154,6 +154,18 @@ class SeasonSummary(_Model):
     recent_form: float | None
 
 
+class RatingSummary(_Model):
+    """A driver's current rating, split into driver skill and car strength (Elo scale: 400 points = 10:1 odds)."""
+
+    overall: int
+    driver: int
+    car: int
+    rank: int
+    races: int
+    provisional: bool  # fewer than 15 races of data
+    as_of: str  # e.g. "2026 R21"
+
+
 class DriverProfile(_Model):
     schema_version: int = SCHEMA_VERSION
     code: str
@@ -163,10 +175,38 @@ class DriverProfile(_Model):
     nationality: str | None = None
     image: str | None = None
     latest_season: int
+    rating: RatingSummary | None = None
     titles: int = 0  # drivers' world championships, all-time
     title_years: list[int] = Field(default_factory=list)
     stats: SeasonSummary
     seasons: list[SeasonSummary]
+
+
+class RatingEntry(_Model):
+    code: str
+    name: str
+    team: str
+    overall: int
+    driver: int
+    car: int
+    rank: int
+    races: int
+    provisional: bool
+
+
+class RatingsCurrent(_Model):
+    schema_version: int = SCHEMA_VERSION
+    version: str
+    season: int
+    round: int
+    ratings: list[RatingEntry]
+
+
+class RatingHistory(_Model):
+    """Rating after each race: [season, round, driver rating, car rating]."""
+
+    code: str
+    history: list[list[int]]
 
 
 class DriverListEntry(_Model):

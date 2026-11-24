@@ -5,6 +5,7 @@ const items = [
   { label: "Home", path: "/" },
   { label: "Races", path: "/explore" },
   { label: "Standings", path: "/standings" },
+  { label: "Ratings", path: "/ratings" },
   { label: "Sim", path: "/simulation" },
   { label: "About", path: "/about_app" },
 ];

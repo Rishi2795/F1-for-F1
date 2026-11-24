@@ -21,6 +21,8 @@ from .models import (
     DriverProfile,
     RaceDoc,
     RaceIndex,
+    RatingsCurrent,
+    RatingSummary,
     SeasonStandings,
     SeasonSummary,
 )
@@ -83,6 +85,11 @@ class Publisher:
     def publish_index(self, index: RaceIndex) -> None:
         write_if_changed(self.root / "seasons" / str(index.season) / "races.json", dumps(index))
 
+    # -- ratings ---------------------------------------------------------------
+    def load_ratings(self) -> RatingsCurrent | None:
+        path = self.root / "ratings" / "current.json"
+        return RatingsCurrent.model_validate_json(path.read_text(encoding="utf-8")) if path.exists() else None
+
     # -- champions -------------------------------------------------------------
     def load_champions(self) -> Champions | None:
         path = self.root / "champions.json"
@@ -137,6 +144,8 @@ class Publisher:
                 for drv in doc.drivers:
                     rows.setdefault(drv.driver_code, {}).setdefault(season, []).append((doc, drv))
         champions = self.load_champions()
+        ratings = self.load_ratings()
+        rated = {r.code: r for r in ratings.ratings} if ratings else {}
         listing: list[DriverListEntry] = []
         for code, by_season in rows.items():
             summaries = [_summarise(season, items) for season, items in sorted(by_season.items(), reverse=True)]
@@ -151,6 +160,7 @@ class Publisher:
             profile = DriverProfile(
                 code=code, name=last_drv.driver_name, team=last_drv.team, number=last_drv.driver_number,
                 latest_season=latest.season, titles=len(title_years), title_years=title_years,
+                rating=_rating_summary(rated.get(code), ratings),
                 stats=latest, seasons=summaries,
             )
             write_if_changed(self.root / "drivers" / f"{code}.json", dumps(profile))
@@ -158,6 +168,7 @@ class Publisher:
                 DriverListEntry(
                     code=code, name=last_drv.driver_name, team=last_drv.team, country=None,
                     titles=len(title_years), latest_season=latest.season,
+                    rating=float(rated[code].overall) if code in rated else None,
                 )
             )
         listing.sort(key=lambda d: (-d.latest_season, d.name))
@@ -199,6 +210,7 @@ class Publisher:
                     problems.extend(_structural_problems(season, entry.round, doc))
         for season in seasons:
             problems.extend(self._standings_problems(season))
+        problems.extend(self._ratings_problems())
         manifest = self.root / "manifest.json"
         if not manifest.exists():
             problems.append("manifest.json missing")
@@ -236,6 +248,25 @@ class Publisher:
         for d in final.drivers:
             if d.points + 1e-6 < race_points.get(d.code, 0.0):
                 found.append(f"{where} {d.code}: standings points {d.points} < race points {race_points[d.code]}")
+        return found
+
+    def _ratings_problems(self) -> list[str]:
+        ratings = self.load_ratings()
+        if ratings is None:
+            return []
+        found: list[str] = []
+        if not (self.root / "ratings" / "model.json").exists():
+            found.append("ratings: model card missing")
+        overall = [r.overall for r in ratings.ratings]
+        if overall != sorted(overall, reverse=True):
+            found.append("ratings: not sorted by overall rating")
+        if [r.rank for r in ratings.ratings] != list(range(1, len(ratings.ratings) + 1)):
+            found.append("ratings: ranks are not 1..n")
+        for r in ratings.ratings:
+            if not (self.root / "ratings" / "history" / f"{r.code}.json").exists():
+                found.append(f"ratings: history missing for {r.code}")
+            if abs((r.driver - 1500) + (r.car - 1500) - (r.overall - 1500)) > 2:  # rounding only
+                found.append(f"ratings {r.code}: overall is not driver + car")
         return found
 
     def content_hash(self) -> str:
@@ -312,6 +343,15 @@ def _structural_problems(season: int, rnd: int, doc: RaceDoc) -> list[str]:
 
 def _mean(values: list[float]) -> float | None:
     return round(statistics.fmean(values), 2) if values else None
+
+
+def _rating_summary(row, ratings) -> RatingSummary | None:
+    if row is None or ratings is None:
+        return None
+    return RatingSummary(
+        overall=row.overall, driver=row.driver, car=row.car, rank=row.rank, races=row.races,
+        provisional=row.provisional, as_of=f"{ratings.season} R{ratings.round}",
+    )
 
 
 def _summarise(season: int, items: list[tuple[RaceDoc, Any]]) -> SeasonSummary:

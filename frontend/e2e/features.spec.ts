@@ -116,7 +116,7 @@ test.describe("footer, methodology and race story", () => {
     await footer.getByRole("link", { name: "Methodology and data coverage" }).click();
     await expect(page).toHaveURL(/\/methodology$/);
     await expect(page.getByRole("heading", { name: "How the numbers are made" })).toBeVisible();
-    await expect(page.locator("tbody tr")).toHaveCount(7); // 2020-2026
+    await expect(page.getByRole("table", { name: /Races by completeness/ }).locator("tbody tr")).toHaveCount(7); // 2020-2026
     await expect(page.getByRole("link", { name: "2022 Monaco Grand Prix" })).toBeVisible(); // a known partial race
     await expect(page.getByText(/Data last built/).first()).toBeVisible();
   });
@@ -135,5 +135,33 @@ test.describe("footer, methodology and race story", () => {
     for (const jargon of ["SYS_ACTIVE", "CIRCUIT_ARCHITECTURE", "Alpha_Pilot", "Selection_Sync", "Unit_Efficiency"]) {
       expect(text, jargon).not.toContain(jargon);
     }
+  });
+});
+
+test.describe("driver and car ratings", () => {
+  test("leaderboard ranks the grid and links to profiles", async ({ page }) => {
+    await page.goto("/ratings");
+    await expect(page.getByRole("heading", { name: "Driver or car?" })).toBeVisible();
+    const rows = page.getByRole("table").getByRole("row");
+    await expect(rows.nth(11)).toBeVisible(); // header + more than ten drivers, once loaded
+    await expect(rows.nth(1).getByRole("cell").first()).toHaveText("1");
+    await rows.nth(1).getByRole("link").click();
+    await expect(page).toHaveURL(/\/driver\/[A-Z]{3}$/);
+  });
+
+  test("profile shows the driver/car split and a history chart", async ({ page }) => {
+    await page.goto("/driver/VER");
+    const panel = page.getByRole("region", { name: /driver & car rating/i });
+    await expect(panel.getByText(/Overall · #\d+/)).toBeVisible();
+    await expect(panel.getByRole("img", { name: /^Driver skill \d+, average is 1500/ })).toBeVisible();
+    await expect(panel.getByRole("img", { name: /driver skill \d+ to \d+, car strength/i })).toBeVisible();
+  });
+
+  test("methodology states how accurate the model is, honestly", async ({ page }) => {
+    await page.goto("/methodology#ratings");
+    const section = page.getByRole("region", { name: "The ratings model" });
+    await expect(section.getByRole("table", { name: /Prediction accuracy/ })).toBeVisible();
+    await expect(section.getByText(/Honest reading|Ratings improve/)).toBeVisible();
+    await expect(section.getByRole("table", { name: /Predicted versus observed/ })).toBeVisible();
   });
 });

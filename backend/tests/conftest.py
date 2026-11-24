@@ -33,6 +33,9 @@ def data_dir(tmp_path: Path) -> Path:
     )
     _write(tmp_path / "drivers" / "index.json", [{"code": "VER", "name": "Max Verstappen"}])
     _write(tmp_path / "drivers" / "VER.json", {"code": "VER", "name": "Max Verstappen"})
+    _write(tmp_path / "ratings" / "current.json", {"version": "ratings-v1", "ratings": [{"code": "VER", "overall": 1900}]})
+    _write(tmp_path / "ratings" / "model.json", {"version": "ratings-v1", "metrics": {}})
+    _write(tmp_path / "ratings" / "history" / "VER.json", {"code": "VER", "history": [[2024, 1, 1500, 1500]]})
     _write(tmp_path / "coverage.json", {"seasons": {}})
     _write(tmp_path / "manifest.json", {"schema_version": 1})
     return tmp_path

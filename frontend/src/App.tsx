@@ -18,6 +18,7 @@ const DriversHub = lazy(() => import("./pages/drivers"));
 const AboutPage = lazy(() => import("./pages/about_app"));
 const NotFound = lazy(() => import("./pages/notfound"));
 const Standings = lazy(() => import("./pages/standings"));
+const Ratings = lazy(() => import("./pages/ratings"));
 const Methodology = lazy(() => import("./pages/methodology"));
 const StandingsRedirect = lazy(() => import("./pages/standings").then((m) => ({ default: m.StandingsRedirect })));
 
@@ -50,6 +51,7 @@ export default function App() {
               <Route path="/explore" element={<Home />} />
               <Route path="/race/:year/:round" element={<RaceDashboard />} />
 
+              <Route path="/ratings" element={<Ratings />} />
               <Route path="/methodology" element={<Methodology />} />
               <Route path="/standings" element={<StandingsRedirect />} />
               <Route path="/season/:year" element={<Standings />} />

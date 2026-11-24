@@ -147,10 +147,33 @@ def run_ingest(
     finished = {int(y) for y, b in coverage["seasons"].items() if b["expected_rounds"] and not b["scheduled"]}
     _ingest_champions(jolpica, publisher, today, finished, refresh)
     drivers = publisher.rebuild_drivers()
+    run_ratings(publisher, audit)
     digest = publisher.publish_manifest({"upstream_commits": upstream})
     audit.record("publish.bundle", str(config.PUBLISHED_DIR.name), "success",
                  details={"content_sha256": digest, "drivers": drivers, "seasons": sorted(blocks)})
     return 1 if failures else 0
+
+
+def run_ratings(publisher: Publisher, audit: AuditLog) -> None:
+    """Fit the driver/car rating model on the published races and publish it (about 2 seconds)."""
+    from .ratings.data import load_races
+    from .ratings.publish import publish_ratings
+    from .ratings.report import build_report
+
+    races = load_races(publisher)
+    if len(races) < 30:
+        log.warning("ratings: only %d races published; skipping", len(races))
+        return
+    report = build_report(races)
+    rated = publish_ratings(publisher, report)
+    publisher.rebuild_drivers()  # drivers carry their rating
+    card = report["card"]
+    log.info("ratings: %d drivers rated through %s R%s", rated, card["as_of"]["season"], card["as_of"]["round"])
+    audit.record(
+        "ratings.build", "ratings", "success",
+        details={"version": card["version"], "drivers": rated, "test_pairs": card["test"]["pairs"],
+                 "log_loss": {k: v["log_loss"] for k, v in card["metrics"].items()}},
+    )
 
 
 def _ingest_champions(jolpica, publisher, today, finished_seasons: set[int], refresh: bool) -> None:
@@ -250,6 +273,7 @@ def main(argv: list[str] | None = None) -> int:
     ing.add_argument("--no-openf1", action="store_true")
     sub.add_parser("verify-audit", help="check the audit log hash chain")
     sub.add_parser("validate", help="validate the published data bundle (CI data-quality gate)")
+    sub.add_parser("ratings", help="rebuild driver and car ratings from the published races")
     parser.add_argument("--log-level", default=None)
     args = parser.parse_args(argv)
     setup_logging(args.log_level)
@@ -261,6 +285,11 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         log.error("audit chain BROKEN after %d entries: %s", count, problem)
         return 2
+    if args.command == "ratings":
+        publisher = Publisher()
+        run_ratings(publisher, AuditLog())
+        publisher.publish_manifest({})
+        return 0
     if args.command == "validate":
         problems = Publisher().validate()
         for problem in problems:

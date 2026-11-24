@@ -5,6 +5,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { ErrorState, Skeleton } from "../components/ui/states";
 import { ChampionBadge } from "../components/ui/championbadge";
 import { fmt, fmtSigned } from "../lib/format";
+import { RatingPanel } from "../components/ratings/ratingpanel";
 import type { DriverProfile } from "../types/api";
 
 /* DNA and AI insight arrive with the ratings model (see plan.md). The API answers 404
@@ -116,6 +117,8 @@ export default function DriverPage() {
               <Mini label="Recent form (avg finish, last 5)" value={fmt(s.recent_form)} />
             </Grid4>
           </Panel>
+
+          {driver.rating && <RatingPanel code={driver.code} name={driver.name} rating={driver.rating} />}
 
           <Panel title="BY SEASON">
             <div className="overflow-x-auto">
