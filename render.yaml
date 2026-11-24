@@ -1,0 +1,31 @@
+# Render Blueprint for the API. Frontend is on Vercel.
+#
+# Using it creates a NEW service (f1-for-f1-api.onrender.com). To keep your existing service and URL,
+# skip this file and set the same values in that service's dashboard instead (see docs/deploy.md).
+# Not validated against Render's schema from here: Render reports any problem when you sync the Blueprint.
+services:
+  - type: web
+    name: f1-for-f1-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    # Deploy only after this repo's CI (tests, data-quality gate, browser tests) has passed.
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: APP_ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        value: https://f1-for-f1.vercel.app
+      - key: TRUST_PROXY # Render adds exactly one proxy hop
+        value: "true"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "240"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_IP_SALT
+        generateValue: true
