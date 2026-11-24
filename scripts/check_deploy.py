@@ -120,6 +120,10 @@ def run(base: str, origin: str | None, expect_season: int | None) -> int:
     else:
         r.check(False, "found a played race to test")
 
+    standings = request(f"{api}/seasons/{latest}/standings")
+    srounds = (standings.data() or {}).get("rounds", []) if standings.status == 200 else []
+    r.check(bool(srounds), f"{latest} standings are served", f"{len(srounds)} rounds")
+
     drivers = request(f"{api}/drivers")
     listed = drivers.data() if drivers.status == 200 else None
     r.check(isinstance(listed, list) and len(listed) >= 20, "/api/drivers is served", f"{len(listed) if isinstance(listed, list) else 'HTTP ' + str(drivers.status)} drivers")

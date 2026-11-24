@@ -154,3 +154,12 @@ def test_conditional_get_accepts_weak_etags_lists_and_star(client):
         assert response.status_code == 304, header
     for header in ('"something-else"', 'W/"something-else"', ""):
         assert client.get("/api/seasons/2024/races/1", headers={"If-None-Match": header}).status_code == 200, header
+
+
+def test_standings(client):
+    body = client.get("/api/seasons/2024/standings").json()
+    assert body["season"] == 2024 and body["rounds"][0]["round"] == 1
+    assert client.head("/api/seasons/2024/standings").headers["etag"]
+    missing = client.get("/api/seasons/2023/standings")
+    assert missing.status_code == 404 and missing.json()["error"] == "not_available"
+    assert client.get("/api/seasons/1900/standings").status_code == 422

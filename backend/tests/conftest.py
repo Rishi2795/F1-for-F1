@@ -27,6 +27,10 @@ def data_dir(tmp_path: Path) -> Path:
         ]},
     )
     _write(tmp_path / "seasons" / "2024" / "race_1.json", {"season": 2024, "round": 1, "drivers": []})
+    _write(
+        tmp_path / "seasons" / "2024" / "standings.json",
+        {"season": 2024, "rounds": [{"round": 1, "event_name": "Bahrain Grand Prix", "drivers": [], "constructors": []}]},
+    )
     _write(tmp_path / "drivers" / "index.json", [{"code": "VER", "name": "Max Verstappen"}])
     _write(tmp_path / "drivers" / "VER.json", {"code": "VER", "name": "Max Verstappen"})
     _write(tmp_path / "coverage.json", {"seasons": {}})

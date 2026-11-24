@@ -31,6 +31,15 @@ def list_races(request: Request, year: Year, store: PublishedStore = Depends(get
     return json_response(request, blob)
 
 
+@router.api_route("/{year}/standings", methods=["GET", "HEAD"])
+def get_standings(request: Request, year: Year, store: PublishedStore = Depends(get_store)):
+    """Official championship standings after every played round (sprint points included)."""
+    blob = store.get("seasons", str(year), "standings.json")
+    if blob is None:
+        raise not_available(f"Standings for {year}")
+    return json_response(request, blob)
+
+
 @router.api_route("/{year}/races/{round_number}", methods=["GET", "HEAD"])
 def get_race(request: Request, year: Year, round_number: Round, store: PublishedStore = Depends(get_store)):
     blob = store.get("seasons", str(year), f"race_{round_number}.json")
