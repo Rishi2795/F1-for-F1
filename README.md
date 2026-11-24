@@ -67,60 +67,42 @@ All attributes are explainable and traceable — no black-box logic.
 
 Data Flow
 
-FastF1 (offline) → Precompute scripts → MongoDB Atlas → FastAPI → React UI
+Free public sources → pipeline (validate, derive metrics) → static JSON → read-only FastAPI → React UI
+
+	•	Sources: Jolpica-F1 (results, pit stops), TracingInsights (per-lap tyres, stints, weather), OpenF1 (fallback). No account, API key or subscription is needed anywhere.
+	•	The pipeline (pipeline/) runs offline: python -m f1data ingest. It never invents data: a missing value is null and the race is flagged partial.
+	•	The API (backend/) only serves precomputed files. It never calls an upstream service while a user waits.
+	•	Every pipeline run is recorded in a tamper-evident audit log (audit/). Application logs are structured JSON; nothing prints.
 
 Key Design Decisions
-	•	No live telemetry scraping
-	•	All race data is precomputed
-	•	API is read-only at runtime
-	•	Stateless backend
-	•	Explainable metrics only
+	•	Precompute everything; the API is read-only and stateless
+	•	Honest data: gaps are shown as gaps, with a public coverage report (/api/coverage)
+	•	Explainable metrics only (rule-based ones are labelled rule_based_v1)
+	•	Credential-free by design: no F1TV/F1 account dependency
 
-This makes the system:
-	•	Stable
-	•	Scalable
-	•	Production-safe
-	•	Interview-ready
+Run locally: see docs/deploy.md. Performance measurements: docs/perf-baseline.md. Roadmap and ML plan: plan.md.
 
 ⸻
 
 🛠️ Tech Stack
 
 Frontend
-	•	React + TypeScript
-	•	Vite
-	•	Tailwind CSS
-	•	Responsive, mobile-first UI
-	•	Pitch-black F1-inspired design
-	•	Hover-driven micro-interactions
+	•	React + TypeScript, Vite, Tailwind CSS
+	•	Route-level code splitting, cached API client, skeleton and error states
 
 Backend
-	•	Python 3.11
-	•	FastAPI
-	•	Modular strategy & analysis engine
-	•	Clean REST APIs
-	•	No blocking operations
+	•	Python 3.11, FastAPI (read-only), structured logging, rate limiting, strict CORS
 
-Database
-	•	MongoDB Atlas (Cloud)
-	•	Precomputed multi-season race documents
-	•	Indexed for fast retrieval
-	•	Shared access for collaboration
-
-Data & Analytics
-	•	FastF1 (offline only)
-	•	Pandas / NumPy
-	•	Rule-based strategy & behaviour models
-	•	ML-ready architecture (future)
+Pipeline
+	•	Python, pydantic-validated published schema, hash-chained audit log
 
 Deployment
-	•	Frontend: Vercel
-	•	Backend: Render (Free Tier)
-	•	Database: MongoDB Atlas (Free Tier)
+	•	Frontend: Vercel · API: Render · No database
 
+⸻
 
 📊 Data Coverage
-	•	Seasons: 2020 → 2025
+	•	Seasons: 2020 → 2026
 	•	Race sessions only (by design)
 	•	All data precomputed & cached
 	•	Safe for deployment & sharing
