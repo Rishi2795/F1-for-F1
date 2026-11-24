@@ -5,3 +5,23 @@
 body {
   @apply bg-slate-950 text-slate-100;
 }
+
+/* Standings chart: lines are revealed left to right once; skipped for people who prefer reduced motion. */
+@keyframes f1-reveal {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.f1-reveal {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: f1-reveal 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .f1-reveal {
+    animation: none;
+  }
+}

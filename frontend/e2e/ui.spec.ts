@@ -210,9 +210,46 @@ test.describe("standings", () => {
     await expect(chart.locator("polyline")).toHaveCount(7);
     await page.getByRole("button", { name: "VER", exact: true }).click();
     await expect(chart.locator("polyline")).toHaveCount(6);
+    await chart.scrollIntoViewIfNeeded(); // the page is taller than the window; the mouse must land on the chart
     const box = await chart.boundingBox();
     await page.mouse.move(box!.x + box!.width * 0.98, box!.y + box!.height / 2);
     await expect(page.getByText(/R24 · Abu Dhabi GP/)).toBeVisible();
+  });
+
+  test("podium shows the top three; for teams the sub-line lists their drivers", async ({ page }) => {
+    await page.goto("/season/2021");
+    const podium = page.getByRole("list", { name: "Top three" });
+    await expect(podium.getByRole("listitem")).toHaveCount(3);
+    await expect(podium.getByRole("listitem").first()).toContainText("Max Verstappen"); // 2021 drivers' champion
+    await expect(podium.getByRole("listitem").first()).toContainText("395.5");
+    await page.getByRole("tab", { name: "constructors" }).click();
+    await expect(podium.getByRole("listitem").first()).toContainText("Mercedes");
+    await expect(podium.getByRole("listitem").first()).toContainText("HAM · BOT");
+    await expect(podium.getByRole("listitem").first()).toContainText("613.5");
+  });
+
+  test("gap view re-plots the same data as points behind the leader", async ({ page }) => {
+    await page.goto("/season/2024");
+    await page.getByRole("button", { name: "Gap to leader" }).click();
+    await expect(page.getByRole("heading", { name: "Points behind the leader" })).toBeVisible();
+    const chart = page.getByRole("img", { name: /Line chart of drivers championship points behind the leader/ });
+    await expect(chart).toBeVisible();
+    await expect(chart.getByText("Leader", { exact: true })).toBeVisible(); // the zero line is labelled
+    await page.getByRole("button", { name: "Total points" }).click();
+    await expect(page.getByRole("heading", { name: "Points after each round" })).toBeVisible();
+  });
+
+  test("on a phone the table keeps points and drops the secondary columns, with no sideways scroll", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/season/2024");
+    await expect(page.getByRole("columnheader", { name: "Points" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Gap" })).toBeHidden();
+    await expect(page.locator("tbody tr").first()).toContainText("437");
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+    // the chart is drawn at real size, not a shrunken desktop chart: its axis text is at least ~11px on screen
+    const fontPx = await page.getByRole("img", { name: /Line chart/ }).locator("text").first().evaluate((el) => el.getBoundingClientRect().height);
+    expect(fontPx).toBeGreaterThan(9);
   });
 
   test("/standings goes to the latest season; the dock highlights Standings", async ({ page }) => {
