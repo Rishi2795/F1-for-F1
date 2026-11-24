@@ -228,6 +228,26 @@ test.describe("standings", () => {
     await expect(podium.getByRole("listitem").first()).toContainText("613.5");
   });
 
+  test("reduced motion: no entrance animations, points show their final value at once", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/season/2024");
+    const first = page.getByRole("list", { name: "Top three" }).getByRole("listitem").first();
+    // the visible (aria-hidden) digits equal the final value immediately, not a mid-count number
+    await expect(first.locator('span[aria-hidden="true"]').filter({ hasText: /^437$/ })).toBeVisible({ timeout: 500 });
+    const names = await page.evaluate(() => [...document.querySelectorAll(".f1-rise, .f1-drive")].map((el) => getComputedStyle(el).animationName));
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.every((n) => n === "none")).toBe(true);
+  });
+
+  test("the header car artwork loads and is hidden from assistive tech", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/season/2024");
+    const car = page.locator("img.f1-drive");
+    await expect(car).toHaveAttribute("alt", "");
+    await expect.poll(() => car.evaluate((el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0)).toBe(true);
+    await expect(car).toBeVisible();
+  });
+
   test("gap view re-plots the same data as points behind the leader", async ({ page }) => {
     await page.goto("/season/2024");
     await page.getByRole("button", { name: "Gap to leader" }).click();

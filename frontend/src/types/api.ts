@@ -121,6 +121,8 @@ export type DriverProfile = {
 export type StandingsDriver = {
   code: string;
   name: string;
+  /** The number raced with that season (not the driver's current number). */
+  number: number | null;
   team: string | null;
   team_color: string | null;
   position: number | null;
