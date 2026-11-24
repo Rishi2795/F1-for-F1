@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 const items = [
   { label: "Home", path: "/" },
   { label: "Races", path: "/explore" },
+  { label: "Standings", path: "/standings" },
   { label: "Sim", path: "/simulation" },
   { label: "About", path: "/about_app" },
 ];
@@ -57,7 +58,7 @@ export default function FloatingDock() {
         "
       >
         {items.map((item) => {
-          const active = pathname === item.path;
+          const active = pathname === item.path || (item.path === "/standings" && pathname.startsWith("/season/"));
 
           return (
             <Link

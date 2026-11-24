@@ -19,7 +19,8 @@ export default defineConfig({
     {
       command: "npm run build && npx vite preview --port 4173 --host 127.0.0.1",
       url: "http://127.0.0.1:4173",
-      reuseExistingServer: !process.env.CI,
+      // Always build and serve fresh. Reusing a leftover server silently tests a stale build.
+      reuseExistingServer: false,
       env: { VITE_API_URL: "http://localhost:8000/api" },
       timeout: 120_000,
     },

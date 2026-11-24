@@ -167,6 +167,68 @@ test.describe("drivers", () => {
   });
 });
 
+test.describe("standings", () => {
+  test("2024: official order and points, constructors tab, season switch", async ({ page }) => {
+    const errors = trackErrors(page);
+    await page.goto("/season/2024");
+    await expect(page.getByRole("heading", { name: "2024 standings" })).toBeVisible();
+    await expect(page).toHaveTitle(/2024 championship standings/);
+    const first = page.locator("tbody tr").first();
+    await expect(first).toContainText("Max Verstappen");
+    await expect(first).toContainText("437");
+    await expect(page.locator("tbody tr").nth(1)).toContainText("Lando Norris");
+    await page.getByRole("tab", { name: "constructors" }).click();
+    await expect(page.locator("tbody tr").first()).toContainText("McLaren");
+    await expect(page.locator("tbody tr").first()).toContainText("666");
+    await page.getByLabel("Season").selectOption("2023");
+    await expect(page).toHaveURL(/\/season\/2023$/);
+    await expect(page.getByRole("heading", { name: "2023 standings" })).toBeVisible();
+    await page.getByRole("tab", { name: "drivers" }).click();
+    await expect(page.locator("tbody tr").first()).toContainText("575");
+    expect(errors).toEqual([]);
+  });
+
+  test("tabs work with the arrow keys", async ({ page }) => {
+    await page.goto("/season/2024");
+    const drivers = page.getByRole("tab", { name: "drivers" });
+    await drivers.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("tab", { name: "constructors" })).toHaveAttribute("aria-selected", "true");
+    await page.keyboard.press("ArrowLeft");
+    await expect(drivers).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("chart: 6 lines by default, lines can be toggled, hover shows exact points", async ({ page }) => {
+    await page.goto("/season/2024");
+    const chart = page.getByRole("img", { name: /Line chart of drivers championship points/ });
+    await expect(chart).toBeVisible();
+    await expect(chart.locator("polyline")).toHaveCount(6);
+    const ham = page.getByRole("button", { name: "HAM", exact: true });
+    await expect(ham).toHaveAttribute("aria-pressed", "false");
+    await ham.click();
+    await expect(ham).toHaveAttribute("aria-pressed", "true");
+    await expect(chart.locator("polyline")).toHaveCount(7);
+    await page.getByRole("button", { name: "VER", exact: true }).click();
+    await expect(chart.locator("polyline")).toHaveCount(6);
+    const box = await chart.boundingBox();
+    await page.mouse.move(box!.x + box!.width * 0.98, box!.y + box!.height / 2);
+    await expect(page.getByText(/R24 · Abu Dhabi GP/)).toBeVisible();
+  });
+
+  test("/standings goes to the latest season; the dock highlights Standings", async ({ page }) => {
+    await page.goto("/standings");
+    await expect(page).toHaveURL(/\/season\/2026$/);
+    await expect(page.getByRole("link", { name: "Standings", exact: true })).toHaveClass(/text-red-600/);
+  });
+
+  test("bad seasons explain themselves", async ({ page }) => {
+    for (const path of ["/season/abc", "/season/1999", "/season/2019"]) {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { name: "We couldn't find that season" }), path).toBeVisible();
+    }
+  });
+});
+
 test.describe("pages and assets", () => {
   for (const [path, title] of [
     ["/", /F1 for F1/],
@@ -202,7 +264,7 @@ test.describe("pages and assets", () => {
 
   test("no horizontal scrolling on a phone", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    for (const path of ["/explore", "/race/2020/1", "/drivers", "/driver/VER", "/about_app"]) {
+    for (const path of ["/explore", "/race/2020/1", "/drivers", "/driver/VER", "/about_app", "/season/2024"]) {
       await page.goto(path, { waitUntil: "networkidle" });
       await expect(page.locator('[role="status"]')).toHaveCount(0); // data has finished loading
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

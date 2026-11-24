@@ -55,6 +55,14 @@
 - ⬜ Rate limiter is per-process memory (fine for one instance). 2026 data is shown as published upstream and not independently verified.
 - ⬜ Nothing is committed: the git identity isn't configured and you didn't ask for a commit. The `git rm`/edits are in the working tree.
 
+## 0c. Feature log
+
+| Date | Feature | Notes |
+|---|---|---|
+| 2026-11-25 | **Season standings + championship progression chart** (`/season/:year`, `/standings`, `GET /api/seasons/{year}/standings`) | Official Jolpica standings after every round, so **sprint points are now included**. Drivers and constructors tabs, points-after-each-round chart (dependency-free SVG, 4 KB gzipped page), gap and lead changes. Validation: official points are never lower than the race points we publish, points never decrease between rounds, positions are unique. All 2020–2026 seasons published. |
+
+Also fixed on the way: weak-ETag conditional requests (found by running the deploy check against the live service), and the deploy check now detects a missing `ALLOWED_ORIGINS` / `APP_ENV`.
+
 ---
 
 ## 1. Findings from the code review

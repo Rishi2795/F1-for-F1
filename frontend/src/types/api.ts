@@ -117,3 +117,35 @@ export type DriverProfile = {
   stats: SeasonSummary;
   seasons: SeasonSummary[];
 };
+
+export type StandingsDriver = {
+  code: string;
+  name: string;
+  team: string | null;
+  team_color: string | null;
+  position: number | null;
+  points: number;
+  wins: number;
+};
+
+export type StandingsConstructor = {
+  name: string;
+  team_color: string | null;
+  position: number | null;
+  points: number;
+  wins: number;
+};
+
+export type StandingsRound = {
+  round: number;
+  event_name: string;
+  drivers: StandingsDriver[];
+  constructors: StandingsConstructor[];
+};
+
+/** Official championship standings after every played round (sprint points included). */
+export type SeasonStandings = {
+  season: number;
+  source: string;
+  rounds: StandingsRound[];
+};
