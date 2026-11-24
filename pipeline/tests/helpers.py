@@ -2,10 +2,10 @@ from f1data.sources.jolpica import PitStopRow, ResultRow, ScheduleEntry
 from f1data.sources.tracinginsights import Lap
 
 
-def lap(n, time=90.0, compound="SOFT", stint=1, life="auto", status="1", pin=False, pout=False, **kw):
+def lap(n, time=90.0, compound="SOFT", stint=1, life="auto", status="1", pin=False, pout=False, team="T", **kw):
     return Lap(
         lap=n, time_s=time, compound=compound, stint=stint, tyre_life=n if life == "auto" else life,
-        fresh=True, position=1, track_status=status, pit_in=pin, pit_out=pout, deleted=False, team="T",
+        fresh=True, position=1, track_status=status, pit_in=pin, pit_out=pout, deleted=False, team=team,
         air_temp=25.0, track_temp=40.0, humidity=50.0, rainfall=False, **kw,
     )
 

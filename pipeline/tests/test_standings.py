@@ -80,3 +80,25 @@ def test_validate_flags_standings_that_contradict_the_race_data(tmp_path):
     pub2 = Publisher(tmp_path / "other")
     make(pub2, [10], race_points=25.0)  # official 10 < race points 25: impossible
     assert any("< race points" in p for p in pub2._standings_problems(2024))
+
+
+def test_titles_count_only_when_code_and_name_both_match(tmp_path):
+    from f1data.models import Champion, Champions
+
+    pub = Publisher(tmp_path)
+    doc = race_doc(1)
+    pub.publish_race(doc)
+    pub.publish_champions(
+        Champions(champions=[
+            Champion(season=2008, code="VER", name="Driver VER"),   # same code and name: counts
+            Champion(season=2010, code="VER", name="Someone Else"),  # same 3-letter code, different person: ignored
+            Champion(season=2012, code="HAM", name="Driver HAM"),
+        ])
+    )
+    pub.rebuild_drivers()
+    import json
+
+    profile = json.loads((tmp_path / "drivers" / "VER.json").read_text())
+    assert profile["titles"] == 1 and profile["title_years"] == [2008]
+    listing = {d["code"]: d for d in json.loads((tmp_path / "drivers" / "index.json").read_text())}
+    assert listing["VER"]["titles"] == 1 and listing["HAM"]["titles"] == 1

@@ -69,3 +69,19 @@ def test_driver_matched_by_number_when_codes_differ():
     laps.drivers["XXX"].number = 1
     doc = build_race(RaceInputs(ENTRY, [result("VER", number=1)], [STOP], laps))
     assert doc.drivers[0].laps_available is True
+
+
+def test_driver_without_lap_data_borrows_team_name_and_colour_from_teammate():
+    # 2026 Brazil: BOT had no lap data, so he showed as "Cadillac F1 Team" with no colour beside PER on "Cadillac"
+    rows = [result("PER", 8, 9, number=11), result("BOT", 12, 10, number=77)]
+    rows = [r.__class__(**{**r.__dict__, "constructor": "Cadillac F1 Team"}) for r in rows]
+    laps = RaceLaps("T", "2024-03-02", 40, {"PER": _laps("PER").__class__("PER", 11, _laps("PER").laps)}, {"PER": "FFFFFF"}, {"PER": "Cadillac"})
+    doc = build_race(RaceInputs(ENTRY, rows, [], laps))
+    by = {d.driver_code: d for d in doc.drivers}
+    assert by["BOT"].laps_available is False
+    assert (by["BOT"].team, by["BOT"].team_color) == ("Cadillac", "#FFFFFF") == (by["PER"].team, by["PER"].team_color)
+
+
+def test_without_any_lap_archive_the_jolpica_constructor_name_is_used():
+    doc = build_race(RaceInputs(ENTRY, [result("VER")], [], None))
+    assert doc.drivers[0].team == "Team" and doc.drivers[0].team_color is None

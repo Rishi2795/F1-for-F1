@@ -163,6 +163,8 @@ class DriverProfile(_Model):
     nationality: str | None = None
     image: str | None = None
     latest_season: int
+    titles: int = 0  # drivers' world championships, all-time
+    title_years: list[int] = Field(default_factory=list)
     stats: SeasonSummary
     seasons: list[SeasonSummary]
 
@@ -210,4 +212,18 @@ class SeasonStandings(_Model):
     schema_version: int = SCHEMA_VERSION
     season: int
     source: str = "jolpica"
+    complete: bool = False  # True once the season's final round is in: the leader is then the champion
     rounds: list[StandingsRound]
+
+
+class Champion(_Model):
+    season: int
+    code: str
+    name: str
+
+
+class Champions(_Model):
+    """Drivers' world champions of every finished season (1950 onward)."""
+
+    schema_version: int = SCHEMA_VERSION
+    champions: list[Champion]

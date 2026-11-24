@@ -13,11 +13,12 @@ from datetime import UTC, date, datetime, timedelta
 from . import config
 from .audit import AuditLog
 from .build import RaceInputs, build_race
+from .consistency import fill_team_colors
 from .coverage import build_coverage, race_row, regressions, season_block
 from .errors import F1DataError, SourceUnavailable
 from .export import Publisher
 from .logging_setup import get_logger, setup_logging
-from .models import RaceIndex, RaceIndexEntry, SeasonStandings
+from .models import Champion, Champions, RaceIndex, RaceIndexEntry, SeasonStandings
 from .sources.jolpica import JolpicaSource, ScheduleEntry
 from .sources.openf1 import OpenF1Source
 from .sources.tracinginsights import RaceLaps, TracingInsightsSource
@@ -119,6 +120,7 @@ def run_ingest(
             )
             rows.append(race_row(season, entry.round, entry.event_name, status, doc))
         publisher.publish_index(RaceIndex(season=season, races=entries))
+        fill_team_colors(publisher, season)
         standings_rounds = _ingest_standings(season, schedule, entries, rounds, jolpica, publisher, ttl, refresh, today)
         for row in rows:
             if row["status"] in ("ok", "partial"):
@@ -142,11 +144,32 @@ def run_ingest(
         log.error("coverage regression: %s", item)
         failures += 1
     publisher.publish_coverage(coverage)
+    finished = {int(y) for y, b in coverage["seasons"].items() if b["expected_rounds"] and not b["scheduled"]}
+    _ingest_champions(jolpica, publisher, today, finished, refresh)
     drivers = publisher.rebuild_drivers()
     digest = publisher.publish_manifest({"upstream_commits": upstream})
     audit.record("publish.bundle", str(config.PUBLISHED_DIR.name), "success",
                  details={"content_sha256": digest, "drivers": drivers, "seasons": sorted(blocks)})
     return 1 if failures else 0
+
+
+def _ingest_champions(jolpica, publisher, today, finished_seasons: set[int], refresh: bool) -> None:
+    """Drivers' champions of every finished season since 1950 (finished seasons never change, so cached forever)."""
+    seasons = sorted(set(range(1950, today.year)) | finished_seasons)
+    known = publisher.load_champions()
+    have = {c.season: c for c in known.champions} if known else {}
+    for season in seasons:
+        if season in have and not refresh:
+            continue
+        try:
+            row = jolpica.champion(season, refresh=refresh)
+        except F1DataError as exc:
+            log.warning("champion for %d unavailable (%s)", season, exc)
+            continue
+        if row:
+            have[season] = Champion(season=season, code=row.code, name=row.name)
+    changed = publisher.publish_champions(Champions(champions=[have[k] for k in sorted(have)]))
+    log.info("champions: %d seasons (%s)", len(have), "updated" if changed else "unchanged")
 
 
 def _ingest_standings(season, schedule, entries, rounds, jolpica, publisher, ttl, refresh, today) -> set[int]:
@@ -174,7 +197,13 @@ def _ingest_standings(season, schedule, entries, rounds, jolpica, publisher, ttl
             per_round[entry.round] = (entry.event_name, drivers, constructors)
     built = build_season_standings(season, per_round, race_docs)
     merged = {**kept, **{r.round: r for r in built.rounds}}
-    outcome = publisher.publish_standings(SeasonStandings(season=season, rounds=[merged[k] for k in sorted(merged)]))
+    # The leader of a finished season is its champion. Finished = every round played and in the standings.
+    complete = bool(schedule) and all(e.data_status != "scheduled" for e in entries) and max(merged, default=0) == max(
+        e.round for e in schedule
+    )
+    outcome = publisher.publish_standings(
+        SeasonStandings(season=season, complete=complete, rounds=[merged[k] for k in sorted(merged)])
+    )
     log.info("season %d standings: %d rounds (%s)", season, len(merged), outcome)
     return set(merged)
 

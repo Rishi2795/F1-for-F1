@@ -69,6 +69,13 @@ class ConstructorStandingRow:
     wins: int
 
 
+@dataclass(frozen=True)
+class ChampionRow:
+    season: int
+    code: str
+    name: str
+
+
 class JolpicaSource:
     name = "jolpica"
 
@@ -151,6 +158,16 @@ class JolpicaSource:
         data = self.http.get_json(path, {"limit": _PAGE}, ttl=ttl, refresh=refresh)
         rows = (_parse_constructor_standing(i) for i in _standings_list(data, "ConstructorStandings"))
         return [r for r in rows if r is not None]
+
+    def champion(self, season: int, *, ttl: float | None = None, refresh: bool = False) -> ChampionRow | None:
+        """The drivers' champion of a FINISHED season. For a season still running this returns the current
+        leader, so callers must only ask about seasons that are over."""
+        data = self.http.get_json(f"{season}/driverstandings/1.json", {"limit": 5}, ttl=ttl, refresh=refresh)
+        for item in _standings_list(data, "DriverStandings"):
+            row = _parse_driver_standing(item)
+            if row is not None and row.position == 1:
+                return ChampionRow(season=season, code=row.driver_code, name=row.driver_name)
+        return None
 
     def pit_stops(
         self, season: int, round_number: int, *, ttl: float | None = None, refresh: bool = False

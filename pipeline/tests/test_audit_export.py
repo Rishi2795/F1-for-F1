@@ -75,6 +75,8 @@ def test_validate_catches_tampering_and_missing_files(tmp_path):
     rows = [result(f"D{i:02d}", finish=i + 1, grid=i + 1, number=i + 1) for i in range(12)]
     doc = build_race(RaceInputs(ENTRY, rows, [], None))
     doc.quality.status = "partial"
+    for drv in doc.drivers:
+        drv.team_color = "#112233"  # validate() requires every driver to have a team colour
     pub.publish_race(doc)
     entry = RaceIndexEntry(season=2024, round=1, event_name="Test GP", location="X", country=None,
                            date="2024-03-02", data_status="partial")
@@ -87,3 +89,17 @@ def test_validate_catches_tampering_and_missing_files(tmp_path):
     assert any("manifest" in p for p in pub.validate())
     path.unlink()
     assert any("race file is missing" in p for p in pub.validate())
+
+
+def test_validate_flags_a_driver_without_a_team_colour(tmp_path):
+    from f1data.models import RaceIndex, RaceIndexEntry
+
+    pub = Publisher(tmp_path)
+    rows = [result(f"D{i:02d}", finish=i + 1, grid=i + 1, number=i + 1) for i in range(12)]
+    doc = build_race(RaceInputs(ENTRY, rows, [], None))
+    doc.quality.status = "partial"
+    pub.publish_race(doc)
+    entry = RaceIndexEntry(season=2024, round=1, event_name="Test GP", location="X", country=None, date="2024-03-02", data_status="partial")
+    pub.publish_index(RaceIndex(season=2024, races=[entry]))
+    pub.publish_manifest({})
+    assert any("no team colour" in p for p in pub.validate())

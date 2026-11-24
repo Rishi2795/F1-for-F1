@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import statistics
+from collections import Counter
 from dataclasses import dataclass, field
 
 from . import metrics
@@ -46,6 +47,37 @@ def _stints_from_openf1(items: list[OpenF1Stint], total_laps: int | None) -> lis
             )
         )
     return out
+
+
+def _team_lookup(results: list[ResultRow], laps: RaceLaps | None):
+    """Return ``row -> (team name, colour)``.
+
+    Names and colours come from the lap archive. A driver missing from it (no lap data) would otherwise fall
+    back to Jolpica's constructor name ("Cadillac F1 Team" next to teammates on "Cadillac") and lose the colour,
+    so we borrow both from a teammate in the same race: the same constructor has the same team.
+    """
+    known: dict[str, Counter[tuple[str, str | None]]] = {}
+    if laps:
+        for row in results:
+            team = laps.team_names.get(row.driver_code)
+            if team:
+                known.setdefault(row.constructor, Counter())[(team, _hex(laps.team_colors.get(row.driver_code)))] += 1
+
+    def lookup(row: ResultRow) -> tuple[str, str | None]:
+        if laps and laps.team_names.get(row.driver_code):
+            return laps.team_names[row.driver_code], _hex(laps.team_colors.get(row.driver_code))
+        own = _find_laps(row, laps)
+        lap_team = next((lap.team for lap in own.laps if lap.team), None) if own else None
+        if lap_team:  # the lap rows carry the team name even when drivers.json is missing for the race
+            return lap_team, None
+        votes = known.get(row.constructor)
+        return votes.most_common(1)[0][0] if votes else (row.constructor, None)
+
+    return lookup
+
+
+def _hex(color: str | None) -> str | None:
+    return f"#{color}" if color else None
 
 
 def _find_laps(row: ResultRow, laps: RaceLaps | None) -> DriverLaps | None:
@@ -113,6 +145,8 @@ def build_race(inputs: RaceInputs) -> RaceDoc:
     winner_stints = stints_by_code.get(winner_row.driver_code) if winner_row else None
     winner_stops = len(winner_stints) - 1 if winner_stints else None
 
+    team_lookup = _team_lookup(inputs.results, laps)
+
     for row in inputs.results:
         dl = _find_laps(row, laps)
         stints = stints_by_code[row.driver_code]
@@ -127,15 +161,14 @@ def build_race(inputs: RaceInputs) -> RaceDoc:
         )
         sequence = [s.compound or "UNKNOWN" for s in stints] if stints else None
         longest = max((s.laps for s in stints), default=None) if stints else None
-        team = (laps.team_names.get(row.driver_code) if laps else None) or row.constructor
-        color = laps.team_colors.get(row.driver_code) if laps else None
+        team, color = team_lookup(row)
         drivers.append(
             DriverRace(
                 driver_code=row.driver_code,
                 driver_number=row.driver_number,
                 driver_name=row.driver_name,
                 team=team,
-                team_color=f"#{color}" if color else None,
+                team_color=color,
                 finish=row.finish,
                 classified=row.classified,
                 status=row.status,

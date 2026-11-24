@@ -16,6 +16,7 @@ from . import SCHEMA_VERSION, config
 from .coverage import RANK
 from .logging_setup import get_logger
 from .models import (
+    Champions,
     DriverListEntry,
     DriverProfile,
     RaceDoc,
@@ -75,8 +76,20 @@ class Publisher:
             return "kept_previous"
         return "written" if write_if_changed(self.race_path(doc.season, doc.round), dumps(doc)) else "unchanged"
 
+    def write_race(self, doc: RaceDoc) -> bool:
+        """Rewrite an existing race document (used by season-wide clean-ups; no quality comparison)."""
+        return write_if_changed(self.race_path(doc.season, doc.round), dumps(doc))
+
     def publish_index(self, index: RaceIndex) -> None:
         write_if_changed(self.root / "seasons" / str(index.season) / "races.json", dumps(index))
+
+    # -- champions -------------------------------------------------------------
+    def load_champions(self) -> Champions | None:
+        path = self.root / "champions.json"
+        return Champions.model_validate_json(path.read_text(encoding="utf-8")) if path.exists() else None
+
+    def publish_champions(self, champions: Champions) -> bool:
+        return write_if_changed(self.root / "champions.json", dumps(champions))
 
     # -- standings -------------------------------------------------------------
     def standings_path(self, season: int) -> Path:
@@ -123,20 +136,28 @@ class Publisher:
                 doc = RaceDoc.model_validate_json(path.read_text(encoding="utf-8"))
                 for drv in doc.drivers:
                     rows.setdefault(drv.driver_code, {}).setdefault(season, []).append((doc, drv))
+        champions = self.load_champions()
         listing: list[DriverListEntry] = []
         for code, by_season in rows.items():
             summaries = [_summarise(season, items) for season, items in sorted(by_season.items(), reverse=True)]
             latest = summaries[0]
             _, last_drv = max(by_season[latest.season], key=lambda t: t[0].round)
+            # A title counts only if code AND name match, so two drivers who share a 3-letter code never mix.
+            title_years = sorted(
+                c.season
+                for c in (champions.champions if champions else [])
+                if c.code == code and c.name == last_drv.driver_name
+            )
             profile = DriverProfile(
                 code=code, name=last_drv.driver_name, team=last_drv.team, number=last_drv.driver_number,
-                latest_season=latest.season, stats=latest, seasons=summaries,
+                latest_season=latest.season, titles=len(title_years), title_years=title_years,
+                stats=latest, seasons=summaries,
             )
             write_if_changed(self.root / "drivers" / f"{code}.json", dumps(profile))
             listing.append(
                 DriverListEntry(
                     code=code, name=last_drv.driver_name, team=last_drv.team, country=None,
-                    latest_season=latest.season,
+                    titles=len(title_years), latest_season=latest.season,
                 )
             )
         listing.sort(key=lambda d: (-d.latest_season, d.name))
@@ -269,6 +290,8 @@ def _structural_problems(season: int, rnd: int, doc: RaceDoc) -> list[str]:
     for d in doc.drivers:
         if not d.team.strip() or not d.driver_name.strip():
             found.append(f"{where} {d.driver_code}: empty team or name")
+        if not d.team_color:
+            found.append(f"{where} {d.driver_code}: no team colour")
         if d.stints:
             for prev, cur in zip(d.stints, d.stints[1:], strict=False):
                 if cur.lap_start != prev.lap_end + 1:
