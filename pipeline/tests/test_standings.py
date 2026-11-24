@@ -43,6 +43,7 @@ def test_constructor_names_are_mapped_to_our_team_names_and_colours():
     )
     rnd = standings.rounds[0]
     assert rnd.drivers[0].team == "Red Bull Racing" and rnd.drivers[0].team_color == "#3671C6"
+    assert rnd.drivers[0].number == 1  # the number raced with, not the driver's current permanent number
     assert rnd.constructors[0].name == "Red Bull Racing" and rnd.constructors[0].team_color == "#3671C6"
 
 

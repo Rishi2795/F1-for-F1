@@ -181,6 +181,7 @@ class DriverListEntry(_Model):
 class StandingsDriver(_Model):
     code: str
     name: str
+    number: int | None = None  # the number raced with in that season
     team: str | None
     team_color: str | None
     position: int | None
