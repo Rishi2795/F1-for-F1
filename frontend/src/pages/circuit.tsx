@@ -29,7 +29,7 @@ export default function Circuit() {
   if (!c) return <div className="min-h-screen"><ErrorState error={error} onRetry={reload} subject="circuit" backTo={{ href: "/circuits", label: "All circuits" }} /></div>;
   const visits = c.races.length;
   return (
-    <div className="min-h-screen px-4 pb-32 pt-16 text-zinc-300 md:px-8">
+    <div className="min-h-screen px-5 pb-32 pt-16 text-zinc-300 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-5xl space-y-12">
         <Link to="/circuits" className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400 hover:text-white">← ALL_CIRCUITS</Link>
         <PageHead

@@ -33,15 +33,16 @@ function Points({ value, className }: { value: number; className: string }) {
 }
 
 
-/** The top three, arranged like a podium: P2 – P1 – P3, the leader tallest. Reading order stays P1, P2, P3. */
+/** The top three, arranged like a podium on every screen: P2 – P1 – P3, the leader tallest. Reading order stays P1, P2, P3.
+ *  On a phone the three sit side by side in compact cards. */
 export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; leaderPoints: number }) {
   const place = [
-    "md:order-2 md:min-h-[19rem]", // P1: centre, tallest
-    "md:order-1 md:min-h-[16rem]", // P2
-    "md:order-3 md:min-h-[14.5rem]", // P3
+    "order-2 min-h-[15.5rem] sm:min-h-[17rem] md:min-h-[19rem]", // P1: centre, tallest
+    "order-1 min-h-[13.5rem] sm:min-h-[14.5rem] md:min-h-[16rem]", // P2
+    "order-3 min-h-[12rem] sm:min-h-[13rem] md:min-h-[14.5rem]", // P3
   ];
   return (
-    <ol className="grid gap-4 md:grid-cols-3 md:items-end" aria-label="Top three">
+    <ol className="grid grid-cols-3 items-end gap-2 sm:gap-4" aria-label="Top three">
       {entries.slice(0, 3).map((e, i) => {
         const lead = i === 0;
         const card = (
@@ -51,33 +52,48 @@ export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; lead
           >
             {/* Team colour: one flat hairline. */}
             <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[2px]" style={{ backgroundColor: e.color }} />
-            <div className="relative z-10 flex h-full flex-col p-6">
-              <div className="flex items-center gap-3 text-xs">
-                <span className="rounded-sm border border-white/20 px-2.5 py-0.5 font-semibold tracking-widest text-zinc-200">P{e.position ?? i + 1}</span>
-                <span className="text-zinc-400">
-                  {e.wins} {e.wins === 1 ? "win" : "wins"}
+            <div className="relative z-10 flex h-full flex-col p-2.5 sm:p-6">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                <span className="rounded-sm border border-white/20 px-1.5 py-0.5 text-[10px] font-semibold tracking-widest text-zinc-200 sm:px-2.5 sm:text-xs">P{e.position ?? i + 1}</span>
+                <span className="text-[10px] text-zinc-400 sm:text-xs">
+                  {e.wins}
+                  <span className="hidden sm:inline"> {e.wins === 1 ? "win" : "wins"}</span>
+                  <span className="sm:hidden">W</span>
                 </span>
-                {e.champion && <ChampionBadge titles={1} label={e.champion} />}
+                {e.champion && (
+                  <>
+                    {/* a crown on its own where the three cards are narrow; the full badge from tablets up */}
+                    <span title={e.champion} className="inline-flex items-center rounded-sm border border-red-500/60 p-1 sm:hidden">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="#ef4444" aria-hidden="true"><path d="M5 16 3 6l5.5 4L12 4l3.5 6L21 6l-2 10H5Zm0 2h14v2H5v-2Z" /></svg>
+                      <span className="sr-only">{e.champion}</span>
+                    </span>
+                    <span className="hidden sm:inline-flex"><ChampionBadge titles={1} label={e.champion} /></span>
+                  </>
+                )}
               </div>
-              <div className="mt-auto pt-10">
-                <h3 className={`truncate font-extrabold leading-tight tracking-tight text-white ${lead ? "text-2xl md:text-3xl" : "text-xl"}`}>{e.label}</h3>
+              <div className="mt-auto min-w-0 pt-6 sm:pt-10">
+                <h3 className={`line-clamp-3 break-words font-extrabold leading-tight tracking-tight text-white sm:line-clamp-none sm:truncate ${lead ? "text-sm sm:text-2xl md:text-3xl" : "text-xs sm:text-xl"}`}>{e.label}</h3>
                 {e.sublabel && (
-                  <p className="mt-0.5 flex items-center gap-2 truncate text-sm text-zinc-400">
-                    <span aria-hidden="true" className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: e.color }} />
+                  <p className="mt-0.5 flex items-start gap-1.5 text-[10px] leading-tight text-zinc-400 sm:items-center sm:gap-2 sm:truncate sm:text-sm">
+                    <span aria-hidden="true" className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full sm:mt-0" style={{ backgroundColor: e.color }} />
                     {e.sublabel}
                   </p>
                 )}
-                <p className="mt-4 flex items-baseline gap-2">
-                  <Points value={e.points} className={`font-serif leading-none text-white ${lead ? "text-6xl md:text-7xl" : "text-5xl"}`} />
-                  <span className="text-sm text-zinc-400">pts</span>
+                <p className="mt-2 flex items-baseline gap-1 sm:mt-4 sm:gap-2">
+                  <Points value={e.points} className={`font-serif leading-none text-white ${lead ? "text-3xl sm:text-6xl md:text-7xl" : "text-2xl sm:text-5xl"}`} />
+                  <span className="text-[10px] text-zinc-400 sm:text-sm">pts</span>
                 </p>
-                {!lead && <p className="mt-2 text-sm text-zinc-400">−{leaderPoints - e.points} behind the leader</p>}
+                {!lead && (
+                  <p className="mt-1 text-[10px] text-zinc-400 sm:mt-2 sm:text-sm">
+                    −{leaderPoints - e.points}<span className="hidden sm:inline"> behind the leader</span>
+                  </p>
+                )}
               </div>
             </div>
           </div>
         );
         return (
-          <li key={e.id} className={`${place[i]} md:flex`}>
+          <li key={e.id} className={`${place[i]} flex min-w-0`}>
             {e.href ? (
               <Link to={e.href} onMouseEnter={() => e.prefetch && prefetch(e.prefetch)} className="block w-full rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600">
                 {card}

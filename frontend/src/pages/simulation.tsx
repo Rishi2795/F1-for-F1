@@ -77,7 +77,7 @@ export default function StrategySim() {
   };
 
   return (
-    <div className="h-screen bg-[#050505] text-white p-6 font-sans overflow-hidden flex flex-col uppercase select-none">
+    <div className="h-screen bg-[#050505] text-white px-5 py-6 sm:px-8 lg:px-12 font-sans overflow-hidden flex flex-col uppercase select-none">
       
       {/* HEADER */}
       <div className="flex justify-between items-end border-b border-white/10 pb-4 mb-6">

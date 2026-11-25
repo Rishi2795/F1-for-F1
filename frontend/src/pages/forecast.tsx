@@ -22,7 +22,7 @@ export default function Forecast() {
   const favourite = upcoming?.drivers[0];
 
   return (
-    <div className="min-h-screen px-4 pb-32 pt-16 text-zinc-300 md:px-8">
+    <div className="min-h-screen px-5 pb-32 pt-16 text-zinc-300 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-5xl space-y-14">
         <PageHead
           align="split"

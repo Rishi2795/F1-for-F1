@@ -1,5 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
+/** The test API's port: 8000 unless E2E_API_PORT says otherwise (see playwright.config.ts). */
+const API_PORT = process.env.E2E_API_PORT ?? "8000";
+
 /** Collect real JavaScript errors (404/422 network noise from deliberately bad URLs is ignored). */
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -117,7 +120,7 @@ test.describe("bad addresses never leave a blank or endless-loading page", () =>
 test.describe("resilience", () => {
   test("API outage shows an error with retry, and retry recovers", async ({ page }) => {
     let down = true;
-    await page.route("**/localhost:8000/api/**", (route) => (down ? route.abort("connectionrefused") : route.continue()));
+    await page.route(`**/localhost:${API_PORT}/api/**`, (route) => (down ? route.abort("connectionrefused") : route.continue()));
     await page.goto("/race/2020/1");
     await expect(page.getByRole("heading", { name: "Something went wrong" })).toBeVisible({ timeout: 10_000 });
     down = false;
@@ -126,7 +129,7 @@ test.describe("resilience", () => {
   });
 
   test("slow API shows a skeleton, then the content", async ({ page }) => {
-    await page.route("**/localhost:8000/api/seasons/2020/races/1", async (route) => {
+    await page.route(`**/localhost:${API_PORT}/api/seasons/2020/races/1`, async (route) => {
       await new Promise((r) => setTimeout(r, 1500));
       await route.continue();
     });
@@ -136,7 +139,7 @@ test.describe("resilience", () => {
   });
 
   test("navigating quickly between races shows the last one requested", async ({ page }) => {
-    await page.route("**/localhost:8000/api/seasons/2020/races/1", async (route) => {
+    await page.route(`**/localhost:${API_PORT}/api/seasons/2020/races/1`, async (route) => {
       await new Promise((r) => setTimeout(r, 1500));
       await route.continue();
     });

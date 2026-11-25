@@ -13,7 +13,7 @@ export default function Circuits() {
   const [q, setQ] = useState("");
   const shown = useMemo(() => (data ?? []).filter((c) => `${c.name} ${c.location} ${c.country ?? ""}`.toLowerCase().includes(q.trim().toLowerCase())), [data, q]);
   return (
-    <div className="min-h-screen px-4 pb-32 pt-16 text-zinc-300 md:px-8">
+    <div className="min-h-screen px-5 pb-32 pt-16 text-zinc-300 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-5xl space-y-10">
         <PageHead align="center" kicker="CIRCUITS" title="Know the" accent="track" intro="What usually happens at each circuit: who wins from pole, how much overtaking to expect, how often a safety car comes out. Built from every race since 2020." />
         <label className="block max-w-sm">

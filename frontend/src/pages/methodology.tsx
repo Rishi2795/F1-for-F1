@@ -47,7 +47,7 @@ export default function Methodology() {
   const partial = seasons.flatMap(([year, s]) => s.races.filter((r) => r.status === "partial").map((r) => ({ year, ...r })));
 
   return (
-    <div className="min-h-screen px-4 pb-24 pt-16 text-zinc-300 md:px-8">
+    <div className="min-h-screen px-5 pb-24 pt-16 text-zinc-300 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-3xl space-y-14">
         <header>
           <p className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] text-zinc-400">

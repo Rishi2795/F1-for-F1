@@ -30,7 +30,7 @@ export default function Drivers() {
   }, [data, search, show]);
 
   return (
-    <div className="min-h-screen px-4 py-14 text-zinc-200 md:px-8">
+    <div className="min-h-screen px-5 py-14 text-zinc-200 sm:px-8 lg:px-12">
       <div className="mx-auto mb-10 max-w-7xl space-y-4 text-center">
         <h1 className="text-5xl font-black uppercase italic tracking-tighter text-white md:text-7xl">The <span className="text-red-500">drivers</span></h1>
         <p className="text-sm text-zinc-400">Every driver on the grid since 2020, from official results and timing data.</p>

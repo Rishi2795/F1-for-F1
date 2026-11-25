@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
 
+/** The test API's port: 8000 unless E2E_API_PORT says otherwise (see playwright.config.ts). */
+const API_PORT = process.env.E2E_API_PORT ?? "8000";
+
 test.describe("world champions", () => {
   test("profile and list show titles; a finished season's leader is crowned, a running one is not", async ({ page }) => {
     await page.goto("/driver/HAM");
@@ -66,7 +69,7 @@ test.describe("copy link", () => {
 
 test.describe("free-hosting experience", () => {
   test("a request stuck for over 3 seconds explains the wait, then the notice goes away", async ({ page }) => {
-    await page.route("**/localhost:8000/api/seasons/2024/standings", async (route) => {
+    await page.route(`**/localhost:${API_PORT}/api/seasons/2024/standings`, async (route) => {
       await new Promise((r) => setTimeout(r, 4200));
       await route.continue();
     });
@@ -438,6 +441,7 @@ test.describe("race lab and team pace", () => {
 
   test("the replay can be played and paused", async ({ page }) => {
     await page.goto("/race/2024/8/lab");
+    await page.getByRole("group", { name: "Replay speed" }).getByRole("button", { name: "30×" }).click(); // the default is a calm 2×
     await page.getByRole("button", { name: "PLAY" }).click();
     await expect(page.getByRole("button", { name: "PAUSE" })).toBeVisible();
     await expect(page.getByText(/LAP_([2-9]|\d\d)_OF_78/)).toBeVisible();
@@ -477,7 +481,7 @@ test.describe("map replay and analysis", () => {
     await page.goto("/race/2024/8/lab");
     await page.getByRole("group", { name: "Colour cars by" }).getByRole("button", { name: "TYRE" }).click();
     await expect(page.getByRole("group", { name: "Colour cars by" }).getByRole("button", { name: "TYRE" })).toHaveAttribute("aria-pressed", "true");
-    await page.getByRole("group", { name: "Replay speed" }).getByRole("button", { name: "240×" }).click();
+    await page.getByRole("group", { name: "Replay speed" }).getByRole("button", { name: "30×" }).click();
     await page.getByRole("list", { name: /Running order at lap/ }).getByRole("button", { name: "VER" }).click();
   });
 

@@ -30,7 +30,7 @@ export default function PitWall() {
     { to: "/simulation", n: "08", title: "Pit-wall game", question: "Can you out-strategise the engineer?" },
   ];
   return (
-    <div className="min-h-screen px-4 pb-32 pt-16 text-zinc-300 md:px-8">
+    <div className="min-h-screen px-5 pb-32 pt-16 text-zinc-300 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-5xl space-y-10">
         <PageHead align="center" kicker="PIT_WALL" title="The" accent="pit wall" intro="Every tool, as the question it answers. Start anywhere: each one explains itself, and each shows its working." />
         <ul className="grid gap-px border border-white/10 bg-white/10 sm:grid-cols-2">

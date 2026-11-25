@@ -38,7 +38,7 @@ export default function RaceLab() {
   useDocumentTitle(race.data ? `${race.data.event_name} race lab` : "Race lab");
 
   return (
-    <div className="min-h-screen px-4 pb-32 pt-16 text-zinc-300 md:px-8">
+    <div className="min-h-screen px-5 pb-32 pt-16 text-zinc-300 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-5xl space-y-14">
         <header className="f1-rise space-y-4">
           <Link to={`/race/${year}/${round}`} className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400 hover:text-white">← BACK_TO_THE_RACE</Link>

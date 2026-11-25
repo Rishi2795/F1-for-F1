@@ -42,7 +42,7 @@ export default function DriverPage() {
 
   if (stats.loading) {
     return (
-      <div className="min-h-screen px-4 py-14 md:px-8">
+      <div className="min-h-screen px-5 py-14 sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-12">
           <Skeleton className="h-[420px] lg:col-span-4" />
           <Skeleton className="h-[420px] lg:col-span-8" />
@@ -61,7 +61,7 @@ export default function DriverPage() {
   const s = driver.stats;
 
   return (
-    <div className="min-h-screen px-4 py-14 text-zinc-200 md:px-8">
+    <div className="min-h-screen px-5 py-14 text-zinc-200 sm:px-8 lg:px-12">
       <div className="mx-auto mb-10 flex max-w-7xl justify-between">
         <Link to="/drivers" className="text-xs font-mono text-zinc-400 hover:text-white">
           ← ALL DRIVERS

@@ -41,7 +41,7 @@ export default function Play() {
   const history = Object.entries(picks).sort((a, b) => b[1].date.localeCompare(a[1].date));
 
   return (
-    <div className="min-h-screen px-4 pb-32 pt-16 text-zinc-300 md:px-8">
+    <div className="min-h-screen px-5 pb-32 pt-16 text-zinc-300 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-5xl space-y-10">
         <PageHead align="center" kicker="PLAY" title="Beat the" accent="model" intro="Pick the podium before the race. When the result is in, you are scored against the forecast model. Your picks stay on this device: no account, nothing sent." />
         {next.loading && <Skeleton className="h-72" />}

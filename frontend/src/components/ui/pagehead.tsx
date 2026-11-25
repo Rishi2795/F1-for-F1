@@ -5,10 +5,10 @@ export type HeadAlign = "left" | "center" | "right" | "split";
 /** The opening of a page. Each page picks its own alignment so they do not all read the same:
  *  left (default), centred, right-aligned, or split with a glass card (`aside`) on the right. */
 export function PageHead({ kicker, title, accent, intro, align = "left", aside, children }: { kicker: string; title: string; accent: string; intro?: ReactNode; align?: HeadAlign; aside?: ReactNode; children?: ReactNode }) {
-  const text = align === "center" ? "mx-auto items-center text-center" : align === "right" ? "ml-auto items-end text-right" : "";
+  const text = align === "center" ? "mx-auto items-center text-center" : align === "right" ? "md:ml-auto md:items-end md:text-right" : "";
   const body = (
     <div className={`flex max-w-3xl flex-col ${text}`}>
-      <p className={`flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] text-zinc-400 ${align === "right" ? "flex-row-reverse" : ""}`}>
+      <p className={`flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] text-zinc-400 ${align === "right" ? "md:flex-row-reverse" : ""}`}>
         <span aria-hidden="true" className="h-2 w-2 bg-red-600" />
         REGISTRY // {kicker}
         {align === "center" && <span aria-hidden="true" className="h-2 w-2 bg-red-600" />}

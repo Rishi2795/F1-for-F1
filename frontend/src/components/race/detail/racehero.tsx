@@ -18,16 +18,18 @@ export function RaceHero({ race, accent }: { race: RaceDoc; accent: string }) {
 
   return (
     <>
-      <nav aria-label="Race navigation" className="fixed left-0 top-0 z-50 flex w-full items-center justify-between gap-4 border-b border-white/10 bg-black/50 px-5 py-3 backdrop-blur-xl sm:px-8">
+      <nav aria-label="Race navigation" className="fixed left-0 top-0 z-50 w-full border-b border-white/10 bg-black/50 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
         <div className="flex min-w-0 items-center gap-4">
           <Link to="/explore" className="whitespace-nowrap text-xs font-black uppercase tracking-widest text-white transition-colors hover:text-red-500">All races</Link>
-          <span aria-hidden="true" className="h-3 w-px bg-white/10" />
-          <span className="whitespace-nowrap font-mono text-xs uppercase text-zinc-500">SYS_ACTIVE // {race.season}.R{race.round}</span>
+          <span aria-hidden="true" className="hidden h-3 w-px bg-white/10 sm:block" />
+          <span className="hidden whitespace-nowrap font-mono text-xs uppercase text-zinc-500 sm:inline">SYS_ACTIVE // {race.season}.R{race.round}</span>
         </div>
         <div className="flex items-center gap-5">
           {prev && <Link to={`/race/${race.season}/${prev.round}`} className={NAV_LINK} aria-label={`Previous race: ${prev.event_name}`}>‹ <span className="hidden sm:inline">{tag(short(prev.event_name))}</span><span className="sm:hidden">PREV</span></Link>}
           {next && <Link to={`/race/${race.season}/${next.round}`} className={NAV_LINK} aria-label={`Next race: ${next.event_name}`}><span className="hidden sm:inline">{tag(short(next.event_name))}</span><span className="sm:hidden">NEXT</span> ›</Link>}
           <span className="hidden text-xs font-black italic uppercase tracking-tighter text-zinc-400 md:block">Archive · {race.date}</span>
+        </div>
         </div>
       </nav>
 

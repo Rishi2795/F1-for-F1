@@ -25,7 +25,7 @@ export function StandingsRedirect() {
 
 function PageSkeleton() {
   return (
-    <div className="min-h-screen px-4 pt-20 md:px-8" role="status" aria-label="Loading standings">
+    <div className="min-h-screen px-5 pt-20 sm:px-8 lg:px-12" role="status" aria-label="Loading standings">
       <div className="mx-auto max-w-5xl space-y-4">
         <Skeleton className="h-12 w-1/2" />
         <Skeleton className="h-10 w-72" />
@@ -126,7 +126,7 @@ export default function Standings() {
   const second = view.rows[1];
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-4 pb-32 pt-16 text-zinc-200 md:px-8">
+    <div className="relative min-h-screen overflow-hidden px-5 pb-32 pt-16 text-zinc-200 sm:px-8 lg:px-12">
 
       <div className="relative mx-auto max-w-5xl space-y-12">
         <header className="relative min-h-[12rem]">

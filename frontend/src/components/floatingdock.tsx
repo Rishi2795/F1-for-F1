@@ -53,7 +53,7 @@ export default function FloatingDock() {
     >
       <div
         className="
-          flex max-w-[calc(100vw-1rem)] items-center gap-3.5 sm:gap-6
+          flex max-w-[calc(100vw-1.5rem)] items-center gap-3 sm:gap-6
           px-4 py-3 sm:px-8
           rounded-full
           bg-white/[0.06] backdrop-blur-xl
@@ -74,7 +74,7 @@ export default function FloatingDock() {
               to={item.path}
               aria-current={active ? "page" : undefined}
               className={`
-                relative
+                relative whitespace-nowrap
                 text-[13px] font-medium sm:text-sm
                 transition-all
                 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-600
