@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { ErrorState, Skeleton } from "../components/ui/states";
 import { ChampionBadge } from "../components/ui/championbadge";
 import { fmt, fmtSigned } from "../lib/format";
+import { framing, useDriverPhotos } from "../lib/driverphotos";
 import { WeekendPanel } from "../components/driver/weekendpanel";
 import { RatingPanel } from "../components/ratings/ratingpanel";
 import type { DriverProfile } from "../types/api";
@@ -39,6 +40,7 @@ export default function DriverPage() {
   const ai = useApi<AIInsight>(withAi ? `/ai/driver/${code}` : null).data;
 
   useDocumentTitle(stats.data?.name ?? "Driver");
+  const photos = useDriverPhotos();
 
   if (stats.loading) {
     return (
@@ -58,6 +60,8 @@ export default function DriverPage() {
     );
   }
   const driver = stats.data;
+  const photo = photos[driver.code];
+  const teamColour = `#${(driver.team_color ?? "888888").replace("#", "")}`;
   const s = driver.stats;
 
   return (
@@ -72,11 +76,26 @@ export default function DriverPage() {
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 lg:grid-cols-12">
         <div className="lg:col-span-4">
           <div className="overflow-hidden rounded-sm border border-white/10 bg-[#080808]">
-            <div className="relative flex h-[320px] items-center justify-center overflow-hidden glass-cell">
-              <span aria-hidden="true" className="f1-outline text-9xl font-black italic">
-                {driver.code}
-              </span>
+            <div className="relative flex h-[380px] items-center justify-center overflow-hidden glass-cell" style={photo ? undefined : { backgroundImage: `linear-gradient(165deg, ${teamColour}55 0%, ${teamColour}14 45%, #050505 85%)` }}>
+              {driver.number !== null && (
+                <span aria-hidden="true" className="f1-outline absolute -right-3 top-2 text-[10rem] font-black italic leading-none" style={{ "--stroke": `${teamColour}77` } as CSSProperties}>{driver.number}</span>
+              )}
+              {photo ? (
+                <>
+                  <img src={`/drivers/${photo.file}`} alt={`${driver.name}`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: framing(photo, 1.05, 0.4) }} />
+                  <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#080808] to-transparent" />
+                </>
+              ) : (
+                <span aria-hidden="true" className="f1-outline relative text-9xl font-black italic">{driver.code}</span>
+              )}
             </div>
+            {photo && (
+              <p className="border-t border-white/10 px-4 py-2 text-[10px] leading-snug text-zinc-500">
+                Photo: © {photo.credit},{" "}
+                {photo.licenceUrl ? <a href={photo.licenceUrl} rel="noopener noreferrer" className="underline">{photo.licence}</a> : photo.licence}
+                {photo.source && <> · <a href={photo.source} rel="noopener noreferrer" className="underline">Wikimedia Commons</a></>} · resized and cropped
+              </p>
+            )}
             <div className="space-y-3 p-6">
               <h1 className="text-3xl font-black italic text-white">{driver.name}</h1>
               <ChampionBadge titles={driver.titles} years={driver.title_years} />

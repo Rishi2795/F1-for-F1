@@ -160,6 +160,7 @@ export type DriverProfile = {
   code: string;
   name: string;
   team: string | null;
+  team_color?: string | null;
   number: number | null;
   image: string | null;
   latest_season: number;

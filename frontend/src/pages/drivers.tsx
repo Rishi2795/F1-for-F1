@@ -7,7 +7,7 @@ import { ErrorState, Skeleton } from "../components/ui/states";
 import { ChampionBadge } from "../components/ui/championbadge";
 import { chip } from "../components/ui/chipstyle";
 import { readableOnDark } from "../lib/color";
-import { useDriverPhotos, type Photo } from "../lib/driverphotos";
+import { framing, useDriverPhotos, type Photo } from "../lib/driverphotos";
 import type { DriverListEntry } from "../types/api";
 
 type Show = "all" | "grid" | "champions";
@@ -102,7 +102,7 @@ function DriverCard({ d, photo }: { d: DriverListEntry; photo?: Photo }) {
           {d.number}
         </span>
       )}
-      {photo && <img src={`/drivers/${photo.file}`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: photo.focus ?? "50% 22%" }} />}
+      {photo && <img src={`/drivers/${photo.file}`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: framing(photo, 0.75, 0.36) }} />}
       <span className="absolute left-3 top-3 z-10 rounded-sm border border-white/20 bg-black/40 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-widest text-zinc-200">{d.code}</span>
       <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black via-black/70 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 z-10 space-y-1.5 p-3 sm:p-4">

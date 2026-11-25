@@ -181,6 +181,7 @@ class Publisher:
                 code=code,
                 name=last_drv.driver_name,
                 team=last_drv.team,
+                team_color=last_drv.team_color,
                 number=last_drv.driver_number,
                 latest_season=latest.season,
                 titles=len(title_years),

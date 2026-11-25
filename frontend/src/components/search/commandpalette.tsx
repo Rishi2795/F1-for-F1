@@ -1,9 +1,10 @@
+import { DriverAvatar } from "../ui/driveravatar";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../hooks/useApi";
 import type { CircuitIndexEntry, DriverListEntry, RaceIndexEntry } from "../../types/api";
 
-type Item = { id: string; group: string; label: string; hint?: string; to: string };
+type Item = { id: string; group: string; label: string; hint?: string; to: string; code?: string; color?: string | null; number?: number | null };
 
 const PAGES: Item[] = [
   ["Home", "/"], ["Races", "/explore"], ["Standings", "/standings"], ["Pit Wall", "/pitwall"], ["Forecast: who wins next?", "/forecast"],
@@ -57,7 +58,7 @@ export function CommandPalette() {
   const items = useMemo<Item[]>(() => {
     const all: Item[] = [
       ...PAGES,
-      ...(drivers ?? []).map((d) => ({ id: `d-${d.code}`, group: "DRIVERS", label: d.name, hint: d.team ?? undefined, to: `/driver/${d.code}` })),
+      ...(drivers ?? []).map((d) => ({ id: `d-${d.code}`, group: "DRIVERS", label: d.name, hint: d.team ?? undefined, to: `/driver/${d.code}`, code: d.code, color: d.team_color, number: d.number })),
       ...(races?.races ?? []).filter((r) => r.data_status !== "scheduled").map((r) => ({ id: `r-${r.season}-${r.round}`, group: "RACES", label: `${r.event_name} ${r.season}`, hint: r.date, to: `/race/${r.season}/${r.round}` })),
       ...(circuits ?? []).map((c) => ({ id: `c-${c.slug}`, group: "CIRCUITS", label: c.location, hint: c.country ?? undefined, to: `/circuit/${c.slug}` })),
     ];
@@ -94,7 +95,7 @@ export function CommandPalette() {
           {items.map((item, i) => (
             <li key={item.id} id={`opt-${item.id}`} role="option" aria-selected={i === active}>
               <button type="button" onMouseEnter={() => setActive(i)} onClick={() => go(item)} className={`flex w-full items-center justify-between gap-4 px-5 py-2.5 text-left transition-colors ${i === active ? "bg-white/10 text-white" : "text-zinc-300"}`}>
-                <span>{item.label}{item.hint && <span className="ml-3 text-xs text-zinc-500">{item.hint}</span>}</span>
+                <span className="flex items-center gap-3">{item.code && <DriverAvatar code={item.code} color={item.color} number={item.number} size={26} />}<span>{item.label}{item.hint && <span className="ml-3 text-xs text-zinc-500">{item.hint}</span>}</span></span>
                 <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">{item.group}</span>
               </button>
             </li>

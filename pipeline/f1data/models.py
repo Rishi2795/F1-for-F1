@@ -270,6 +270,7 @@ class DriverProfile(_Model):
     code: str
     name: str
     team: str | None
+    team_color: str | None = None
     number: int | None
     nationality: str | None = None
     image: str | None = None

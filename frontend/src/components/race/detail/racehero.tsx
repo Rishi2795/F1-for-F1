@@ -1,3 +1,4 @@
+import { DriverAvatar } from "../../ui/driveravatar";
 import { Link } from "react-router-dom";
 import { useApi } from "../../../hooks/useApi";
 import { readableOnDark } from "../../../lib/color";
@@ -73,6 +74,7 @@ export function RaceHero({ race, accent }: { race: RaceDoc; accent: string }) {
             className="group inline-flex items-center gap-5 glass py-3 pl-4 pr-6 transition-colors hover:border-white/40"
             style={{ boxShadow: `inset 3px 0 0 ${accent}` }}
           >
+            <DriverAvatar code={winner.driver_code} color={winner.team_color} number={winner.driver_number} size={48} />
             <span>
               <span className="block font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">WINNER</span>
               <span className="block text-xl font-black uppercase italic tracking-tighter text-white">{winner.driver_name}</span>

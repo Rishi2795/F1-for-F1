@@ -218,6 +218,55 @@ def cmd_apply() -> int:
     return 0
 
 
+def cmd_faces() -> int:
+    """Find the face in each registered photo so every card shape can be framed around it.
+
+    Needs OpenCV (`pip install opencv-python-headless`), which is only used here, never by the site. Writes `face`
+    (centre of the largest face, as fractions of the picture) and the picture's size into credits.json. A photo where no
+    face is found keeps the hand-set `focus`; a face fixed by hand ("face_manual": true) is never overwritten. Check the
+    result by eye: detection sometimes lands on a jersey."""
+    try:
+        import cv2
+    except ImportError:
+        print("this step needs OpenCV: pip install opencv-python-headless")
+        return 1
+    registry_path = PUBLIC / "credits.json"
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    cascades = [cv2.CascadeClassifier(cv2.data.haarcascades + n) for n in ("haarcascade_frontalface_default.xml", "haarcascade_frontalface_alt2.xml")]
+    found = 0
+    for code, p in registry.get("photos", {}).items():
+        img = cv2.imread(str(PUBLIC / p["file"]))
+        if img is None:
+            continue
+        h, w = img.shape[:2]
+        gray = cv2.equalizeHist(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+        best = None
+        for cascade in cascades:
+            for scale, neighbours in ((1.1, 5), (1.05, 3)):
+                faces = cascade.detectMultiScale(gray, scaleFactor=scale, minNeighbors=neighbours, minSize=(max(40, w // 14), max(40, w // 14)))
+                if len(faces):
+                    best = max(faces, key=lambda f: f[2] * f[3])
+                    break
+            if best is not None:
+                break
+        p["width"], p["height"] = w, h
+        if p.get("face_manual"):  # a person set this by hand after checking the picture: leave it
+            print(f"{code}: face set by hand {p['face']}")
+            found += 1
+            continue
+        if best is not None:
+            x, y, fw, fh = (int(v) for v in best)
+            p["face"] = [round((x + fw / 2) / w, 3), round((y + fh / 2) / h, 3)]
+            found += 1
+            print(f"{code}: face at {p['face']}")
+        else:
+            p.pop("face", None)
+            print(f"{code}: no face found, keeping focus {p.get('focus')}")
+    registry_path.write_text(json.dumps(registry, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"\n{found} of {len(registry.get('photos', {}))} faces located")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -225,7 +274,10 @@ def main() -> int:
     f.add_argument("--since", type=int, default=2025, help="drivers whose latest season is at least this (default 2025)")
     f.add_argument("--only", nargs="*", default=[], help="driver codes, to try a few")
     sub.add_parser("apply")
+    sub.add_parser("faces", help="locate the face in each registered photo (needs opencv-python-headless)")
     args = ap.parse_args()
+    if args.cmd == "faces":
+        return cmd_faces()
     return cmd_find(args.since, args.only) if args.cmd == "find" else cmd_apply()
 
 

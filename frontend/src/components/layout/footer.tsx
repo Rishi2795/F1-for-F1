@@ -20,6 +20,7 @@ export function Footer() {
           <p className="font-bold text-white">F1 for F1</p>
           <p className="mt-2 max-w-xs">An unofficial fan project. Not affiliated with, or endorsed by, Formula 1, the FIA or any team.</p>
           <div className="mt-4 flex items-center gap-3"><span className="text-xs uppercase tracking-widest text-zinc-500">Typeface</span><ThemeToggle /></div>
+          <p className="mt-4 max-w-xs text-xs text-zinc-500">Driver photos are by Wikimedia Commons contributors under Creative Commons licences. Each photo’s author and licence are credited on its profile and on the <Link to="/drivers" className="underline underline-offset-2 hover:text-white">Drivers</Link> page.</p>
         </div>
         <div>
           <p className="font-semibold text-white">Data</p>

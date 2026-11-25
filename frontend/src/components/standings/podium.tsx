@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useCountUp } from "../../hooks/useCountUp";
 import { ChampionBadge } from "../ui/championbadge";
 import { prefetch } from "../../lib/api";
+import { framing, useDriverPhotos } from "../../lib/driverphotos";
 
 export type PodiumEntry = {
   id: string;
@@ -41,6 +42,7 @@ export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; lead
     "order-1 min-h-[13.5rem] sm:min-h-[14.5rem] md:min-h-[16rem]", // P2
     "order-3 min-h-[12rem] sm:min-h-[13rem] md:min-h-[14.5rem]", // P3
   ];
+  const photos = useDriverPhotos();
   return (
     <ol className="grid grid-cols-3 items-end gap-2 sm:gap-4" aria-label="Top three">
       {entries.slice(0, 3).map((e, i) => {
@@ -50,6 +52,13 @@ export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; lead
             className={`f1-rise group relative h-full overflow-hidden rounded-sm glass transition-colors hover:border-white/25 ${place[i]}`}
             style={{ "--d": `${i * 110}ms` } as CSSProperties}
           >
+            {/* A licensed photo, when there is one (drivers only), under a dark fade so the text stays readable. */}
+            {photos[e.id] && (
+              <>
+                <img src={`/drivers/${photos[e.id].file}`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-80" style={{ objectPosition: framing(photos[e.id], 1.25, 0.34) }} />
+                <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/10" />
+              </>
+            )}
             {/* Team colour: one flat hairline. */}
             <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[2px]" style={{ backgroundColor: e.color }} />
             <div className="relative z-10 flex h-full flex-col p-2.5 sm:p-6">

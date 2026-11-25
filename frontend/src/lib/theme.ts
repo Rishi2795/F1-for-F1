@@ -20,7 +20,7 @@ export const DOT_MIN_PX = 24;
  *  Done from the real computed size, so a heading that is small on a phone and big on a laptop is right on both. */
 function markDisplayText(): void {
   if (document.documentElement.dataset.theme !== "dot") return;
-  for (const el of document.querySelectorAll<HTMLElement>("h1, h2, h3, .font-serif")) {
+  for (const el of document.querySelectorAll<HTMLElement>("h1, h2, .font-serif")) {
     el.toggleAttribute("data-dot", parseFloat(getComputedStyle(el).fontSize) >= DOT_MIN_PX);
   }
 }

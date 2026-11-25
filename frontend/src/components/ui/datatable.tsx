@@ -1,3 +1,4 @@
+import { DriverAvatar } from "./driveravatar";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { readableOnDark } from "../../lib/color";
@@ -36,6 +37,7 @@ export function DriverCell({ name, code, color, team }: { name: string; code?: s
   return (
     <span className="flex items-center gap-3">
       {bar && <span aria-hidden="true" className="h-8 w-1 shrink-0 rounded-full" style={{ backgroundColor: bar }} />}
+      {code && <DriverAvatar code={code} color={color} size={34} />}
       <span className="min-w-0">
         {code ? <Link to={`/driver/${code}`} className="hover:text-red-400">{label}</Link> : label}
         {team && <span className="block text-xs text-zinc-500 md:hidden">{team}</span>}

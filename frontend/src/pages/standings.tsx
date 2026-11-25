@@ -8,6 +8,7 @@ import { readableOnDark } from "../lib/color";
 import { ErrorState, Skeleton } from "../components/ui/states";
 import { ProgressionChart, type ChartMode, type Series } from "../components/standings/progressionchart";
 import { Podium, type PodiumEntry } from "../components/standings/podium";
+import { DriverAvatar } from "../components/ui/driveravatar";
 import type { SeasonStandings, StandingsConstructor, StandingsDriver } from "../types/api";
 
 type Tab = "drivers" | "constructors";
@@ -300,6 +301,7 @@ export default function Standings() {
                     <td className="px-3 py-3.5">
                       <span className="flex items-center gap-3">
                         <span className="h-8 w-1 rounded-sm" style={{ backgroundColor: row.color }} aria-hidden="true" />
+                        {tab === "drivers" && <DriverAvatar code={row.id} color={row.color} number={row.number} size={34} />}
                         <span className="min-w-0">
                           {row.href ? (
                             <Link to={row.href} onMouseEnter={() => row.prefetch && prefetch(row.prefetch)} className="font-semibold text-white transition-colors hover:text-red-400">
