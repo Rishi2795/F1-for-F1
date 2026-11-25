@@ -25,7 +25,6 @@ const Hero = () => {
   const carOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
   const titleY = useTransform(scrollYProgress, [0, 1], [0, move(-150)]);
   const titleOpacity = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
-  const bgY = useTransform(scrollYProgress, [0, 1], [0, move(90)]);
   const cueOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
 
   /* Pointer parallax on desktop: the headline and the car drift in opposite directions, which reads as depth. */
@@ -48,22 +47,28 @@ const Hero = () => {
           DESKTOP VIEW
       ========================================== */}
       <div className="hidden md:block absolute inset-0 bg-black">
-        {/* Layer 1: base background. Shifted down with layout (top/bottom), because an animated transform would replace a CSS translate. */}
-        <motion.div style={{ y: bgY }} className="absolute inset-x-0 -bottom-[100px] top-[100px] z-0">
-          <motion.img
-            initial={{ opacity: 0, scale: 1.14 }}
-            animate={{ opacity: 1, scale: 1.08 }}
-            transition={{ duration: 2.2, ease: EASE }}
-            src={assets.desktopBg}
-            referrerPolicy="no-referrer"
-            onError={hideBroken}
-            className="h-full w-full object-cover object-center brightness-[0.25]"
-            alt=""
-          />
+        {/* The shifted background would leave a hard edge at the top: blend it into the page */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-[3] h-44 bg-gradient-to-b from-black via-black/80 to-transparent" />
+
+        {/* Background photo and car cutout are the same shot, one baked into the other: they are drawn at exactly the same size and
+            position and move as ONE block (entrance, scroll, pointer). Moving them separately shows a ghost second car. */}
+        <motion.div style={{ x: carX, y: carY, scale: carScale, opacity: carOpacity }} className="pointer-events-none absolute inset-x-0 -bottom-[100px] top-[100px] z-[1]">
+          <motion.div
+            style={{ y: carShift }}
+            initial={{ opacity: 0, x: 90 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ opacity: { duration: 1.1, delay: 0.25, ease: "easeOut" }, x: { duration: 1.5, delay: 0.25, ease: EASE } }}
+            className="relative h-full w-full"
+          >
+            <img src={assets.desktopBg} referrerPolicy="no-referrer" onError={hideBroken} className="absolute inset-0 h-full w-full object-cover object-center brightness-[0.25]" alt="" />
+            {/* a soft red rim light between the photo and the cutout, so it glows behind the car, not over it */}
+            <motion.div aria-hidden="true" className="absolute bottom-[8%] left-[18%] z-10 h-[40%] w-[62%] rounded-full bg-red-700/30 blur-[110px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2.4, delay: 0.7, ease: "easeOut" }} />
+            <img src={assets.desktopCutout} className="absolute inset-0 z-20 h-full w-full object-cover object-center drop-shadow-[0_30px_60px_rgba(0,0,0,1)]" alt="A 2026-era Formula 1 car" />
+          </motion.div>
         </motion.div>
 
-        {/* The shifted background would leave a hard edge at the top: blend it into the page */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-44 bg-gradient-to-b from-black via-black/80 to-transparent" />
+        {/* The shifted photo would leave a hard edge at the top: blend it into the page */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-[3] h-44 bg-gradient-to-b from-black via-black/80 to-transparent" />
 
         {/* Layer 2: headline, each line rising out of a mask */}
         <motion.div style={{ y: titleY, x: titleX, opacity: titleOpacity }} className="absolute inset-0 z-10 flex flex-col justify-start pt-[4dvh] px-16 pointer-events-none">
@@ -81,36 +86,12 @@ const Hero = () => {
           </h2>
         </motion.div>
 
-        {/* A soft red rim light behind the car: it fades up once, then stays put */}
-        <motion.div
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-[8%] left-[18%] z-[15] h-[40%] w-[62%] rounded-full bg-red-700/25 blur-[110px]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 2.4, delay: 0.7, ease: "easeOut" }}
-        />
-
-        {/* Layer 3: the car. It slides in and settles; after that only scroll and a light pointer drift move it. */}
-        <motion.div style={{ x: carX, y: carY, scale: carScale, opacity: carOpacity }} className="pointer-events-none absolute inset-x-0 -bottom-[100px] top-[100px] z-20">
-          <motion.div style={{ y: carShift }} className="h-full w-full">
-            <motion.img
-              initial={{ opacity: 0, x: 160 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ opacity: { duration: 0.9, delay: 0.35, ease: "easeOut" }, x: { duration: 1.6, delay: 0.35, ease: EASE } }}
-              src={assets.desktopCutout}
-              className="h-full w-full object-cover object-center drop-shadow-[0_30px_60px_rgba(0,0,0,1)]"
-              alt="A 2026-era Formula 1 car"
-            />
-          </motion.div>
-        </motion.div>
       </div>
 
       {/* ==========================================
           MOBILE ENGINE (sm only)
       ========================================== */}
       <div className="block md:hidden absolute inset-0">
-        <motion.img initial={{ opacity: 0, scale: 1.15 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.6, ease: EASE }} src={assets.mobileBg} referrerPolicy="no-referrer" onError={hideBroken} className="w-full h-full object-cover brightness-[0.4]" alt="" />
-
         <motion.div style={{ y: titleY, opacity: titleOpacity }} className="absolute inset-0 z-20 flex flex-col justify-start pt-[12dvh] px-6 text-center pointer-events-none">
           <h2 className="flex flex-col">
             <span className="block overflow-hidden pb-[0.06em]">
@@ -122,15 +103,12 @@ const Hero = () => {
           </h2>
         </motion.div>
 
-        <motion.div style={{ y: carY, scale: carScale, opacity: carOpacity }} className="absolute inset-0 z-10">
-          <motion.img
-            initial={{ scale: 1.06, opacity: 0, y: 30 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            transition={{ duration: 1.3, delay: 0.3, ease: EASE }}
-            src={assets.mobileCutout}
-            className="w-full h-full object-cover object-center pointer-events-none"
-            alt="A Formula 1 car seen from above"
-          />
+        {/* Same rule as desktop: photo and cutout are one shot and move together */}
+        <motion.div style={{ y: carY, scale: carScale, opacity: carOpacity }} className="pointer-events-none absolute inset-0 z-10">
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.3, delay: 0.25, ease: EASE }} className="relative h-full w-full">
+            <img src={assets.mobileBg} referrerPolicy="no-referrer" onError={hideBroken} className="absolute inset-0 h-full w-full object-cover brightness-[0.4]" alt="" />
+            <img src={assets.mobileCutout} className="absolute inset-0 h-full w-full object-cover object-center" alt="A Formula 1 car seen from above" />
+          </motion.div>
         </motion.div>
       </div>
 
