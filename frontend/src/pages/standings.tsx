@@ -273,7 +273,7 @@ export default function Standings() {
         </section>
 
         <section aria-labelledby="table-h">
-          <h2 id="table-h" className="mb-4 text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">
+          <h2 id="table-h" className="mb-4 text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl lg:mb-3 lg:text-2xl">
             {tab === "drivers" ? "Drivers' championship" : "Constructors' championship"}
           </h2>
           <div className="overflow-hidden rounded-sm glass">
@@ -283,25 +283,25 @@ export default function Standings() {
               </caption>
               <thead className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">
                 <tr>
-                  <th scope="col" className="px-4 py-4">POS</th>
-                  <th scope="col" className="px-3 py-4">{tab === "drivers" ? "Driver" : "Team"}</th>
-                  {tab === "drivers" && <th scope="col" className="hidden px-3 py-4 md:table-cell">TEAM</th>}
-                  <th scope="col" className="px-3 py-4 text-right">POINTS</th>
-                  <th scope="col" className="hidden px-3 py-4 text-right sm:table-cell">BEHIND_LEADER</th>
-                  <th scope="col" className="hidden px-4 py-4 text-right sm:table-cell">WINS</th>
+                  <th scope="col" className="px-4 py-4 lg:py-2">POS</th>
+                  <th scope="col" className="px-3 py-4 lg:py-2">{tab === "drivers" ? "Driver" : "Team"}</th>
+                  {tab === "drivers" && <th scope="col" className="hidden px-3 py-4 md:table-cell lg:py-2">TEAM</th>}
+                  <th scope="col" className="px-3 py-4 text-right lg:py-2">POINTS</th>
+                  <th scope="col" className="hidden px-3 py-4 text-right sm:table-cell lg:py-2">BEHIND_LEADER</th>
+                  <th scope="col" className="hidden px-4 py-4 text-right sm:table-cell lg:py-2">WINS</th>
                 </tr>
               </thead>
               <tbody>
                 {view.rows.map((row) => (
                   <tr key={row.id} className="group border-t border-white/[0.06] transition-colors hover:bg-white/[0.04]">
-                    <td className="px-4 py-3.5" style={row.position !== null && row.position <= 3 ? { boxShadow: `inset 3px 0 0 ${row.color}` } : undefined}>
-                      <span className={`text-xl font-black italic leading-none ${row.position === 1 ? "text-white" : row.position !== null && row.position <= 3 ? "text-zinc-200" : "text-zinc-500"}`}>{row.position ?? "—"}</span>
+                    <td className="px-4 py-3.5 lg:py-0" style={row.position !== null && row.position <= 3 ? { boxShadow: `inset 3px 0 0 ${row.color}` } : undefined}>
+                      <span className={`text-xl font-black italic leading-none lg:text-lg ${row.position === 1 ? "text-white" : row.position !== null && row.position <= 3 ? "text-zinc-200" : "text-zinc-500"}`}>{row.position ?? "—"}</span>
                       {row.moved ? <span aria-label={`${row.moved > 0 ? "up" : "down"} ${Math.abs(row.moved)} since the last round`} className={`ml-2 font-mono text-[10px] ${row.moved > 0 ? "text-white" : "text-red-500"}`}>{row.moved > 0 ? "▲" : "▼"}{Math.abs(row.moved)}</span> : null}
                     </td>
-                    <td className="px-3 py-3.5">
-                      <span className="flex items-center gap-3">
-                        <span className="h-8 w-1 rounded-sm" style={{ backgroundColor: row.color }} aria-hidden="true" />
-                        {tab === "drivers" && <DriverAvatar code={row.id} color={row.color} number={row.number} size={34} />}
+                    <td className="px-3 py-3.5 lg:py-0">
+                      <span className="flex items-center gap-3 lg:gap-2.5">
+                        <span className="h-8 w-1 rounded-sm lg:h-5" style={{ backgroundColor: row.color }} aria-hidden="true" />
+                        {tab === "drivers" && <DriverAvatar code={row.id} color={row.color} number={row.number} size={24} />}
                         <span className="min-w-0">
                           {row.href ? (
                             <Link to={row.href} onMouseEnter={() => row.prefetch && prefetch(row.prefetch)} className="font-semibold text-white transition-colors hover:text-red-400">
@@ -314,15 +314,17 @@ export default function Standings() {
                         </span>
                       </span>
                     </td>
-                    {tab === "drivers" && <td className="hidden px-3 py-3.5 text-zinc-400 md:table-cell">{row.team ?? "—"}</td>}
-                    <td className="w-32 px-3 py-3.5 text-right sm:w-44">
-                      <span className="font-mono text-base font-bold text-white">{row.points}</span>
-                      <span aria-hidden="true" className="mt-1.5 block h-1 rounded-full bg-white/[0.07]">
+                    {tab === "drivers" && <td className="hidden px-3 py-3.5 lg:py-0 text-zinc-400 md:table-cell">{row.team ?? "—"}</td>}
+                    <td className="w-32 px-3 py-3.5 text-right sm:w-44 lg:w-64 lg:py-0">
+                      <span className="lg:flex lg:flex-row-reverse lg:items-center lg:gap-3">
+                      <span className="font-mono text-base font-bold text-white lg:w-10 lg:text-sm">{row.points}</span>
+                      <span aria-hidden="true" className="mt-1.5 block h-1 rounded-full bg-white/[0.07] lg:mt-0 lg:flex-1">
                         <span className="block h-full rounded-sm" style={{ width: `${leader.points ? (row.points / leader.points) * 100 : 0}%`, backgroundColor: row.color }} />
                       </span>
+                      </span>
                     </td>
-                    <td className="hidden px-3 py-3.5 text-right font-mono text-zinc-400 sm:table-cell">{row.position === 1 ? "—" : `−${leader.points - row.points}`}</td>
-                    <td className="hidden px-4 py-3.5 text-right font-mono text-zinc-300 sm:table-cell">{row.wins}</td>
+                    <td className="hidden px-3 py-3.5 lg:py-0 text-right font-mono text-zinc-400 sm:table-cell">{row.position === 1 ? "—" : `−${leader.points - row.points}`}</td>
+                    <td className="hidden px-4 py-3.5 lg:py-0 text-right font-mono text-zinc-300 sm:table-cell">{row.wins}</td>
                   </tr>
                 ))}
               </tbody>

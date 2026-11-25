@@ -29,18 +29,35 @@ test.describe("schedule, news and possible standings", () => {
     await expect(page.getByRole("table", { name: /Possible final/ })).toBeVisible();
   });
 
-  test("the pit wall is a carousel: arrows, the tool strip and the keyboard all move it", async ({ page }) => {
+  test("the pit wall is a 3D ring: arrows, the tool strip, the keyboard and dragging all turn it", async ({ page }) => {
     await page.goto("/pitwall");
     const region = page.getByRole("region", { name: "Pit wall tools" });
     await expect(region.getByText(/01 \/ 09/)).toBeVisible();
     await region.getByRole("button", { name: "Next tool" }).click();
     await expect(region.getByText(/02 \/ 09/)).toBeVisible();
     await region.getByRole("button", { name: "Circuits", exact: true }).click();
-    await expect(region.getByText(/06 \/ 09/)).toBeVisible({ timeout: 5000 });
-    await expect(region.getByRole("button", { name: "Previous tool" })).toBeEnabled();
-    await page.getByLabel("Swipe, scroll or use the arrow keys").focus();
-    await page.keyboard.press("Home");
-    await expect(region.getByText(/01 \/ 09/)).toBeVisible({ timeout: 5000 });
+    await expect(region.getByText(/06 \/ 09/)).toBeVisible();
+    await region.getByRole("button", { name: "Next tool" }).click();
+    await region.getByRole("button", { name: "Next tool" }).click();
+    await region.getByRole("button", { name: "Next tool" }).click();
+    await expect(region.getByText(/09 \/ 09/)).toBeVisible();
+    await region.getByRole("button", { name: "Next tool" }).click(); // the ring keeps going round
+    await expect(region.getByText(/01 \/ 09/)).toBeVisible();
+
+    const ring = page.getByLabel("Turn the ring with the arrow keys, or drag it");
+    await ring.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(region.getByText(/02 \/ 09/)).toBeVisible();
+    await page.keyboard.press("End");
+    await expect(region.getByText(/09 \/ 09/)).toBeVisible();
+
+    const box = (await ring.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + 60);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 - 260, box.y + 60, { steps: 8 });
+    await page.mouse.up();
+    await expect(region.getByText(/09 \/ 09/)).toHaveCount(0); // a drag turned it
+    expect(page.url()).toMatch(/\/pitwall$/); // and did not open the card under the pointer
   });
 
   test("methodology has a summary board and an index that jumps to a chapter", async ({ page }) => {

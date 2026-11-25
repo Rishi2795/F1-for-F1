@@ -35,4 +35,14 @@ test.describe("scroll position", () => {
     await page.waitForTimeout(400);
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(200);
   });
+
+  test("on a laptop the whole championship table fits one screen, without scrolling inside it", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 800 });
+    await page.goto("/season/2026");
+    const section = page.locator("section[aria-labelledby=table-h]");
+    await expect(section.locator("tbody tr").first()).toBeVisible();
+    const box = await section.evaluate((el) => ({ h: el.getBoundingClientRect().height, rows: el.querySelectorAll("tbody tr").length }));
+    expect(box.rows).toBeGreaterThan(15);
+    expect(box.h).toBeLessThanOrEqual(800);
+  });
 });

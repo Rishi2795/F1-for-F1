@@ -37,6 +37,8 @@ test.describe("strategy simulator", () => {
 
   test("racing live: the order, the tyre and a pit call all work", async ({ page }) => {
     await page.goto("/simulation");
+    // a clean race: otherwise a random red flag (correctly) stops it until the player restarts
+    await page.getByRole("button", { name: "My events", exact: true }).click();
     await page.getByRole("button", { name: "Race it live" }).click();
     await expect(page.getByRole("table", { name: "Running order" }).locator("tbody tr")).toHaveCount(22);
     await page.getByRole("button", { name: "Next lap" }).click();

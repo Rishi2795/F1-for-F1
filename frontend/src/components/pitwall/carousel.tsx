@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { Link } from "react-router-dom";
 
 export type CarouselTool = { to: string; title: string; question: string; teaser?: string; Icon: LucideIcon };
@@ -7,127 +7,158 @@ export type CarouselTool = { to: string; title: string; question: string; teaser
 /** One accent per card, always from the site's own palette (red, white, amber, sky, emerald), in a fixed order. */
 const ACCENTS = ["#ef4444", "#f4f4f5", "#fbbf24", "#38bdf8", "#34d399"];
 
-const hide = "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+const mod = (a: number, n: number) => ((a % n) + n) % n;
+const DRAG_DEG_PER_PX = 0.28;
 
-/** A carousel of the pit wall's tools: big cards you swipe, scroll or step through with the arrows or the keyboard. The card in the
- *  middle lights up; every card is a real link, and the strip below jumps straight to any of them. */
+/** The pit wall's tools on a ring in 3D: the card in front faces you, the others curve away behind it. Drag the ring, use the arrows
+ *  or the keyboard to turn it, or jump straight to a tool. Every card stays a real link. */
 export function ToolCarousel({ tools }: { tools: CarouselTool[] }) {
-  const track = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
+  const n = tools.length;
+  const step = 360 / n;
+  const stage = useRef<HTMLDivElement>(null);
+  const [turn, setTurn] = useState(0); // whole turns of one card; may run past n so the ring can keep spinning one way
+  const [drag, setDrag] = useState(0); // degrees, while a finger or mouse is down
+  const [size, setSize] = useState({ w: 340, ring: 560 });
+  const pointer = useRef<{ x: number; id: number; moved: boolean } | null>(null);
+  const active = mod(turn, n);
 
-  const cards = () => Array.from(track.current?.querySelectorAll<HTMLElement>("[data-card]") ?? []);
-
-  const measure = useCallback(() => {
-    const el = track.current;
-    if (!el) return;
-    // the "current" card is the one at the left edge; at the very end of the track it is the last
-    if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 4) {
-      setActive(tools.length - 1);
-      return;
-    }
-    const gutter = parseFloat(getComputedStyle(el).paddingLeft) || 0;
-    const edge = el.scrollLeft + gutter;
-    let best = 0;
-    let dist = Infinity;
-    cards().forEach((c, i) => {
-      const d = Math.abs(c.offsetLeft - edge);
-      if (d < dist) {
-        dist = d;
-        best = i;
-      }
-    });
-    setActive(best);
-  }, [tools.length]);
-
+  // card width follows the screen; the ring's radius is whatever lets n cards of that width sit side by side with a little air
   useEffect(() => {
-    const el = track.current;
+    const el = stage.current;
     if (!el) return;
-    let frame = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(measure);
+    const measure = () => {
+      const w = Math.max(230, Math.min(360, el.clientWidth * 0.72));
+      setSize({ w, ring: (w / 2 / Math.tan(Math.PI / n)) * 1.14 });
     };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
     measure();
-    return () => {
-      cancelAnimationFrame(frame);
-      el.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, [measure]);
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [n]);
 
-  const go = (i: number) => {
-    const el = track.current;
-    const card = cards()[Math.max(0, Math.min(tools.length - 1, i))];
-    if (!el || !card) return;
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    const gutter = parseFloat(getComputedStyle(el).paddingLeft) || 0;
-    el.scrollTo({ left: card.offsetLeft - gutter, behavior: reduce ? "auto" : "smooth" });
+  const goTo = (i: number) => {
+    let d = mod(i, n) - active;
+    if (d > n / 2) d -= n;
+    if (d < -n / 2) d += n;
+    setTurn((t) => t + d);
   };
 
   const onKey = (e: KeyboardEvent) => {
-    if (e.key === "ArrowRight") { e.preventDefault(); go(active + 1); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); go(active - 1); }
-    else if (e.key === "Home") { e.preventDefault(); go(0); }
-    else if (e.key === "End") { e.preventDefault(); go(tools.length - 1); }
+    if (e.key === "ArrowRight") { e.preventDefault(); setTurn((t) => t + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); setTurn((t) => t - 1); }
+    else if (e.key === "Home") { e.preventDefault(); goTo(0); }
+    else if (e.key === "End") { e.preventDefault(); goTo(n - 1); }
   };
 
-  const arrow = "grid h-11 w-11 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur transition-colors hover:border-white hover:bg-white hover:text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-black/60 disabled:hover:text-white";
+  const down = (e: PointerEvent) => {
+    pointer.current = { x: e.clientX, id: e.pointerId, moved: false };
+  };
+  const move = (e: PointerEvent) => {
+    const p = pointer.current;
+    if (!p || p.id !== e.pointerId) return;
+    const dx = e.clientX - p.x;
+    if (Math.abs(dx) > 6 && !p.moved) {
+      p.moved = true;
+      stage.current?.setPointerCapture(e.pointerId);
+    }
+    if (p.moved) setDrag(dx * DRAG_DEG_PER_PX);
+  };
+  const up = (e: PointerEvent) => {
+    const p = pointer.current;
+    if (!p || p.id !== e.pointerId) return;
+    if (p.moved) setTurn((t) => t - Math.round(drag / step));
+    setDrag(0);
+    // a drag must not count as a click on the card under the finger
+    window.setTimeout(() => (pointer.current = null), 0);
+  };
+
+  const dragging = drag !== 0;
+  const arrow = "grid h-11 w-11 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur transition-colors hover:border-white hover:bg-white hover:text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600";
 
   return (
-    <section aria-roledescription="carousel" aria-label="Pit wall tools" className="space-y-5">
+    <section aria-roledescription="carousel" aria-label="Pit wall tools" className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <p className="font-mono text-xs uppercase tracking-[0.3em] text-zinc-400" aria-live="polite">
-          <span className="text-white">{String(active + 1).padStart(2, "0")}</span> / {String(tools.length).padStart(2, "0")} · {tools[active]?.title}
+          <span className="text-white">{String(active + 1).padStart(2, "0")}</span> / {String(n).padStart(2, "0")} · {tools[active]?.title}
         </p>
         <div className="flex gap-2">
-          <button type="button" aria-label="Previous tool" disabled={active === 0} onClick={() => go(active - 1)} className={arrow}><ChevronLeft aria-hidden="true" size={20} /></button>
-          <button type="button" aria-label="Next tool" disabled={active === tools.length - 1} onClick={() => go(active + 1)} className={arrow}><ChevronRight aria-hidden="true" size={20} /></button>
+          <button type="button" aria-label="Previous tool" onClick={() => setTurn((t) => t - 1)} className={arrow}><ChevronLeft aria-hidden="true" size={20} /></button>
+          <button type="button" aria-label="Next tool" onClick={() => setTurn((t) => t + 1)} className={arrow}><ChevronRight aria-hidden="true" size={20} /></button>
         </div>
       </div>
 
-      {/* edge to edge, with the page gutters restored as padding so the first card lines up with the headline */}
       <div
-        ref={track}
-        onKeyDown={onKey}
+        ref={stage}
         tabIndex={0}
-        aria-label="Swipe, scroll or use the arrow keys"
-        className={`-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 py-4 [scroll-padding-inline:1.25rem] sm:px-8 sm:[scroll-padding-inline:2rem] lg:px-12 lg:[scroll-padding-inline:3rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600 sm:-mx-8 lg:-mx-12 ${hide}`}
+        aria-label="Turn the ring with the arrow keys, or drag it"
+        onKeyDown={onKey}
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={up}
+        className="relative h-[26rem] cursor-grab select-none overflow-hidden [perspective:1700px] [touch-action:pan-y] focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600 active:cursor-grabbing"
       >
-        {tools.map((t, i) => {
-          const accent = ACCENTS[i % ACCENTS.length];
-          const on = i === active;
-          return (
-            <div key={t.to} data-card role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${tools.length}: ${t.title}`} className="w-[min(26rem,82vw)] shrink-0 snap-start">
-            <Link
-              to={t.to}
-              style={{ "--accent": accent, backgroundImage: `radial-gradient(circle at 15% 0%, ${accent}2e, transparent 55%), radial-gradient(circle at 100% 100%, ${accent}14, transparent 50%)` } as CSSProperties}
-              className={`group relative flex h-[22rem] w-full flex-col justify-between overflow-hidden rounded-sm border bg-[#0a0a0a] p-6 transition-all duration-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 motion-reduce:transition-none ${on ? "scale-100 border-[var(--accent)] opacity-100 shadow-[0_0_40px_-12px_var(--accent)]" : "scale-[0.94] border-white/10 opacity-60 hover:opacity-90"}`}
-            >
-              <span aria-hidden="true" className="pointer-events-none absolute -bottom-6 -right-2 select-none font-serif text-[9rem] leading-none text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.12)]">{String(i + 1).padStart(2, "0")}</span>
-              <span className="relative flex items-center justify-between">
-                <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-zinc-400">REF_{String(i + 1).padStart(2, "0")}</span>
-                <span className="grid h-11 w-11 place-items-center rounded-full border" style={{ borderColor: accent, color: accent, backgroundColor: `${accent}1a` }}><t.Icon aria-hidden="true" size={20} strokeWidth={1.8} /></span>
-              </span>
-              <span className="relative block">
-                <span className="block text-3xl font-black uppercase italic leading-none tracking-tighter text-white">{t.title}</span>
-                <span className="mt-3 block text-zinc-300">{t.question}</span>
-                {t.teaser && <span className="mt-4 inline-block rounded-sm border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em]" style={{ borderColor: `${accent}88`, color: accent }}>{t.teaser}</span>}
-              </span>
-              <span className="relative flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">
-                <span className="h-px flex-1 bg-white/10" aria-hidden="true" />
-                <span className="ml-3 text-white transition-transform duration-300 group-hover:translate-x-1">OPEN →</span>
-              </span>
-            </Link>
-            </div>
-          );
-        })}
+        {/* the ring's floor: a flat ellipse the cards seem to stand on */}
+        <div aria-hidden="true" className="pointer-events-none absolute bottom-3 left-1/2 h-40 w-[78%] -translate-x-1/2 [transform:translateX(-50%)_rotateX(72deg)]">
+          <div className="h-full w-full rounded-[50%] border border-white/15 bg-[radial-gradient(ellipse_at_center,rgba(239,68,68,0.10),transparent_70%)]" />
+        </div>
+
+        <div
+          className="absolute left-1/2 top-4 [transform-style:preserve-3d] motion-reduce:!transition-none"
+          style={{
+            width: size.w,
+            height: "21rem",
+            marginLeft: -size.w / 2,
+            transform: `translateZ(${-size.ring}px) rotateY(${-turn * step + drag}deg)`,
+            transition: dragging ? "none" : "transform 900ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        >
+          {tools.map((t, i) => {
+            const accent = ACCENTS[i % ACCENTS.length];
+            const off = Math.abs(((mod(i - turn, n) + n / 2) % n) - n / 2); // how many places round the ring from the front
+            const front = i === active;
+            const opacity = front ? 1 : off <= 1.01 ? 0.78 : off <= 2.01 ? 0.5 : 0.3;
+            return (
+              <div
+                key={t.to}
+                role="group"
+                aria-roledescription="slide"
+                aria-label={`${i + 1} of ${n}: ${t.title}`}
+                className="absolute inset-0 [backface-visibility:hidden] motion-reduce:!transition-none"
+                style={{ transform: `rotateY(${i * step}deg) translateZ(${size.ring}px)`, opacity, transition: dragging ? "none" : "opacity 600ms" }}
+              >
+                <Link
+                  to={t.to}
+                  onFocus={() => goTo(i)}
+                  onClickCapture={(e) => { if (pointer.current?.moved) e.preventDefault(); }}
+                  draggable={false}
+                  style={{ "--accent": accent, backgroundImage: `radial-gradient(circle at 15% 0%, ${accent}30, transparent 55%), radial-gradient(circle at 100% 100%, ${accent}14, transparent 50%)` } as CSSProperties}
+                  className={`group relative flex h-full w-full flex-col justify-between overflow-hidden rounded-sm border bg-[#0a0a0a] p-6 transition-[border-color,box-shadow] duration-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${front ? "border-[var(--accent)] shadow-[0_0_44px_-10px_var(--accent)]" : "border-white/10"}`}
+                >
+                  <span aria-hidden="true" className="pointer-events-none absolute -bottom-6 -right-2 select-none font-serif text-[9rem] leading-none text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.12)]">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="relative flex items-center justify-between">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-zinc-400">REF_{String(i + 1).padStart(2, "0")}</span>
+                    <span className="grid h-11 w-11 place-items-center rounded-full border" style={{ borderColor: accent, color: accent, backgroundColor: `${accent}1a` }}><t.Icon aria-hidden="true" size={20} strokeWidth={1.8} /></span>
+                  </span>
+                  <span className="relative block">
+                    <span className="block text-2xl font-black uppercase italic leading-none tracking-tighter text-white sm:text-3xl">{t.title}</span>
+                    <span className="mt-3 block text-sm text-zinc-300 sm:text-base">{t.question}</span>
+                    {t.teaser && <span className="mt-4 inline-block rounded-sm border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.2em]" style={{ borderColor: `${accent}88`, color: accent }}>{t.teaser}</span>}
+                  </span>
+                  <span className="relative flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+                    <span className="h-px flex-1 bg-white/10" aria-hidden="true" />
+                    <span className="ml-3 text-white transition-transform duration-300 group-hover:translate-x-1">OPEN →</span>
+                  </span>
+                </Link>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div role="group" aria-label="Jump to a tool" className="flex flex-wrap justify-center gap-2">
         {tools.map((t, i) => (
-          <button key={t.to} type="button" aria-current={i === active ? "true" : undefined} onClick={() => go(i)} className={`rounded-full border px-3.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${i === active ? "border-white bg-white text-black" : "border-white/15 text-zinc-300 hover:border-white/60 hover:text-white"}`}>
+          <button key={t.to} type="button" aria-current={i === active ? "true" : undefined} onClick={() => goTo(i)} className={`rounded-full border px-3.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${i === active ? "border-white bg-white text-black" : "border-white/15 text-zinc-300 hover:border-white/60 hover:text-white"}`}>
             {t.title}
           </button>
         ))}
