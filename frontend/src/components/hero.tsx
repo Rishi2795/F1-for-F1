@@ -1,9 +1,15 @@
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
+import { useRef, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { hideBroken } from "../lib/images";
 
+const EASE = [0.22, 1, 0.36, 1] as const;
+const STREAKS = [14, 26, 38, 52, 63, 75, 86]; // % from the top
+
 const Hero = () => {
   const navigate = useNavigate();
+  const section = useRef<HTMLElement>(null);
+  const still = useReducedMotion();
   const assets = {
     desktopBg: "https://media.formula1.com/image/upload/c_lfill,w_3392/q_auto/v1740000000/fom-website/2026%20regulations/2026_Explainer_FIA_Front_3_4_1920x1080.webp",
     desktopCutout: "/f1_new-hd.webp",
@@ -11,121 +17,164 @@ const Hero = () => {
     mobileCutout: "/top_down-f1.webp",
   };
 
+  /* Scrolling away is part of the animation: the car drives off towards you while the headline lifts and fades, so the
+     page below arrives as the next scene instead of a hard cut. */
+  const { scrollYProgress } = useScroll({ target: section, offset: ["start start", "end start"] });
+  const move = (to: number) => (still ? 0 : to);
+  const carY = useTransform(scrollYProgress, [0, 1], [0, move(200)]);
+  const carScale = useTransform(scrollYProgress, [0, 1], [1, still ? 1 : 1.22]);
+  const carOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const titleY = useTransform(scrollYProgress, [0, 1], [0, move(-150)]);
+  const titleOpacity = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
+  const bgY = useTransform(scrollYProgress, [0, 1], [0, move(90)]);
+  const cueOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
+
+  /* Pointer parallax on desktop: the headline and the car drift in opposite directions, which reads as depth. */
+  const px = useMotionValue(0);
+  const py = useMotionValue(0);
+  const sx = useSpring(px, { stiffness: 70, damping: 18 });
+  const sy = useSpring(py, { stiffness: 70, damping: 18 });
+  const carX = useTransform(sx, [-0.5, 0.5], [still ? 0 : 26, still ? 0 : -26]);
+  const carShift = useTransform(sy, [-0.5, 0.5], [still ? 0 : 8, still ? 0 : -8]);
+  const titleX = useTransform(sx, [-0.5, 0.5], [still ? 0 : -14, still ? 0 : 14]);
+  const onMove = (e: MouseEvent<HTMLElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    px.set((e.clientX - r.left) / r.width - 0.5);
+    py.set((e.clientY - r.top) / r.height - 0.5);
+  };
+
   return (
-    <section className="relative min-h-[100dvh] w-full bg-[#050505] overflow-hidden flex flex-col">
-      
-  {/* ==========================================
-    DESKTOP VIEW (Perfectly Synchronized)
-========================================== */}
-<div className="hidden md:block absolute inset-0 bg-black">
-  
-  {/* Layer 1: Base Background */}
-  <div className="absolute inset-0 z-0">
-    <motion.img 
-      initial={{ opacity: 0 }}
-      animate={{ 
-        opacity: 1,
-        y: 100 // MATCHED: Sync with car
-      }}
-      transition={{ duration: 1.5 }}
-      src={assets.desktopBg}
-      referrerPolicy="no-referrer"
-      onError={hideBroken} 
-      className="w-full h-full object-cover object-center brightness-[0.25] scale-110" 
-      alt="Background"
-    />
-  </div>
+    <section ref={section} onMouseMove={onMove} className="relative min-h-[100dvh] w-full bg-[#050505] overflow-hidden flex flex-col">
+      {/* ==========================================
+          DESKTOP VIEW
+      ========================================== */}
+      <div className="hidden md:block absolute inset-0 bg-black">
+        {/* Layer 1: base background, slowly pushing in */}
+        <motion.div style={{ y: bgY }} className="absolute inset-0 z-0">
+          <motion.img
+            initial={{ opacity: 0, scale: 1.2 }}
+            animate={{ opacity: 1, scale: 1.1 }}
+            transition={{ duration: 2.4, ease: EASE }}
+            src={assets.desktopBg}
+            referrerPolicy="no-referrer"
+            onError={hideBroken}
+            className="w-full h-full translate-y-[100px] object-cover object-center brightness-[0.25]"
+            alt=""
+          />
+        </motion.div>
 
-  {/* Layer 2: 3D Text */}
-  <div className="absolute inset-0 z-10 flex flex-col justify-start pt-[4dvh] px-16 pointer-events-none">
-    <h2 className="flex flex-col text-left">
-      <motion.span className="text-[11rem] font-black italic tracking-tighter leading-[0.8] uppercase text-white drop-shadow-2xl">
-        F1 FOR
-      </motion.span>
-      <motion.span className="text-[11rem] font-black italic tracking-tighter leading-[0.8] uppercase text-transparent [-webkit-text-stroke:2px_#dc2626]">
-        FORMULA 1
-      </motion.span>
-    </h2>
-  </div>
+        {/* Speed lines: one fast sweep as the car arrives, then a slow idle drift */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5]">
+          {STREAKS.map((top, i) => (
+            <motion.span
+              key={top}
+              className="absolute h-px bg-gradient-to-r from-transparent via-red-500/70 to-transparent"
+              style={{ top: `${top}%`, width: `${28 + (i % 3) * 12}%` }}
+              initial={{ left: "-45%", opacity: 0 }}
+              animate={still ? { left: "-45%", opacity: 0 } : { left: ["-45%", "130%"], opacity: [0, 0.9, 0] }}
+              transition={{ duration: 1.1, delay: 0.5 + i * 0.07, ease: "easeIn" }}
+            />
+          ))}
+          {!still && STREAKS.slice(0, 4).map((top, i) => (
+            <motion.span
+              key={`idle-${top}`}
+              className="absolute h-px bg-gradient-to-r from-transparent via-white/25 to-transparent"
+              style={{ top: `${top + 5}%`, width: "24%" }}
+              initial={{ left: "-30%" }}
+              animate={{ left: "125%" }}
+              transition={{ duration: 7 + i * 1.5, repeat: Infinity, ease: "linear", delay: 3 + i * 1.7 }}
+            />
+          ))}
+        </div>
 
-  {/* Layer 3: The Foreground Car */}
-  <div className="absolute inset-0 z-20 pointer-events-none">
-    <motion.img 
-      initial={{ opacity: 0, scale: 1.05 }}
-      animate={{ 
-        opacity: 1, 
-        scale: 1, 
-        y: 100 // MATCHED: Sync with background
-      }}
-      transition={{ duration: 1.5 }}
-      src={assets.desktopCutout} 
-      className="w-full h-full object-cover object-center drop-shadow-[0_30px_60px_rgba(0,0,0,1)]" 
-      alt="Car Overlay"
-    />
-  </div>
-</div>
+        {/* Layer 2: headline, each line rising out of a mask */}
+        <motion.div style={{ y: titleY, x: titleX, opacity: titleOpacity }} className="absolute inset-0 z-10 flex flex-col justify-start pt-[4dvh] px-16 pointer-events-none">
+          <h2 className="flex flex-col text-left">
+            <span className="block overflow-hidden pb-[0.06em]">
+              <motion.span initial={{ y: "105%" }} animate={{ y: 0 }} transition={{ duration: 1, delay: 0.2, ease: EASE }} className="block text-[11rem] font-black italic tracking-tighter leading-[0.8] uppercase text-white drop-shadow-2xl">
+                F1 FOR
+              </motion.span>
+            </span>
+            <span className="block overflow-hidden pb-[0.06em]">
+              <motion.span initial={{ y: "105%" }} animate={{ y: 0 }} transition={{ duration: 1, delay: 0.38, ease: EASE }} className="block text-[11rem] font-black italic tracking-tighter leading-[0.8] uppercase text-transparent [-webkit-text-stroke:2px_#dc2626]">
+                FORMULA 1
+              </motion.span>
+            </span>
+          </h2>
+        </motion.div>
+
+        {/* A red pool of light under the car that breathes */}
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-[10%] left-[22%] z-[15] h-[14%] w-[56%] rounded-full bg-red-600/30 blur-3xl"
+          initial={{ opacity: 0 }}
+          animate={still ? { opacity: 0.5 } : { opacity: [0, 0.75, 0.45, 0.75] }}
+          transition={still ? { duration: 1 } : { duration: 5, delay: 1, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+        />
+
+        {/* Layer 3: the car. Scroll and pointer move it, a slow float sits on top, and the entrance slides it in out of a blur. */}
+        <motion.div style={{ x: carX, y: carY, scale: carScale, opacity: carOpacity }} className="absolute inset-0 z-20 pointer-events-none">
+          <motion.div style={{ y: carShift }} className="h-full w-full">
+            <motion.div className="h-full w-full translate-y-[100px]" animate={still ? undefined : { y: [0, -9, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}>
+              <motion.img
+                initial={{ opacity: 0, x: 220, scale: 1.06, filter: "blur(16px)" }}
+                animate={{ opacity: 1, x: 0, scale: 1, filter: "blur(0px)" }}
+                transition={{ duration: 1.5, delay: 0.35, ease: EASE }}
+                src={assets.desktopCutout}
+                className="w-full h-full object-cover object-center drop-shadow-[0_30px_60px_rgba(0,0,0,1)]"
+                alt="A 2026-era Formula 1 car"
+              />
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      </div>
+
       {/* ==========================================
           MOBILE ENGINE (sm only)
       ========================================== */}
       <div className="block md:hidden absolute inset-0">
-        {/* Top-Down BG */}
-        <img src={assets.mobileBg} referrerPolicy="no-referrer" onError={hideBroken} className="w-full h-full object-cover brightness-[0.4]" alt="" />
-        
-        {/* MOBILE TEXT: Centered and High */}
-        <div className="absolute inset-0 z-20 flex flex-col justify-start pt-[12dvh] px-6 text-center pointer-events-none">
-          <h2 className="flex flex-col">
-            <motion.span className="text-[15vw] font-black italic tracking-tighter leading-[0.8] text-white">
-              F1 FOR
-            </motion.span>
-            <motion.span className="text-[15vw] font-black italic tracking-tighter leading-[0.8] text-red-500 [-webkit-text-stroke:1px_#dc2626]">
-              FORMULA 1
-            </motion.span>
-          </h2>
-        </div>
+        <motion.img initial={{ opacity: 0, scale: 1.15 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.6, ease: EASE }} src={assets.mobileBg} referrerPolicy="no-referrer" onError={hideBroken} className="w-full h-full object-cover brightness-[0.4]" alt="" />
 
-        {/* MOBILE CAR: Scaled to fill vertical space */}
-        {/* MOBILE CAR: Full-Bleed Vertical Alignment */}
-<div className="absolute inset-0 z-10">
-  <motion.img 
-    initial={{ 
-      scale: 1.1, // Start slightly larger
-      opacity: 0,
-      y: 20 
-    }} 
-    animate={{ 
-      scale: 1, // Settle to 100% width/height
-      opacity: 1,
-      y: 0 
-    }}
-    transition={{ duration: 1.2, ease: "easeOut" }}
-    src={assets.mobileCutout} 
-    /* CHANGE: object-cover makes the car stay "tall" and fill the screen 
-       without being squeezed or pushed by padding.
-    */
-    className="w-full h-full object-cover object-center pointer-events-none" 
-  />
-</div>
+        <motion.div style={{ y: titleY, opacity: titleOpacity }} className="absolute inset-0 z-20 flex flex-col justify-start pt-[12dvh] px-6 text-center pointer-events-none">
+          <h2 className="flex flex-col">
+            <span className="block overflow-hidden pb-[0.06em]">
+              <motion.span initial={{ y: "105%" }} animate={{ y: 0 }} transition={{ duration: 0.9, delay: 0.2, ease: EASE }} className="block text-[15vw] font-black italic tracking-tighter leading-[0.8] text-white">F1 FOR</motion.span>
+            </span>
+            <span className="block overflow-hidden pb-[0.06em]">
+              <motion.span initial={{ y: "105%" }} animate={{ y: 0 }} transition={{ duration: 0.9, delay: 0.34, ease: EASE }} className="block text-[15vw] font-black italic tracking-tighter leading-[0.8] text-red-500 [-webkit-text-stroke:1px_#dc2626]">FORMULA 1</motion.span>
+            </span>
+          </h2>
+        </motion.div>
+
+        <motion.div style={{ y: carY, scale: carScale, opacity: carOpacity }} className="absolute inset-0 z-10">
+          <motion.img
+            initial={{ scale: 1.1, opacity: 0, y: 40, filter: "blur(10px)" }}
+            animate={{ scale: 1, opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1.3, delay: 0.3, ease: EASE }}
+            src={assets.mobileCutout}
+            className="w-full h-full object-cover object-center pointer-events-none"
+            alt="A Formula 1 car seen from above"
+          />
+        </motion.div>
       </div>
 
       {/* ==========================================
           UNIVERSAL UI (Navigation & Buttons)
       ========================================== */}
       <div className="relative z-30 w-full min-h-[100dvh] flex flex-col p-8 pointer-events-none">
-        <div className="mt-auto pb-44 md:pb-12 flex justify-center md:justify-start">
-            <button 
-              onClick={() => navigate("/explore")} // 3. Add the redirect path
-              className="group flex flex-col items-center md:items-start gap-2 pointer-events-auto"
-            >
-               <span className="text-[10px] font-black italic text-red-500 tracking-[0.5em] uppercase">
-                 Start_exploring
-               </span>
-               <div className="w-12 h-[1px] bg-red-600/40 group-hover:w-20 transition-all duration-300" />
-            </button>
-        </div>
+        <motion.div style={{ opacity: cueOpacity }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 1.5, ease: EASE }} className="mt-auto pb-44 md:pb-12 flex justify-center md:justify-start">
+          <button onClick={() => navigate("/explore")} className="group flex flex-col items-center md:items-start gap-2 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-red-600">
+            <span className="flex items-center gap-3 text-[10px] font-black italic text-red-500 tracking-[0.5em] uppercase">
+              Start_exploring
+              <motion.span aria-hidden="true" animate={still ? undefined : { x: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>→</motion.span>
+            </span>
+            <div className="w-12 h-[1px] bg-red-600/40 group-hover:w-24 transition-all duration-500" />
+          </button>
+        </motion.div>
       </div>
 
-      {/* Finishing Vignette */}
-      <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-[#050505] to-transparent z-25 pointer-events-none" />
+      {/* Finishing Vignette: the hero fades into the next section */}
+      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#050505] to-transparent z-[25] pointer-events-none" />
     </section>
   );
 };
