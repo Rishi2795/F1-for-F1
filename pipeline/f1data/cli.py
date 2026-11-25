@@ -230,6 +230,7 @@ def run_refresh(seasons: list[int], skip_sync: bool, refresh: bool) -> int:
     code = run_ingest(seasons, None, refresh, skip_sync, models=False)
     run_enrich(seasons, refresh)
     run_news_step()
+    run_simulator_step()
     run_telemetry_step(seasons, limit=REFRESH_TELEMETRY_LIMIT)
     run_replay_step(seasons, limit=REFRESH_REPLAY_LIMIT)
     run_derive(audit)
@@ -251,6 +252,16 @@ REFRESH_TELEMETRY_LIMIT = 3  # newest races only, so a scheduled refresh stays q
 
 
 REFRESH_REPLAY_LIMIT = 2  # the newest races only
+
+
+def run_simulator_step() -> int:
+    """Fit the strategy simulator's model from the cached race laps and publish it."""
+    from .simmodel import refresh_simulator
+
+    publisher = Publisher()
+    count = refresh_simulator(publisher)
+    AuditLog().record("simulator.model", "published", "success" if count else "skipped", details={"circuits": count})
+    return count
 
 
 def run_news_step() -> int:
@@ -459,6 +470,7 @@ def main(argv: list[str] | None = None) -> int:
     rep = sub.add_parser("replay", help="real-position replay data for the newest races (needs network)")
     rep.add_argument("--seasons", default=None, help="default: 2023 to the current season")
     rep.add_argument("--limit", type=int, default=REFRESH_REPLAY_LIMIT, help="how many of the newest races (default 2)")
+    sub.add_parser("simmodel", help="fit and publish the strategy simulator's model from cached race laps")
     sub.add_parser("news", help="collect motorsport headlines from the publishers' RSS feeds (needs network)")
     sub.add_parser("derive", help="excitement, teammate duels and circuit profiles from the published races")
     sub.add_parser("predict", help="rebuild race and championship forecasts from the published races")
@@ -487,6 +499,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "replay":
         seasons = _parse_seasons(args.seasons) if args.seasons else list(range(2023, config.DEFAULT_LAST_SEASON + 1))
         run_replay_step(seasons, limit=args.limit)
+        return 0
+    if args.command == "simmodel":
+        run_simulator_step()
         return 0
     if args.command == "news":
         run_news_step()

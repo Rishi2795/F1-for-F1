@@ -212,3 +212,9 @@ def test_lap_detail(client):
 def test_team_pace(client):
     assert client.get("/api/seasons/2024/team-pace").json()["teams"] == []
     assert client.get("/api/seasons/2030/team-pace").status_code == 404
+
+
+def test_simulator_model_is_a_clear_404_until_it_is_published(client):
+    response = client.get("/api/simulator/model")
+    assert response.status_code == 404
+    assert "Simulator model" in response.text

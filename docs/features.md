@@ -10,6 +10,7 @@ private API, with a free tier and a paid tier for archives, long replays and an 
 | Standings, drivers and teams | Yes | Official points, sprints included, per round, with places gained or lost |
 | Standings progression (championship context) | Yes | Points and gap charts; click a round to see the standings then |
 | Points scenarios | Yes, better | "What does X need?" maths plus simulated title odds |
+| Strategy simulator | Yes, rebuilt | A 22-car race simulator on a model fitted from real laps: tyre wear and compound pace per circuit, fuel, track heat, rain, safety cars, traffic, retirements. Test a plan over hundreds of races or race it live. Measured and assumed parts are labelled on the page |
 | Calendar | Yes | With a worth-watching score on every played race |
 | Race page: positions, gaps | Yes | Classification, lap-by-lap position chart, gap to the leader (exact, from timing) |
 | Position over laps | Yes | Lap chart and the replay |

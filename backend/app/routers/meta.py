@@ -32,3 +32,12 @@ def news(request: Request, store: PublishedStore = Depends(get_store)):
     if blob is None:
         raise not_available("News")
     return json_response(request, blob)
+
+
+@router.api_route("/simulator/model", methods=["GET", "HEAD"])
+def simulator_model(request: Request, store: PublishedStore = Depends(get_store)):
+    """The strategy simulator's fitted model: tyres, fuel, heat and rain per circuit, and car and driver pace."""
+    blob = store.get("simulator/model.json")
+    if blob is None:
+        raise not_available("Simulator model")
+    return json_response(request, blob)

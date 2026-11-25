@@ -21,6 +21,7 @@ const PAGES = [
   "/race/2026/9/lab",
   "/about_app",
   "/schedule",
+  "/simulation",
   "/news",
   "/watch",
   "/duels",

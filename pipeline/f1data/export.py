@@ -267,6 +267,7 @@ class Publisher:
         problems.extend(self._incident_problems())
         problems.extend(self._headshot_problems())
         problems.extend(self._news_problems())
+        problems.extend(self._simulator_problems())
         manifest = self.root / "manifest.json"
         if not manifest.exists():
             problems.append("manifest.json missing")
@@ -312,6 +313,15 @@ class Publisher:
 
         return [f"headshots: {code} has a link that is not an https png on media.formula1.com"
                 for code, url in self.load_headshots().items() if not acceptable(url)]
+
+    def _simulator_problems(self) -> list[str]:
+        """The simulator's model drives a public page: a missing file is fine, a broken or implausible one is not."""
+        path = self.root / "simulator" / "model.json"
+        if not path.exists():
+            return []
+        from .simmodel import problems
+
+        return problems(path.read_text(encoding="utf-8"))
 
     def _news_problems(self) -> list[str]:
         """Every headline must link to an https page on its own publisher's domain, with a title and a real date."""

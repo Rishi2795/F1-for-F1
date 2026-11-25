@@ -5,7 +5,7 @@ test.describe("driver photos and the simulator link", () => {
     await page.goto("/explore");
     await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Sim", exact: true }).click();
     await expect(page).toHaveURL(/\/simulation$/);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText(/PIT_WALL/i);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/Strategy/i);
   });
 
   // A 1x1 transparent png, so the tests never depend on formula1.com being reachable.

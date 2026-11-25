@@ -29,7 +29,7 @@ const GROUPS: { name: string; entries: Entry[] }[] = [
   {
     name: "Play",
     entries: [
-      { to: "/simulation", title: "Simulator", note: "Out-strategise the engineer" },
+      { to: "/simulation", title: "Simulator", note: "Plan stops, add rain and safety cars, test across hundreds of races" },
       { to: "/play", title: "Beat the model", note: "Pick the podium, see who called it better" },
       { to: "/my", title: "My driver", note: "A briefing on your driver, saved on this device" },
     ],
