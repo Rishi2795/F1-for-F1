@@ -1,11 +1,13 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { chip } from "../ui/chipstyle";
+import { advise, type Advice } from "../../lib/sim/advisor";
 import type { Race } from "../../lib/sim/race";
 import { DRY, type Compound, type ModeKey, type SimCircuit, type SimModel } from "../../lib/sim/types";
 import { Tyre } from "./bits";
 import { NAMES, fmtGap, fmtRace, fmtTime } from "./format";
 import { ChequeredStrip, Confetti } from "./fx";
+import { AdvisorCard, ControlCard, RestartPanel } from "./pitwall";
 import { SampleRace } from "./results";
 
 const SPEEDS = [
@@ -24,24 +26,87 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
   const [mode, setMode] = useState<ModeKey>("standard");
   const [announce, setAnnounce] = useState("");
   const [toast, setToast] = useState("");
+  const [advice, setAdvice] = useState<Advice | null>(null);
+  const [thinking, setThinking] = useState(false);
+  const [auto, setAuto] = useState(true);
+  const [pauseOn, setPauseOn] = useState(true);
+  const [scLaps, setScLaps] = useState(3);
+  const [restartTyre, setRestartTyre] = useState<Compound | null>(null);
+  const [queue, setQueue] = useState<{ inLaps: number; lap: number; tyre: Compound } | null>(null);
+  const [queueForm, setQueueForm] = useState<{ inLaps: number; tyre: Compound }>({ inLaps: 3, tyre: "HARD" });
+  const [calls, setCalls] = useState<{ agreed: number; total: number }>({ agreed: 0, total: 0 });
+  const adviceRef = useRef<Advice | null>(null);
   const still = useReducedMotion();
   const pitRef = useRef<Compound | null>(null);
   const modeRef = useRef<ModeKey>("standard");
+  const queueRef = useRef(queue);
+  const pauseRef = useRef(pauseOn);
   useEffect(() => {
     pitRef.current = pit;
     modeRef.current = mode;
-  }, [pit, mode]);
+    adviceRef.current = advice;
+    queueRef.current = queue;
+    pauseRef.current = pauseOn;
+  }, [pit, mode, advice, queue, pauseOn]);
+
+  const note = useCallback((events: { text: string }[]) => {
+    if (!events.length) return;
+    setAnnounce(events.map((e) => e.text).join(". "));
+    setToast(events[events.length - 1].text);
+  }, []);
 
   const advance = useCallback(() => {
-    if (race.finished) return;
-    const out = race.step({ pit: pitRef.current, mode: modeRef.current });
-    setPit(null);
-    if (out.events.length) {
-      setAnnounce(out.events.map((e) => e.text).join(". "));
-      setToast(out.events[out.events.length - 1].text);
+    if (race.finished || race.suspended) return;
+    // a queued stop fires when its lap comes up
+    let call = pitRef.current;
+    const q = queueRef.current;
+    if (!call && q && race.lap + 1 >= q.lap) {
+      call = q.tyre;
+      setQueue(null);
     }
+    // did the player do what the pit wall advised for this lap?
+    const a = adviceRef.current;
+    if (a && a.lap === race.lap) {
+      const advised = a.best.action.pit;
+      const calledIt = advised !== null || call !== null;
+      if (calledIt) setCalls((c) => ({ agreed: c.agreed + (advised === call ? 1 : 0), total: c.total + 1 }));
+    }
+    const out = race.step({ pit: call, mode: modeRef.current });
+    setPit(null);
+    note(out.events);
+    if (pauseRef.current && out.events.some((e) => ["sc", "vsc", "red", "rain", "dry"].includes(e.kind))) setPlaying(false);
+    if (race.suspended) setPlaying(false);
     redraw();
+  }, [race, note]);
+
+  const ask = useCallback(() => {
+    if (race.finished) return;
+    setThinking(true);
+    const id = window.setTimeout(() => {
+      setAdvice(advise(race, 28));
+      setThinking(false);
+    }, 20);
+    return () => window.clearTimeout(id);
   }, [race]);
+
+  useEffect(() => {
+    if (!auto || race.finished || (playing && speed > 0)) return;
+    return ask();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [race.lap, race.suspended, auto, playing, speed]);
+
+  const restart = () => {
+    const out = race.restart(restartTyre);
+    note(out);
+    setRestartTyre(null);
+    redraw();
+  };
+  const control = (fn: () => { text: string }[]) => {
+    const out = fn();
+    note(out);
+    setPlaying(false);
+    redraw();
+  };
 
   useEffect(() => {
     if (!toast) return;
@@ -88,8 +153,8 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
         <p className="font-serif text-4xl leading-none text-white" aria-label={`Lap ${race.lap} of ${total}`}>
           {Math.min(race.lap + (race.finished ? 0 : 1), total)}<span className="text-xl text-zinc-400">/{total}</span>
         </p>
-        <span className={`rounded-sm border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.25em] ${flag === "sc" ? "border-amber-400 bg-amber-400/15 text-amber-300" : flag === "vsc" ? "border-yellow-300/70 text-yellow-200" : "border-emerald-400/60 text-emerald-300"}`}>
-          {race.finished ? "Finished" : flag === "sc" ? "Safety car" : flag === "vsc" ? "Virtual SC" : "Green"}
+        <span className={`rounded-sm border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.25em] ${flag === "sc" ? "border-amber-400 bg-amber-400/15 text-amber-300" : flag === "vsc" ? "border-yellow-300/70 text-yellow-200" : "border-emerald-400/60 text-emerald-300"} ${race.suspended ? "!border-red-500 !bg-red-500/15 !text-red-300" : ""}`}>
+          {race.finished ? "Finished" : race.suspended ? "Red flag" : flag === "sc" ? "Safety car" : flag === "vsc" ? "Virtual SC" : "Green"}
         </span>
         <span className="rounded-sm border border-white/15 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-200">
           {wet < 0.08 ? "Dry" : wet < 0.35 ? "Damp" : wet < 0.7 ? "Wet" : "Very wet"}
@@ -98,8 +163,8 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {!race.finished && (
             <>
-              <button type="button" onClick={() => setPlaying((p) => !p)} className={chip(playing)}>{playing ? "Pause" : "Play"}</button>
-              <button type="button" onClick={() => { setPlaying(false); advance(); }} className={chip(false)}>Next lap</button>
+              <button type="button" disabled={race.suspended} onClick={() => setPlaying((p) => !p)} className={`${chip(playing)} disabled:opacity-40`}>{playing ? "Pause" : "Play"}</button>
+              <button type="button" disabled={race.suspended} onClick={() => { setPlaying(false); advance(); }} className={`${chip(false)} disabled:opacity-40`}>Next lap</button>
               <div role="group" aria-label="Speed" className="flex gap-1">
                 {SPEEDS.map((s, i) => <button key={s.label} type="button" aria-pressed={speed === i} onClick={() => setSpeed(i)} className={`${chip(speed === i)} !px-2.5`}>{s.label}</button>)}
               </div>
@@ -107,6 +172,12 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
           )}
           <button type="button" onClick={onExit} className={chip(false)}>Leave</button>
         </div>
+        {!race.finished && (
+          <label className="flex w-full items-center gap-2 text-xs text-zinc-300">
+            <input type="checkbox" className="h-4 w-4 accent-red-500" checked={pauseOn} onChange={(e) => setPauseOn(e.target.checked)} />
+            Pause when something happens: a safety car, a red flag, rain arriving or leaving
+          </label>
+        )}
       </div>
       <p className="sr-only" role="status" aria-live="polite">{announce}</p>
 
@@ -135,6 +206,7 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
           <p className="text-zinc-300">
             {myResult.dnf ? `Out on lap ${myResult.dnf}. It happens: retirements are random in this model.` : myResult.dsq ? "A dry race needs two different dry compounds." : `${myResult.gap === 0 ? "You won" : fmtGap(myResult.gap) + " behind the winner"} · ${myResult.stops} ${myResult.stops === 1 ? "stop" : "stops"} · ${fmtRace(myResult.total)}`}
           </p>
+          {calls.total > 0 && <p className="text-sm text-zinc-300">You made the same call as the pit wall on {calls.agreed} of the {calls.total} laps where it had a view.</p>}
           {!myResult.dnf && <SampleRace result={myResult} total={total} />}
           <div className="flex gap-2">
             <button type="button" onClick={onAgain} className={chip(true)}>Race again</button>
@@ -173,6 +245,10 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
         </div>
 
         <div className="min-w-0 space-y-5">
+          {race.suspended && me && !race.finished && <RestartPanel choice={restartTyre} onChoice={setRestartTyre} onRestart={restart} current={me.compound} />}
+          {me && !race.finished && (
+            <AdvisorCard advice={advice} thinking={thinking} onAsk={ask} auto={auto} onAuto={setAuto} suspended={race.suspended} onDo={(c) => (race.suspended ? setRestartTyre(c) : setPit(c))} />
+          )}
           {me && !race.finished && mine >= 0 && (
             <section aria-label="Your car" className="glass space-y-4 p-5">
               <div className="flex items-end justify-between">
@@ -207,9 +283,28 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
                 </div>
                 <p className="mt-2 text-xs text-zinc-400">{pit ? `Boxing for ${NAMES[pit].toLowerCase()}s. Tap again to cancel.` : flag !== "green" ? "A stop under the safety car costs about half as much." : "Pick a tyre to pit at the end of this lap."}</p>
               </div>
+              <div>
+                <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">Or plan a stop</p>
+                {queue ? (
+                  <p className="flex items-center gap-3 text-sm text-zinc-200"><Tyre compound={queue.tyre} size={20} /> Box for {NAMES[queue.tyre].toLowerCase()}s at lap {queue.lap}<button type="button" onClick={() => setQueue(null)} className="font-mono text-[10px] uppercase tracking-widest text-zinc-300 underline-offset-4 hover:text-white hover:underline">Cancel</button></p>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-300">
+                    Box in
+                    <label className="sr-only" htmlFor="q-laps">Laps until the stop</label>
+                    <input id="q-laps" type="number" min={1} max={30} value={queueForm.inLaps} onChange={(e) => setQueueForm({ ...queueForm, inLaps: Math.max(1, Math.min(30, Number(e.target.value) || 1)) })} className="w-14 rounded-sm border border-white/15 bg-black/40 px-2 py-1.5 text-center font-mono text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600" />
+                    laps for
+                    <label className="sr-only" htmlFor="q-tyre">Tyre for the stop</label>
+                    <select id="q-tyre" value={queueForm.tyre} onChange={(e) => setQueueForm({ ...queueForm, tyre: e.target.value as Compound })} className="rounded-sm border border-white/15 bg-black/40 px-2 py-1.5 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600">
+                      {TYRES.map((c) => <option key={c} value={c}>{NAMES[c]}</option>)}
+                    </select>
+                    <button type="button" onClick={() => setQueue({ ...queueForm, lap: Math.min(total - 1, race.lap + queueForm.inLaps) })} className={`${chip(false)} !px-3 !py-1.5`}>Schedule</button>
+                  </div>
+                )}
+              </div>
               {!wetUsed && dry.length < 2 && <p className="text-xs text-amber-300">You have only used one dry compound. You need a second before the flag, unless you switch to wet tyres.</p>}
             </section>
           )}
+          {!race.finished && <ControlCard disabled={race.suspended || race.lap < 1} scLaps={scLaps} onScLaps={setScLaps} onSc={() => control(() => race.deploy("sc", scLaps))} onVsc={() => control(() => race.deploy("vsc", 2))} onRed={() => control(() => race.callRedFlag())} />}
           <section aria-label="Race log" className="glass p-5">
             <h3 className="mb-2 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">Race log</h3>
             <ul className="max-h-48 space-y-1 overflow-y-auto text-sm text-zinc-200">

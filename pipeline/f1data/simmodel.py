@@ -47,7 +47,7 @@ MIN_CIRCUIT_LAPS = 150
 PRIOR_RACES = 4  # weight, in races, of the global rate when estimating a circuit's safety-car chance
 SCHEMA = 1
 MIN_SHARE_OF_PREVIOUS = 0.9
-EMPTY_STATS = {"races": 0, "sc": 0, "vsc": 0, "rain": 0, "laps": None}
+EMPTY_STATS = {"races": 0, "sc": 0, "vsc": 0, "rain": 0, "red": 0, "laps": None}
 VERSION = "sim-v1"
 SIM_PATH = "simulator/model.json"
 
@@ -352,6 +352,7 @@ def _race_stats(publisher: Publisher) -> dict[str, dict]:
             vsc = getattr(derived, "vsc_laps", None) or 0
             s["sc"] += 1 if sc > 0 else 0
             s["vsc"] += 1 if vsc > 0 else 0
+            s["red"] += 1 if getattr(derived, "red_flag", False) else 0
             if sc > 0:
                 s["sc_laps"].append(sc)
             if doc.weather and doc.weather.rainfall:
@@ -415,6 +416,7 @@ def build_model(publisher: Publisher, tracing: TracingInsightsSource) -> dict | 
     prior_sc = sum(s["sc"] for s in totals) / max(1, sum(s["races"] for s in totals))
     prior_vsc = sum(s["vsc"] for s in totals) / max(1, sum(s["races"] for s in totals))
     prior_rain = sum(s["rain"] for s in totals) / max(1, sum(s["races"] for s in totals))
+    prior_red = sum(s["red"] for s in totals) / max(1, sum(s["races"] for s in totals))
     all_pits = [p for s in totals for p in s["pit"]]
     pit_default = statistics.median(all_pits) if all_pits else 22.0
     sc_lengths = [x for s in totals for x in s["sc_laps"]]
@@ -464,6 +466,7 @@ def build_model(publisher: Publisher, tracing: TracingInsightsSource) -> dict | 
             "sc_prob": round(_shrunk(s["sc"], s["races"], prior_sc), 3),
             "vsc_prob": round(_shrunk(s["vsc"], s["races"], prior_vsc), 3),
             "rain_prob": round(_shrunk(s["rain"], s["races"], prior_rain), 3),
+            "red_prob": round(_shrunk(s["red"], s["races"], prior_red), 3),
             "sc_laps": round(statistics.fmean(s["sc_laps"] or sc_lengths or [4.0]), 1),
             "overtakes": doc.get("avg_overtakes"),
             "track_temp_c": round(statistics.median(temps), 1) if temps else 35.0,
@@ -584,7 +587,7 @@ def problems(path_text: str) -> list[str]:
             found.append(f"simulator {k['slug']}: {k['laps']} laps implausible")
         if set(k.get("max_age", {})) != set(DRY):
             found.append(f"simulator {k['slug']}: missing observed stint lengths")
-        for key in ("sc_prob", "vsc_prob", "rain_prob"):
+        for key in ("sc_prob", "vsc_prob", "rain_prob", "red_prob"):
             if not 0 <= k[key] <= 1:
                 found.append(f"simulator {k['slug']}: {key} outside 0..1")
     if not doc.get("circuits"):

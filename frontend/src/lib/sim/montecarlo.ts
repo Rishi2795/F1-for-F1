@@ -1,7 +1,7 @@
 import { buildField, drawEvents, drawWeather, fieldPlans, type PlayerSetup } from "./plan";
 import { POINTS, Race, type CarResult } from "./race";
 import { rng } from "./rng";
-import type { PlanStint, RaceEvents, SimCircuit, SimModel, Weather } from "./types";
+import type { PlanStint, PlayerRules, RaceEvents, SimCircuit, SimModel, Weather } from "./types";
 
 export type Scenario = {
   model: SimModel;
@@ -15,6 +15,8 @@ export type Scenario = {
   events: RaceEvents | null;
   scProb: number;
   rainProb?: number;
+  /** how the player's engineers act when following the plan */
+  rules?: PlayerRules;
 };
 
 export type Summary = {
@@ -38,7 +40,7 @@ export function runOnce(s: Scenario, seed: number, plan = s.player.plan, manual 
   const events = s.events ?? drawEvents(r, s.circuit, s.total, s.scProb);
   const plans = fieldPlans(s.model, s.circuit, s.total, s.trackTemp, seed + 17);
   const cars = buildField(s.model, plans, { ...s.player, plan }, seed);
-  return new Race({ model: s.model, circuit: s.circuit, total: s.total, cars, weather, trackTemp: s.trackTemp, events, seed: seed * 7 + 1, manualPlayer: manual });
+  return new Race({ model: s.model, circuit: s.circuit, total: s.total, cars, weather, trackTemp: s.trackTemp, events, seed: seed * 7 + 1, manualPlayer: manual, rules: s.rules });
 }
 
 export function summarise(results: CarResult[][]): Summary {
@@ -80,7 +82,7 @@ export function monteCarlo(s: Scenario, runs: number, plan?: PlanStint[], seed0 
   return summarise(results);
 }
 
-const tick = () => new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+const tick = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 /** The same as `monteCarlo`, but hands the browser back between batches so the page stays responsive and can show progress. */
 export async function monteCarloAsync(

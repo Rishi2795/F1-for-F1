@@ -1,7 +1,7 @@
 import { gauss, rng } from "./rng";
 import { NOISE_S, lapTime, overtakingEase, slowLapTime, wetnessAt } from "./physics";
-import type { Compound, Dry, ModeKey, PlanStint, RaceEvents, SimCircuit, SimModel, Weather } from "./types";
-import { DRY } from "./types";
+import type { Compound, Dry, ModeKey, PlanStint, PlayerRules, RaceEvents, SimCircuit, SimModel, Weather } from "./types";
+import { DEFAULT_RULES, DRY } from "./types";
 
 export type CarSpec = {
   code: string;
@@ -25,11 +25,16 @@ export type RaceConfig = {
   seed: number;
   /** The player's car takes commands lap by lap instead of following its plan. */
   manualPlayer?: boolean;
+  /** The player's car is run by the engineers like any other (used when the advisor looks ahead). */
+  copilot?: boolean;
+  /** How the player's engineers act when following a plan. */
+  rules?: PlayerRules;
 };
 
-export type Command = { pit?: Compound | null; mode?: ModeKey };
+/** `pit` boxes the player's car at the end of this lap; `hold` keeps it out when the engineers would have boxed. */
+export type Command = { pit?: Compound | null; mode?: ModeKey; hold?: boolean };
 export type Flag = "green" | "vsc" | "sc";
-export type RaceEvent = { lap: number; kind: "sc" | "vsc" | "green" | "rain" | "dry" | "pit" | "info"; text: string; code?: string };
+export type RaceEvent = { lap: number; kind: "sc" | "vsc" | "red" | "green" | "rain" | "dry" | "pit" | "info"; text: string; code?: string };
 
 type CarState = {
   spec: CarSpec;
@@ -91,6 +96,7 @@ export const FORM_S = 0.38; // race-to-race spread of a driver's pace (set-up, c
 export const DNF_P = 0.07; // chance a car does not finish
 const START_GAP_S = 0.3;
 const BUNCH_S = 1.1;
+const RESTART_GAP_S = 0.4; // cars line up on the grid again after a red flag
 const isWetTyre = (c: Compound) => c === "INTERMEDIATE" || c === "WET";
 
 /** A lap-by-lap race of the whole field: tyres, fuel, traffic, safety cars, rain and pit decisions. */
@@ -103,9 +109,15 @@ export class Race {
   private rand: () => number;
   private wasWet = false;
   private lastFlag: Flag = "green";
+  private restartLap = -1;
+  /** the race is stopped under a red flag and waiting for `restart()` */
+  suspended = false;
+  /** safety cars, VSCs and red flags: a copy, so race control can add to it without touching the scenario */
+  readonly events: Required<RaceEvents>;
 
   constructor(cfg: RaceConfig) {
     this.cfg = cfg;
+    this.events = { sc: [...cfg.events.sc], vsc: [...cfg.events.vsc], red: [...(cfg.events.red ?? [])] };
     this.rand = rng(cfg.seed);
     this.cars = cfg.cars.map((spec, idx) => {
       const first = spec.plan[0];
@@ -114,7 +126,7 @@ export class Race {
         idx,
         t: (spec.grid - 1) * START_GAP_S,
         compound: first.compound,
-        age: 0,
+        age: first.startAge ?? 0,
         mode: first.mode ?? "standard",
         plan: spec.plan,
         stintIdx: 0,
@@ -144,8 +156,8 @@ export class Race {
 
   flagAt(lap: number): Flag {
     const within = (p: { start: number; laps: number }) => lap >= p.start && lap < p.start + p.laps;
-    if (this.cfg.events.sc.some(within)) return "sc";
-    if (this.cfg.events.vsc.some(within)) return "vsc";
+    if (this.events.sc.some(within)) return "sc";
+    if (this.events.vsc.some(within)) return "vsc";
     return "green";
   }
 
@@ -156,6 +168,7 @@ export class Race {
   /** Run one lap. `command` only matters for the player's car in manual mode. */
   step(command: Command = {}): { flag: Flag; wetness: number; events: RaceEvent[] } {
     const { model, circuit: k, total } = this.cfg;
+    if (this.suspended) return { flag: "green", wetness: this.wetnessNow(), events: [] };
     const lap = this.lap + 1;
     const flag = this.flagAt(lap);
     const wet = wetnessAt(this.cfg.weather, lap);
@@ -194,14 +207,17 @@ export class Race {
       }
       const manual = !!this.cfg.manualPlayer && !!c.spec.player;
       if (manual && command.mode) c.mode = command.mode;
-      const into = manual ? (command.pit ?? null) : this.decide(c, flag, wet, lap);
+      let into: Compound | null;
+      if (c.spec.player && command.pit) into = command.pit;
+      else if (manual || (c.spec.player && command.hold)) into = null;
+      else into = this.decide(c, flag, wet, lap);
       let t: number;
       if (flag === "green") {
         t = lapTime(model, k, { compound: c.compound, age: c.age, lap, total, car: c.spec.car + c.jitter, mode: c.mode, trackTemp: this.cfg.trackTemp, wetness: wet });
         t += NOISE_S * gauss(this.rand);
         const gap = gapAhead.get(c.idx);
         if (gap !== undefined && gap < 1.5) t += dirty * (1 - gap / 1.5);
-        if (lap === 1) t += 2.5; // standing start
+        if (lap === 1 || lap === this.restartLap) t += 2.5; // standing start
       } else {
         t = slowLapTime(k, flag) + 0.2 * gauss(this.rand);
       }
@@ -212,7 +228,8 @@ export class Race {
         const from = c.compound;
         c.compound = into;
         c.used.add(into);
-        c.age = 0;
+        const planned = c.plan[c.stintIdx + 1];
+        c.age = planned && planned.compound === into ? (planned.startAge ?? 0) : 0;
         c.stintLap = 0;
         c.stintIdx = Math.min(c.stintIdx + 1, c.plan.length - 1);
         if (!manual) c.mode = c.plan[c.stintIdx].mode ?? "standard";
@@ -230,6 +247,7 @@ export class Race {
     this.order = this.ranked().map((c) => c.idx);
     this.order.forEach((id, pos) => this.cars[id].positions.push(pos + 1));
     if (this.finished) this.checkRules(events);
+    else if (this.events.red.includes(lap)) this.stopRace(events, "Red flag: the race is stopped");
     this.feed.push(...events);
     return { flag, wetness: wet, events };
   }
@@ -256,12 +274,15 @@ export class Race {
     if (left <= 0) return null;
     const cur = c.plan[c.stintIdx];
     const next = c.plan[c.stintIdx + 1];
+    const rules = c.spec.player && !this.cfg.copilot ? (this.cfg.rules ?? DEFAULT_RULES) : null;
+    const engineered = !c.spec.player || !!this.cfg.copilot;
     // weather: wait a lap or two after it crosses the threshold, as teams do
-    const wantWet = wet > 0.38 && !isWetTyre(c.compound);
-    const wantDry = wet < 0.2 && isWetTyre(c.compound);
-    const wantFull = wet > 0.82 && c.compound === "INTERMEDIATE";
+    const reacts = rules ? rules.rainReact : true;
+    const wantWet = reacts && wet > 0.38 && !isWetTyre(c.compound);
+    const wantDry = reacts && wet < 0.2 && isWetTyre(c.compound);
+    const wantFull = reacts && wet > 0.82 && c.compound === "INTERMEDIATE";
     if (wantWet || wantDry || wantFull) {
-      if (c.wetDelay < 0) c.wetDelay = Math.floor(this.rand() * 3);
+      if (c.wetDelay < 0) c.wetDelay = rules ? rules.rainDelay : Math.floor(this.rand() * 3);
       if (c.wetDelay > 0) {
         c.wetDelay -= 1;
         return null;
@@ -275,23 +296,123 @@ export class Race {
     c.wetDelay = -1;
     if (cur && next) {
       const last = c.stintLap + 1 >= cur.laps;
-      const cheap = flag === "sc" ? c.stintLap + 1 >= 0.55 * cur.laps : flag === "vsc" ? c.stintLap + 1 >= 0.75 * cur.laps : false;
+      const at = rules ? rules.scAt : 0.55;
+      const cheap = rules && !rules.scStops ? false : flag === "sc" ? c.stintLap + 1 >= at * cur.laps : flag === "vsc" ? c.stintLap + 1 >= Math.min(0.95, at + 0.2) * cur.laps : false;
       if (last || cheap) return next.compound;
     }
     // a tyre that is long past anything seen at this circuit comes off
-    if (!c.spec.player && !isWetTyre(c.compound) && left > 3 && c.age > this.cfg.circuit.max_age[c.compound as Dry] * 1.12) {
+    if (engineered && !isWetTyre(c.compound) && left > 3 && c.age > this.cfg.circuit.max_age[c.compound as Dry] * 1.12) {
       const to = this.slickFor(c, left);
       c.plan = [{ compound: c.compound, laps: 0 }, { compound: to, laps: 999 }];
       c.stintIdx = 0;
       return to;
     }
     // the two-compound rule, for cars that would otherwise break it
-    if (!isWetTyre(c.compound) && !c.spec.player && left === 8) {
+    if (!isWetTyre(c.compound) && engineered && left === 8) {
       const dry = DRY.filter((d) => c.used.has(d));
       const anyWet = [...c.used].some(isWetTyre);
       if (!anyWet && dry.length < 2) return c.compound === "HARD" ? "MEDIUM" : "HARD";
     }
     return null;
+  }
+
+  /** The tyre a car fits under a red flag: the quickest that can last the rest of the race, or a wet if it is wet. */
+  private redTyre(c: CarState): Compound {
+    const left = this.cfg.total - this.lap;
+    const wet = this.wetnessNow();
+    if (wet > 0.38) return wet > 0.75 ? "WET" : "INTERMEDIATE";
+    const k = this.cfg.circuit;
+    const lasts = (d: Dry) => k.max_age[d] * 1.05 >= left;
+    const order: Dry[] = ["SOFT", "MEDIUM", "HARD"];
+    let pick: Dry = order.find(lasts) ?? "HARD";
+    const dry = DRY.filter((d) => c.used.has(d));
+    const wetUsed = [...c.used].some(isWetTyre);
+    if (!wetUsed && dry.length < 2 && dry.includes(pick)) pick = order.find((d) => !c.used.has(d) && lasts(d)) ?? order.find((d) => !c.used.has(d)) ?? pick;
+    return pick;
+  }
+
+  private stopRace(events: RaceEvent[], text: string): void {
+    const running = this.cars.filter((c) => c.outLap > this.lap).sort((a, b) => a.t - b.t);
+    const lead = running[0]?.t ?? 0;
+    running.forEach((c, i) => {
+      c.t = lead + i * RESTART_GAP_S;
+    });
+    this.suspended = true;
+    events.push({ lap: this.lap, kind: "red", text });
+    if (!this.cfg.manualPlayer) this.restart(undefined, events);
+  }
+
+  /** Stop the race now (race control, or the player testing a red flag). Cars line up in running order; tyres change for free. */
+  callRedFlag(): RaceEvent[] {
+    if (this.finished || this.suspended || this.lap < 1) return [];
+    const events: RaceEvent[] = [];
+    this.stopRace(events, "Red flag: the race is stopped");
+    this.feed.push(...events);
+    return events;
+  }
+
+  /** Restart from a red flag. `playerTyre` is the player's free tyre change (omit to stay on the same set); everyone else
+   *  fits what their engineers pick. The first lap back is a standing start. */
+  restart(playerTyre?: Compound | null, sink?: RaceEvent[], forcePlayer = false): RaceEvent[] {
+    if (!this.suspended) return [];
+    const events: RaceEvent[] = sink ?? [];
+    for (const c of this.cars) {
+      if (c.outLap <= this.lap) continue;
+      const manual = (!!this.cfg.manualPlayer || forcePlayer) && !!c.spec.player;
+      const planned = c.plan[c.stintIdx + 1];
+      let to: Compound | null;
+      if (manual) to = playerTyre ?? null;
+      else if (c.spec.player && !this.cfg.copilot && planned) to = planned.compound;
+      else to = this.redTyre(c);
+      if (to && (to !== c.compound || c.age > 0)) {
+        const from = c.compound;
+        c.compound = to;
+        c.used.add(to);
+        c.age = 0;
+        c.stintLap = 0;
+        c.plan = [{ compound: from, laps: 0 }, { compound: to, laps: 999 }];
+        c.stintIdx = 0;
+        if (c.spec.player) events.push({ lap: this.lap, kind: "info", text: `Fresh ${to.toLowerCase()}s fitted under the red flag`, code: c.spec.code });
+      }
+    }
+    this.suspended = false;
+    this.restartLap = this.lap + 1;
+    events.push({ lap: this.lap + 1, kind: "green", text: "Standing restart" });
+    if (!sink) this.feed.push(...events);
+    return events;
+  }
+
+  /** Race control: send out a safety car or VSC from the next lap. */
+  deploy(kind: "sc" | "vsc", laps: number): RaceEvent[] {
+    if (this.finished || this.suspended || this.lap < 1) return [];
+    this.events[kind].push({ start: this.lap + 1, laps });
+    const ev: RaceEvent[] = [{ lap: this.lap, kind, text: kind === "sc" ? `Safety car called for ${laps} laps` : `VSC called for ${laps} laps` }];
+    this.feed.push(...ev);
+    return ev;
+  }
+
+  /** A copy of the race as it stands, for looking ahead. The future is re-drawn: retirements, safety cars and the weather
+   *  are not known to whoever is looking ahead, so each copy gets its own `seed` and `patch`. */
+  clone(seed: number, patch: Partial<RaceConfig> = {}): Race {
+    const r = new Race({ ...this.cfg, ...patch, seed });
+    r.lap = this.lap;
+    r.wasWet = this.wasWet;
+    r.lastFlag = this.lastFlag;
+    r.restartLap = this.restartLap;
+    r.suspended = this.suspended;
+    const left = Math.max(1, this.cfg.total - this.lap);
+    r.cars.forEach((c, i) => {
+      const o = this.cars[i];
+      Object.assign(c, {
+        t: o.t, compound: o.compound, age: o.age, mode: o.mode, plan: o.plan, stintIdx: o.stintIdx, stintLap: o.stintLap,
+        pits: [...o.pits], laps: [...o.laps], positions: [...o.positions], compounds: [...o.compounds], used: new Set(o.used),
+        jitter: o.jitter, wetDelay: o.wetDelay, dsq: o.dsq,
+      });
+      const alive = o.outLap > this.lap;
+      c.outLap = alive ? (r.rand() < DNF_P * (left / this.cfg.total) ? this.lap + 1 + Math.floor(r.rand() * left) : Infinity) : o.outLap;
+    });
+    r.order = [...this.order];
+    return r;
   }
 
   private checkRules(events: RaceEvent[]): void {

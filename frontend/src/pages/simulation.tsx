@@ -4,6 +4,8 @@ import { ErrorState, Skeleton } from "../components/ui/states";
 import { chip } from "../components/ui/chipstyle";
 import { PlanBuilder } from "../components/sim/planner";
 import { ResultsPanel, SampleRace, type WhatIf } from "../components/sim/results";
+import { EventsPanel, RulesPanel } from "../components/sim/controls";
+import { OptimiserPanel } from "../components/sim/optimiser";
 import { SetupPanel, type Setup } from "../components/sim/setup";
 import { LiveRace } from "../components/sim/live";
 import { ModelCard } from "../components/sim/modelcard";
@@ -11,9 +13,10 @@ import { RaceProgress, Reveal, Swap } from "../components/sim/fx";
 import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { monteCarloAsync, runOnce, type Scenario, type Summary } from "../lib/sim/montecarlo";
-import { planProblem, suggestPlans } from "../lib/sim/plan";
+import { optimise, optimiseCost, type Optimisation } from "../lib/sim/optimise";
+import { planProblem, suggestPlans, toRaceEvents } from "../lib/sim/plan";
 import type { CarResult, Race } from "../lib/sim/race";
-import type { PlanStint, SimModel, Weather } from "../lib/sim/types";
+import { DEFAULT_ALLOCATION, DEFAULT_RULES, type PlanStint, type SimModel, type Weather } from "../lib/sim/types";
 import type { NextForecasts } from "../types/api";
 
 const RUNS = 300;
@@ -34,6 +37,8 @@ export default function StrategySim() {
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [live, setLive] = useState<Race | null>(null);
+  const [optimised, setOptimised] = useState<{ signature: string; data: Optimisation } | null>(null);
+  const [optProgress, setOptProgress] = useState<number | null>(null);
   const token = useRef(0);
   useEffect(() => () => { token.current += 1; }, []);
 
@@ -44,6 +49,7 @@ export default function StrategySim() {
     return {
       slug: circuit.slug, code: model.drivers.find((d) => d.code === "NOR")?.code ?? model.drivers[0].code, trim: 0, slot: null,
       weather: "dry", rainStart: Math.round(circuit.laps * 0.4), rainPeak: 0.6, rainLength: 14, trackTemp: Math.round(circuit.track_temp_c), scProb: circuit.sc_prob,
+      eventMode: "random", events: [], rules: DEFAULT_RULES, alloc: DEFAULT_ALLOCATION,
     };
   }, [model, next.data]);
 
@@ -72,15 +78,18 @@ export default function StrategySim() {
     : "circuit";
   const scenario = (over: Partial<Scenario> = {}): Scenario => ({
     model, circuit, total: circuit.laps, trackTemp: setup.trackTemp,
-    player: { code: setup.code, trim: setup.trim, slot: setup.slot, plan }, weather, events: null, scProb: setup.scProb, ...over,
+    player: { code: setup.code, trim: setup.trim, slot: setup.slot, plan }, weather, scProb: setup.scProb, rules: setup.rules,
+    events: setup.eventMode === "mine" ? toRaceEvents(setup.events) : null, ...over,
   });
-  const problem = planProblem(plan, circuit.laps);
+  const problem = planProblem(plan, circuit.laps, setup.alloc);
   const signature = JSON.stringify([setup, plan]);
   const fresh = outcome && outcome.signature === signature ? outcome : null;
   const best = suggestions[0];
-  const isBestPlan = best && JSON.stringify(best.plan.map((p) => [p.compound, p.laps])) === JSON.stringify(plan.map((p) => [p.compound, p.laps]));
-  const totalRuns = RUNS * (isBestPlan ? 1 : 2) + WHAT_IF_RUNS * 4;
   const isBest = best && JSON.stringify(best.plan.map((s) => [s.compound, s.laps])) === JSON.stringify(plan.map((s) => [s.compound, s.laps]));
+
+  const totalRuns = RUNS * (isBest ? 1 : 2) + WHAT_IF_RUNS * 4;
+  const setupSig = JSON.stringify(setup);
+  const foundNow = optimised && optimised.signature === setupSig ? optimised.data : null;
 
   const change = (patch: Partial<Setup>) => setEdit((e) => ({ ...e, ...patch }));
   const onSetup = (next: Setup) => {
@@ -131,6 +140,16 @@ export default function StrategySim() {
     setProgress(null);
   };
 
+  const findBest = async () => {
+    if (problem) return;
+    const mine = ++token.current;
+    setOptProgress(0);
+    const out = await optimise(scenario(), plan, () => token.current !== mine, (f) => setOptProgress(f));
+    if (!out) return;
+    setOptimised({ signature: setupSig, data: out });
+    setOptProgress(null);
+  };
+
   const startLive = () => {
     if (problem) return;
     setLive(runOnce(scenario(), Math.floor(Math.random() * 1e6) + 1, plan, true));
@@ -150,26 +169,41 @@ export default function StrategySim() {
           <>
             <SetupPanel model={model} circuit={circuit} value={setup} onChange={onSetup} />
 
+            <Reveal delay={0.12}>
+              <EventsPanel circuit={circuit} mode={setup.eventMode} events={setup.events} onMode={(m) => change({ eventMode: m })} onChange={(e) => change({ events: e })} />
+            </Reveal>
+
             <Reveal delay={0.2}>
             <section aria-labelledby="sim-plan" className="glass space-y-6 p-5 md:p-7">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h2 id="sim-plan" className="font-mono text-[11px] uppercase tracking-[0.35em] text-red-400">4 · Your strategy</h2>
+                <h2 id="sim-plan" className="font-mono text-[11px] uppercase tracking-[0.35em] text-red-400">5 · Your strategy</h2>
                 {!isBest && best && <button type="button" onClick={() => setPlanEdit(null)} className={chip(false)}>Reset to fastest plan</button>}
               </div>
-              <PlanBuilder model={model} circuit={circuit} plan={plan} onChange={(p) => setPlanEdit({ slug: circuit.slug, plan: p })} suggestions={suggestions} car={carOffset} trackTemp={setup.trackTemp} />
+              <PlanBuilder model={model} circuit={circuit} plan={plan} onChange={(p) => setPlanEdit({ slug: circuit.slug, plan: p })} suggestions={suggestions} car={carOffset} trackTemp={setup.trackTemp} alloc={setup.alloc} events={setup.eventMode === "mine" ? setup.events : []} />
+              <RulesPanel rules={setup.rules} alloc={setup.alloc} onRules={(r) => change({ rules: r })} onAlloc={(a) => change({ alloc: a })} />
               <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-5">
                 <button type="button" onClick={run} disabled={!!problem || progress !== null} className="inline-flex items-center gap-2 bg-red-500 px-6 py-3.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-black hover:bg-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-40">
                   {progress !== null ? `Racing… ${Math.round(progress * 100)}%` : `Run ${RUNS} races`}
                 </button>
+                <button type="button" onClick={findBest} disabled={!!problem || optProgress !== null} className="inline-flex items-center gap-2 border border-red-500/60 px-6 py-3.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-red-300 hover:bg-red-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-40">
+                  {optProgress !== null ? `Searching… ${Math.round(optProgress * 100)}%` : "Find the best strategy"}
+                </button>
                 <button type="button" onClick={startLive} disabled={!!problem} className="inline-flex items-center gap-2 border border-white/25 px-6 py-3.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-white hover:border-white hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-40">
                   Race it live
                 </button>
-                <p className="max-w-md text-xs text-zinc-400">Running tests your plan against {RUNS} versions of the same race with different luck: safety cars, retirements, rain and traffic. Racing live lets you make the calls.</p>
+                <p className="max-w-md text-xs text-zinc-400">Running tests your plan against {RUNS} versions of the race with different luck. Finding the best strategy tries the quickest alternatives under the same luck, and shows when a safety car helps or hurts. Racing live puts every call in your hands, with a pit wall that plays out the rest of the race to advise.</p>
               </div>
               {progress !== null && <RaceProgress done={Math.round(progress * totalRuns)} total={totalRuns} />}
             </section>
             </Reveal>
 
+            {optProgress !== null && <RaceProgress done={Math.round(optProgress * optimiseCost(7))} total={optimiseCost(7)} />}
+            {foundNow && (
+              <section key={optimised?.signature} aria-labelledby="sim-best" className="space-y-6">
+                <h2 id="sim-best" className="font-mono text-[11px] uppercase tracking-[0.35em] text-red-400">Best strategy and best case</h2>
+                <OptimiserPanel data={foundNow} total={circuit.laps} current={plan} onApply={(p) => setPlanEdit({ slug: circuit.slug, plan: p })} />
+              </section>
+            )}
             {outcome && !fresh && progress === null && (
               <p role="status" className="border border-white/10 bg-white/[0.04] p-4 text-sm text-zinc-300">The setup or plan has changed since the last run. Run the races again to see its results.</p>
             )}

@@ -1,5 +1,5 @@
 import { chip } from "../ui/chipstyle";
-import type { SimCircuit, SimModel } from "../../lib/sim/types";
+import type { Allocation, PlayerRules, SimCircuit, SimModel, UserEvent } from "../../lib/sim/types";
 import { Field, Slider } from "./bits";
 import { Reveal } from "./fx";
 import { control, pct0 } from "./format";
@@ -17,6 +17,11 @@ export type Setup = {
   rainLength: number;
   trackTemp: number;
   scProb: number;
+  /** random events from the circuit's history, or only the ones scheduled below */
+  eventMode: "random" | "mine";
+  events: UserEvent[];
+  rules: PlayerRules;
+  alloc: Allocation;
 };
 
 const WEATHER: { key: WeatherKind; label: string; note: string }[] = [

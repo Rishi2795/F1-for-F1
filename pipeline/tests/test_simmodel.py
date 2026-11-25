@@ -71,7 +71,7 @@ def test_clean_laps_drop_pit_laps_and_slow_laps():
 def good_doc():
     return {
         "global": {"offsets": {"SOFT": -0.1, "MEDIUM": 0, "HARD": 0.2}, "wear_s_per_lap": {"SOFT": 0.08, "MEDIUM": 0.07, "HARD": 0.05}, "fuel_total_s": -3.0},
-        "circuits": [{"slug": "x", "base_lap_s": 90, "pit_loss_s": 22, "laps": 55, "sc_prob": 0.5, "vsc_prob": 0.2, "rain_prob": 0.1,
+        "circuits": [{"slug": "x", "base_lap_s": 90, "pit_loss_s": 22, "laps": 55, "sc_prob": 0.5, "vsc_prob": 0.2, "rain_prob": 0.1, "red_prob": 0.05,
                       "max_age": {"SOFT": 20, "MEDIUM": 25, "HARD": 35}}],
     }
 

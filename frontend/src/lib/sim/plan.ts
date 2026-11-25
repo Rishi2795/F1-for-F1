@@ -1,20 +1,26 @@
 import { degradation, lapTime } from "./physics";
 import type { CarSpec } from "./race";
 import { gauss, rng } from "./rng";
-import type { Compound, Dry, PlanStint, RaceEvents, SimCircuit, SimModel, SlowPeriod, Weather } from "./types";
+import type { Allocation, Compound, UserEvent, Dry, PlanStint, RaceEvents, SimCircuit, SimModel, SlowPeriod, Weather } from "./types";
 import { DRY } from "./types";
 
 const MIN_STINT = 5;
 export const QUALI_S = 0.36; // qualifying scatter around a car's true pace, seconds a lap
 
 /** Why a plan is not a legal race, or null when it is. */
-export function planProblem(plan: PlanStint[], total: number): string | null {
+export function planProblem(plan: PlanStint[], total: number, alloc?: Allocation): string | null {
   const laps = plan.reduce((n, s) => n + s.laps, 0);
   if (laps !== total) return laps < total ? `The plan covers ${laps} of ${total} laps` : `The plan is ${laps - total} laps too long`;
   if (plan.some((s) => s.laps < 1)) return "A stint needs at least one lap";
   const wet = plan.some((s) => s.compound === "INTERMEDIATE" || s.compound === "WET");
   const dry = new Set(plan.filter((s) => (DRY as string[]).includes(s.compound)).map((s) => s.compound));
   if (!wet && dry.size < 2) return "A dry race needs at least two different compounds";
+  if (alloc) {
+    for (const c of DRY) {
+      const used = plan.filter((s) => s.compound === c).length;
+      if (used > alloc[c]) return `Only ${alloc[c]} ${c.toLowerCase()} ${alloc[c] === 1 ? "set is" : "sets are"} available, and the plan uses ${used}`;
+    }
+  }
   return null;
 }
 
@@ -111,7 +117,7 @@ export function previewLaps(
 }
 
 /** Random safety cars and VSCs for one simulated race, from this circuit's history. */
-export function drawEvents(r: () => number, k: SimCircuit, total: number, scProb = k.sc_prob, vscProb = k.vsc_prob): RaceEvents {
+export function drawEvents(r: () => number, k: SimCircuit, total: number, scProb = k.sc_prob, vscProb = k.vsc_prob, redProb = k.red_prob ?? 0.06): RaceEvents {
   const period = (laps: number): SlowPeriod => ({ start: 2 + Math.floor(r() * Math.max(1, total - 6)), laps });
   const sc: SlowPeriod[] = [];
   const vsc: SlowPeriod[] = [];
@@ -120,7 +126,20 @@ export function drawEvents(r: () => number, k: SimCircuit, total: number, scProb
     if (r() < 0.2) sc.push(period(Math.max(2, Math.round(k.sc_laps * 0.7))));
   }
   if (r() < vscProb) vsc.push(period(2 + Math.floor(r() * 2)));
-  return { sc, vsc };
+  const red = r() < redProb ? [4 + Math.floor(r() * Math.max(1, total - 10))] : [];
+  return { sc, vsc, red };
+}
+
+/** What might still happen from lap `from` on: each kind of event is as likely per lap as the circuit's history says. */
+export function drawFutureEvents(r: () => number, k: SimCircuit, from: number, total: number): RaceEvents {
+  const left = total - from;
+  if (left < 4) return { sc: [], vsc: [], red: [] };
+  const share = left / total;
+  const start = () => from + 1 + Math.floor(r() * Math.max(1, left - 2));
+  const sc = r() < k.sc_prob * share ? [{ start: start(), laps: Math.max(2, Math.round(k.sc_laps * (0.7 + 0.6 * r()))) }] : [];
+  const vsc = r() < k.vsc_prob * share ? [{ start: start(), laps: 2 + Math.floor(r() * 2) }] : [];
+  const red = r() < (k.red_prob ?? 0.06) * share ? [start()] : [];
+  return { sc, vsc, red };
 }
 
 /** A weather draw for one simulated race, when the player leaves it to the circuit's history. */
@@ -174,4 +193,13 @@ export function buildField(model: SimModel, plans: PlanStint[][], player: Player
     plan: d.code === player.code ? player.plan : plans[planAt++ % plans.length],
     player: d.code === player.code,
   }));
+}
+
+/** The player's scheduled events as race events. A red flag stops the race at the end of its lap. */
+export function toRaceEvents(list: UserEvent[]): RaceEvents {
+  return {
+    sc: list.filter((e) => e.kind === "sc").map((e) => ({ start: e.lap, laps: e.laps })),
+    vsc: list.filter((e) => e.kind === "vsc").map((e) => ({ start: e.lap, laps: e.laps })),
+    red: list.filter((e) => e.kind === "red").map((e) => e.lap),
+  };
 }

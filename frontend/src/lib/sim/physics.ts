@@ -8,6 +8,10 @@ export const NOISE_S = 0.25; // lap-to-lap scatter of a driver
 /** How wet the track is on a lap, 0 dry to 1 flooded. */
 export function wetnessAt(w: Weather, lap: number): number {
   if (w.kind === "dry") return 0;
+  if (w.kind === "hold") {
+    const fall = Math.max(0, (lap - (w.from + w.length)) / 8);
+    return lap < w.from ? w.wetness : Math.max(0, w.wetness * (1 - fall));
+  }
   if (w.kind === "drying") {
     const t = (lap - w.start) / Math.max(1, w.length);
     return Math.max(0, Math.min(1, 0.7 * (1 - t)));
