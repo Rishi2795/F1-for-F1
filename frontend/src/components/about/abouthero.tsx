@@ -76,7 +76,7 @@ export function AboutHero() {
         <motion.div className="absolute -right-40 top-10 h-[34rem] w-[34rem] rounded-full bg-red-600/20 blur-[140px]" animate={still ? undefined : { opacity: [0.5, 0.9, 0.5] }} transition={{ duration: 7, repeat: Infinity }} />
       </div>
 
-      <div className="mx-auto grid max-w-[1300px] items-center gap-14 px-6 md:px-12 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="page grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
         <div>
           <motion.p initial="hidden" animate="show" variants={fade} custom={-6} className="mb-6 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.4em] text-zinc-400">
             <span aria-hidden="true" className="h-2 w-2 animate-pulse bg-red-600" />F1 for F1 · the data desk

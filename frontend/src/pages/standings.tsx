@@ -26,8 +26,8 @@ export function StandingsRedirect() {
 
 function PageSkeleton() {
   return (
-    <div className="min-h-screen px-5 pt-20 sm:px-8 lg:px-12" role="status" aria-label="Loading standings">
-      <div className="mx-auto max-w-5xl space-y-4">
+    <div className="min-h-screen pt-20" role="status" aria-label="Loading standings">
+      <div className="page space-y-4">
         <Skeleton className="h-12 w-1/2" />
         <Skeleton className="h-10 w-72" />
         <div className="grid gap-3 md:grid-cols-3">
@@ -127,9 +127,9 @@ export default function Standings() {
   const second = view.rows[1];
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-5 pb-32 pt-16 text-zinc-200 sm:px-8 lg:px-12">
+    <div className="relative min-h-screen overflow-hidden pb-32 pt-16 text-zinc-200">
 
-      <div className="relative mx-auto max-w-5xl space-y-12">
+      <div className="page relative space-y-12">
         <header className="relative min-h-[12rem]">
           {/* The car: the site's own artwork. */}
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-6 hidden w-[36rem] md:block">

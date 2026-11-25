@@ -39,7 +39,7 @@ export default function Circuit() {
   const tab = params.get("tab") === "records" ? "records" : "track";
   useDocumentTitle(c ? `${c.location}: what to expect` : "Circuit");
 
-  if (loading) return <div className="min-h-screen px-8 pt-24"><Skeleton className="mx-auto h-96 max-w-5xl" /></div>;
+  if (loading) return <div className="min-h-screen pt-24"><div className="page"><Skeleton className="h-96" /></div></div>;
   if (!c) return <div className="min-h-screen"><ErrorState error={error} onRetry={reload} subject="circuit" backTo={{ href: "/circuits", label: "All circuits" }} /></div>;
   const visits = c.races.length;
   const latest = [...c.races].sort((x, y) => y.season - x.season || y.round - x.round).find((r) => r.laps);
@@ -52,8 +52,8 @@ export default function Circuit() {
     c.avg_winner_stops !== null ? `Winners typically stop ${c.avg_winner_stops.toFixed(1)} times${c.typical_winning_tyres ? ` (${c.typical_winning_tyres})` : ""}.` : null,
   ].filter(Boolean).join(" ");
   return (
-    <div className="min-h-screen px-5 pb-32 pt-16 text-zinc-300 sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-5xl space-y-8">
+    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+      <div className="page space-y-8">
         <Link to="/circuits" className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400 hover:text-white">← ALL_CIRCUITS</Link>
         <header className="f1-rise">
           <h1 className="text-5xl font-black uppercase italic leading-[0.95] tracking-tighter text-white md:text-7xl">{c.location}</h1>

@@ -71,7 +71,7 @@ const Hero = () => {
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-[3] h-44 bg-gradient-to-b from-black via-black/80 to-transparent" />
 
         {/* Layer 2: headline, each line rising out of a mask */}
-        <motion.div style={{ y: titleY, x: titleX, opacity: titleOpacity }} className="absolute inset-0 z-10 flex flex-col justify-start pt-[4dvh] px-16 pointer-events-none">
+        <motion.div style={{ y: titleY, x: titleX, opacity: titleOpacity }} className="absolute inset-0 z-10 flex flex-col justify-start pt-[4dvh] px-8 lg:px-12 pointer-events-none">
           <h2 className="flex flex-col text-left">
             <span className="block overflow-hidden pb-[0.06em]">
               <motion.span initial={{ y: "105%" }} animate={{ y: 0 }} transition={{ duration: 1, delay: 0.2, ease: EASE }} className="block text-[11rem] font-black italic tracking-tighter leading-[0.8] uppercase text-white drop-shadow-2xl">

@@ -8,6 +8,7 @@ import { ChampionBadge } from "../components/ui/championbadge";
 import { chip } from "../components/ui/chipstyle";
 import { readableOnDark } from "../lib/color";
 import { framing, useDriverPhotos, type Photo } from "../lib/driverphotos";
+import { portrait } from "../lib/headshots";
 import type { DriverListEntry } from "../types/api";
 
 type Show = "all" | "grid" | "champions";
@@ -33,8 +34,8 @@ export default function Drivers() {
   }, [data, search, show]);
 
   return (
-    <div className="min-h-screen px-5 py-14 text-zinc-200 sm:px-8 lg:px-12">
-      <div className="mx-auto mb-10 max-w-7xl space-y-4 text-center">
+    <div className="min-h-screen py-14 text-zinc-200">
+      <div className="page mb-10 space-y-4 text-center">
         <h1 className="text-5xl font-black uppercase italic tracking-tighter text-white md:text-7xl">The <span className="text-red-500">drivers</span></h1>
         <p className="text-sm text-zinc-400">Every driver on the grid since 2020, from official results and timing data.</p>
         <label className="sr-only" htmlFor="driver-search">
@@ -56,14 +57,14 @@ export default function Drivers() {
 
       {error && <ErrorState error={error} onRetry={reload} />}
 
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 lg:grid-cols-5">
+      <div className="page grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {loading && Array.from({ length: 10 }, (_, i) => <Skeleton key={i} className="aspect-[3/4] rounded-sm" />)}
         {filtered.map((d) => (
           <DriverCard key={d.code} d={d} photo={photos[d.code]} />
         ))}
       </div>
       {Object.keys(photos).length > 0 && (
-        <details className="mx-auto mt-10 max-w-7xl text-xs text-zinc-500">
+        <details className="page mt-10 text-xs text-zinc-500">
           <summary className="cursor-pointer">Photo credits</summary>
           <ul className="mt-2 space-y-1">
             {Object.entries(photos).map(([code, p]) => (
@@ -83,6 +84,8 @@ export default function Drivers() {
 }
 
 function DriverCard({ d, photo }: { d: DriverListEntry; photo?: Photo }) {
+  const official = portrait(d.image, 4);
+  const [failed, setFailed] = useState(false); // a portrait that does not load leaves the number design, not a broken picture
   const colour = `#${(d.team_color ?? "888888").replace("#", "")}`;
   const text = readableOnDark(colour);
   return (
@@ -96,11 +99,14 @@ function DriverCard({ d, photo }: { d: DriverListEntry; photo?: Photo }) {
       {d.number !== null && d.number !== undefined && (
         <span
           aria-hidden="true"
-          className={`f1-outline absolute font-black italic leading-none ${photo ? "-right-2 top-1 text-[7.5rem] sm:text-[9rem]" : "inset-x-0 top-[8%] text-center text-[8.5rem] sm:text-[10.5rem]"}`}
-          style={{ "--stroke": `${colour}${photo ? "66" : "88"}` } as CSSProperties}
+          className={`f1-outline absolute font-black italic leading-none ${photo || (official && !failed) ? "-right-2 top-1 text-[7.5rem] sm:text-[9rem]" : "inset-x-0 top-[8%] text-center text-[8.5rem] sm:text-[10.5rem]"}`}
+          style={{ "--stroke": `${colour}${photo || (official && !failed) ? "66" : "88"}` } as CSSProperties}
         >
           {d.number}
         </span>
+      )}
+      {!photo && official && !failed && (
+        <img src={official} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="absolute bottom-0 left-1/2 h-[90%] w-auto max-w-none -translate-x-1/2 object-contain object-bottom" />
       )}
       {photo && <img src={`/drivers/${photo.file}`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: framing(photo, 0.75, 0.36) }} />}
       <span className="absolute left-3 top-3 z-10 rounded-sm border border-white/20 bg-black/40 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-widest text-zinc-200">{d.code}</span>

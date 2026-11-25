@@ -20,10 +20,15 @@ test.describe("typeface", () => {
   test("no dot-matrix text is used at sizes where it cannot be read", async ({ page }) => {
     await page.goto("/season/2026");
     await expect(page.getByRole("list", { name: "Top three" })).toBeVisible();
-    const sizes = await page.evaluate(() =>
-      [...document.querySelectorAll("*")].filter((el) => getComputedStyle(el).fontFamily.includes("Doto") && el.childNodes.length && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent!.trim()))
-        .map((el) => parseFloat(getComputedStyle(el).fontSize)));
-    expect(sizes.length).toBeGreaterThan(0);
-    expect(Math.min(...sizes)).toBeGreaterThanOrEqual(24); // headlines and big numbers only
+    // Headlines are marked a moment after the page renders, so wait for the page to settle before judging it.
+    await expect
+      .poll(async () => {
+        const sizes = await page.evaluate(() =>
+          [...document.querySelectorAll("*")]
+            .filter((el) => getComputedStyle(el).fontFamily.includes("Doto") && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent!.trim()))
+            .map((el) => parseFloat(getComputedStyle(el).fontSize)));
+        return sizes.length > 0 ? Math.min(...sizes) : 0;
+      })
+      .toBeGreaterThanOrEqual(24); // headlines and big numbers only
   });
 });

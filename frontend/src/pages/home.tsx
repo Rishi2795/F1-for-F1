@@ -45,7 +45,7 @@ export default function Home() {
       
       {/* GLOBAL HEADER */}
       <header className="w-full border-b border-white/[0.08] bg-black/60 sticky top-0 z-50">
-  <div className="max-w-[1400px] mx-auto px-5 sm:px-8 lg:px-12 h-20 flex items-center justify-between gap-4 md:gap-10">
+  <div className="page h-20 flex items-center justify-between gap-4 md:gap-10">
     
     {/* LOGO */}
     <div onClick={() => navigate("/")} className="cursor-pointer shrink-0">
@@ -80,7 +80,7 @@ export default function Home() {
   </div>
 </header>
 
-      <div className="max-w-[1400px] mx-auto px-5 sm:px-8 lg:px-12 py-16">
+      <div className="page py-16">
         
         {/* EDITORIAL HEADING */}
         <div className="mb-14 space-y-2">

@@ -6,6 +6,8 @@ import { ErrorState, Skeleton } from "../components/ui/states";
 import { ChampionBadge } from "../components/ui/championbadge";
 import { fmt, fmtSigned } from "../lib/format";
 import { framing, useDriverPhotos } from "../lib/driverphotos";
+import { portrait } from "../lib/headshots";
+import { CuboidFace, CuboidStack } from "../components/ui/cuboid";
 import { WeekendPanel } from "../components/driver/weekendpanel";
 import { RatingPanel } from "../components/ratings/ratingpanel";
 import type { DriverProfile } from "../types/api";
@@ -44,8 +46,8 @@ export default function DriverPage() {
 
   if (stats.loading) {
     return (
-      <div className="min-h-screen px-5 py-14 sm:px-8 lg:px-12">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-12">
+      <div className="min-h-screen py-14">
+        <div className="page grid gap-8 lg:grid-cols-12">
           <Skeleton className="h-[420px] lg:col-span-4" />
           <Skeleton className="h-[420px] lg:col-span-8" />
         </div>
@@ -61,34 +63,44 @@ export default function DriverPage() {
   }
   const driver = stats.data;
   const photo = photos[driver.code];
+  const official = portrait(driver.image, 6);
   const teamColour = `#${(driver.team_color ?? "888888").replace("#", "")}`;
   const s = driver.stats;
 
   return (
-    <div className="min-h-screen px-5 py-14 text-zinc-200 sm:px-8 lg:px-12">
-      <div className="mx-auto mb-10 flex max-w-7xl justify-between">
+    <div className="min-h-screen py-14 text-zinc-200">
+      <div className="page mb-10 flex justify-between">
         <Link to="/drivers" className="text-xs font-mono text-zinc-400 hover:text-white">
           ← ALL DRIVERS
         </Link>
         <span className="text-xs font-mono text-red-500">DRIVER PROFILE</span>
       </div>
 
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 lg:grid-cols-12">
+      <div className="page grid grid-cols-1 gap-8 lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <div className="overflow-hidden rounded-sm border border-white/10 bg-[#080808]">
-            <div className="relative flex h-[380px] items-center justify-center overflow-hidden glass-cell" style={photo ? undefined : { backgroundImage: `linear-gradient(165deg, ${teamColour}55 0%, ${teamColour}14 45%, #050505 85%)` }}>
+          {/* Pinned, and as tall as the screen: it stays in view while the cards on the right scroll past, and the portrait takes the
+              spare height. On a very short window it is an ordinary card, so nothing is ever cut off. */}
+          <div data-testid="driver-card" className="flex flex-col overflow-hidden rounded-sm border border-white/10 bg-[#080808] lg:sticky lg:top-8 lg:h-[calc(100svh-4rem)] lg:min-h-[34rem] lg:max-h-[56rem] [@media(max-height:640px)]:lg:static [@media(max-height:640px)]:lg:h-auto">
+            <div className="relative flex h-[380px] flex-none items-center justify-center overflow-hidden glass-cell lg:h-auto lg:min-h-[18rem] lg:flex-1" style={photo ? undefined : { backgroundImage: `linear-gradient(165deg, ${teamColour}55 0%, ${teamColour}14 45%, #050505 85%)` }}>
               {driver.number !== null && (
                 <span aria-hidden="true" className="f1-outline absolute -right-3 top-2 text-[10rem] font-black italic leading-none" style={{ "--stroke": `${teamColour}77` } as CSSProperties}>{driver.number}</span>
+              )}
+              {!photo && official && (
+                <>
+                  <img src={official} alt={driver.name} referrerPolicy="no-referrer" onError={(ev) => { ev.currentTarget.style.display = "none"; }} className="absolute bottom-0 left-1/2 h-full w-auto max-w-full -translate-x-1/2 object-contain object-bottom" />
+                  <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#080808] to-transparent" />
+                </>
               )}
               {photo ? (
                 <>
                   <img src={`/drivers/${photo.file}`} alt={`${driver.name}`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: framing(photo, 1.05, 0.4) }} />
                   <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#080808] to-transparent" />
                 </>
-              ) : (
+              ) : !official ? (
                 <span aria-hidden="true" className="f1-outline relative text-9xl font-black italic">{driver.code}</span>
-              )}
+              ) : null}
             </div>
+            {!photo && official && <p className="border-t border-white/10 px-4 py-2 text-[10px] leading-snug text-zinc-500">Portrait © Formula 1, shown from formula1.com.</p>}
             {photo && (
               <p className="border-t border-white/10 px-4 py-2 text-[10px] leading-snug text-zinc-500">
                 Photo: © {photo.credit},{" "}
@@ -103,6 +115,15 @@ export default function DriverPage() {
                 {driver.team ?? "—"}
                 {driver.number !== null && ` · #${driver.number}`}
               </p>
+              <dl className="grid grid-cols-3 gap-2 pt-2">
+                {([["Wins", s.wins], ["Podiums", s.podiums], ["Races", s.races]] as const).map(([k, v]) => (
+                  <div key={k} className="rounded-sm border border-white/10 bg-white/[0.03] px-3 py-2">
+                    <dt className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500">{k}</dt>
+                    <dd className="font-serif text-2xl text-white">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500">{driver.latest_season} season</p>
               {ai && (
                 <div className="flex items-center gap-3">
                   <span className="text-4xl font-black text-red-500">{ai.rating}</span>
@@ -120,7 +141,8 @@ export default function DriverPage() {
           </div>
         </div>
 
-        <div className="space-y-8 lg:col-span-8">
+        <CuboidStack className="space-y-8 lg:col-span-8">
+          <CuboidFace>
           <Panel title={`${driver.latest_season} SEASON`}>
             <Grid4>
               <Mini label="Races" value={s.races} />
@@ -136,11 +158,13 @@ export default function DriverPage() {
               <Mini label="Recent form (avg finish, last 5)" value={fmt(s.recent_form)} />
             </Grid4>
           </Panel>
+          </CuboidFace>
 
-          {driver.latest_season >= 2026 && <WeekendPanel code={driver.code} />}
+          {driver.latest_season >= 2026 && <CuboidFace><WeekendPanel code={driver.code} /></CuboidFace>}
 
-          {driver.rating && <RatingPanel code={driver.code} name={driver.name} rating={driver.rating} />}
+          {driver.rating && <CuboidFace><RatingPanel code={driver.code} name={driver.name} rating={driver.rating} /></CuboidFace>}
 
+          <CuboidFace>
           <Panel title="BY SEASON">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
@@ -170,8 +194,10 @@ export default function DriverPage() {
               </table>
             </div>
           </Panel>
+          </CuboidFace>
 
           {dna && (
+            <CuboidFace>
             <Panel title="PERFORMANCE_DNA">
               <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
                 <Bar label="Pace" value={dna.pace} />
@@ -182,14 +208,17 @@ export default function DriverPage() {
                 <Bar label="Risk Ctrl" value={dna.risk_management} />
               </div>
             </Panel>
+            </CuboidFace>
           )}
 
           {ai && (
+            <CuboidFace>
             <Panel title="INSIGHT">
               <p className="text-lg italic leading-relaxed text-zinc-300">"{ai.summary}"</p>
             </Panel>
+            </CuboidFace>
           )}
-        </div>
+        </CuboidStack>
       </div>
     </div>
   );

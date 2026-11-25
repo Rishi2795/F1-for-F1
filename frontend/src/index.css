@@ -6,6 +6,15 @@ body {
   @apply bg-slate-950 text-slate-100;
 }
 
+/* The one layout rule. Every page's content sits in `.page`: centred, never wider than 90rem (1440px), with the same side
+   gutter everywhere (20px on phones, 32px from small tablets, 48px from laptops). Pages do not set their own width or side
+   padding, so the left and right edges line up from page to page and the menu bar, headings and cards share them. */
+@layer components {
+  .page {
+    @apply mx-auto w-full max-w-[90rem] px-5 sm:px-8 lg:px-12;
+  }
+}
+
 /* Standings chart: lines are revealed left to right once; skipped for people who prefer reduced motion. */
 @keyframes f1-reveal {
   from {

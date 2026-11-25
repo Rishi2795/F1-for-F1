@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { useCountUp } from "../../hooks/useCountUp";
 import { ChampionBadge } from "../ui/championbadge";
 import { prefetch } from "../../lib/api";
-import { framing, useDriverPhotos } from "../../lib/driverphotos";
+import { framing } from "../../lib/driverphotos";
+import { useDriverImages } from "../../lib/driverimages";
 
 export type PodiumEntry = {
   id: string;
@@ -37,31 +38,33 @@ function Points({ value, className }: { value: number; className: string }) {
 /** The top three, arranged like a podium on every screen: P2 – P1 – P3, the leader tallest. Reading order stays P1, P2, P3.
  *  On a phone the three sit side by side in compact cards. */
 export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; leaderPoints: number }) {
-  const place = [
-    "order-2 min-h-[15.5rem] sm:min-h-[17rem] md:min-h-[19rem]", // P1: centre, tallest
-    "order-1 min-h-[13.5rem] sm:min-h-[14.5rem] md:min-h-[16rem]", // P2
-    "order-3 min-h-[12rem] sm:min-h-[13rem] md:min-h-[14.5rem]", // P3
-  ];
-  const photos = useDriverPhotos();
+  const imageOf = useDriverImages();
+  const withPictures = entries.slice(0, 3).some((e) => imageOf(e.id, 4));
+  // The leader is tallest. With portraits the cards are taller, since the picture sits above the text.
+  const place = withPictures
+    ? [
+        "order-2 min-h-[21rem] sm:min-h-[26rem]", // P1: centre, tallest
+        "order-1 min-h-[18.5rem] sm:min-h-[23.5rem]", // P2
+        "order-3 min-h-[17rem] sm:min-h-[21.5rem]", // P3
+      ]
+    : [
+        "order-2 min-h-[15.5rem] sm:min-h-[17rem] md:min-h-[19rem]",
+        "order-1 min-h-[13.5rem] sm:min-h-[14.5rem] md:min-h-[16rem]",
+        "order-3 min-h-[12rem] sm:min-h-[13rem] md:min-h-[14.5rem]",
+      ];
   return (
     <ol className="grid grid-cols-3 items-end gap-2 sm:gap-4" aria-label="Top three">
       {entries.slice(0, 3).map((e, i) => {
         const lead = i === 0;
+        const img = imageOf(e.id, 4);
         const card = (
           <div
             className={`f1-rise group relative h-full overflow-hidden rounded-sm glass transition-colors hover:border-white/25 ${place[i]}`}
             style={{ "--d": `${i * 110}ms` } as CSSProperties}
           >
-            {/* A licensed photo, when there is one (drivers only), under a dark fade so the text stays readable. */}
-            {photos[e.id] && (
-              <>
-                <img src={`/drivers/${photos[e.id].file}`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-80" style={{ objectPosition: framing(photos[e.id], 1.25, 0.34) }} />
-                <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/10" />
-              </>
-            )}
             {/* Team colour: one flat hairline. */}
             <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[2px]" style={{ backgroundColor: e.color }} />
-            <div className="relative z-10 flex h-full flex-col p-2.5 sm:p-6">
+            <div className="relative z-10 flex h-full flex-col p-2.5 sm:p-5">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                 <span className="rounded-sm border border-white/20 px-1.5 py-0.5 text-[10px] font-semibold tracking-widest text-zinc-200 sm:px-2.5 sm:text-xs">P{e.position ?? i + 1}</span>
                 <span className="text-[10px] text-zinc-400 sm:text-xs">
@@ -80,8 +83,19 @@ export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; lead
                   </>
                 )}
               </div>
-              <div className="mt-auto min-w-0 pt-6 sm:pt-10">
-                <h3 className={`line-clamp-3 break-words font-extrabold leading-tight tracking-tight text-white sm:line-clamp-none sm:truncate ${lead ? "text-sm sm:text-2xl md:text-3xl" : "text-xs sm:text-xl"}`}>{e.label}</h3>
+              {img && (
+                <div className="relative my-1 min-h-[6.5rem] flex-1 sm:min-h-[10rem]">
+                  {/* a glow in the team's colour behind the driver */}
+                  <span aria-hidden="true" className="absolute inset-0" style={{ backgroundImage: `radial-gradient(ellipse 70% 62% at 50% 92%, ${e.color}77, transparent 72%)` }} />
+                  {img.kind === "licensed" ? (
+                    <img src={`/drivers/${img.photo.file}`} alt="" loading="lazy" className="absolute inset-0 h-full w-full rounded-sm object-cover" style={{ objectPosition: framing(img.photo, 1.2, 0.34) }} />
+                  ) : (
+                    <img src={img.url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(ev) => { ev.currentTarget.style.display = "none"; }} className="absolute inset-x-0 bottom-0 mx-auto h-full w-auto max-w-full object-contain object-bottom" />
+                  )}
+                </div>
+              )}
+              <div className={`min-w-0 ${img ? "pt-1" : "mt-auto pt-6 sm:pt-10"}`}>
+                <h3 className={`line-clamp-3 break-words font-extrabold leading-tight tracking-tight text-white sm:line-clamp-2 ${lead ? "text-sm sm:text-2xl lg:text-3xl" : "text-xs sm:text-xl"}`}>{e.label}</h3>
                 {e.sublabel && (
                   <p className="mt-0.5 flex items-start gap-1.5 text-[10px] leading-tight text-zinc-400 sm:items-center sm:gap-2 sm:truncate sm:text-sm">
                     <span aria-hidden="true" className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full sm:mt-0" style={{ backgroundColor: e.color }} />

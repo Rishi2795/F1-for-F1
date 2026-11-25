@@ -7,6 +7,7 @@ import { ErrorState, Skeleton } from "../components/ui/states";
 import { Block } from "../components/race/detail/block";
 import { Accuracy } from "../components/forecast/accuracy";
 import { RacePanel } from "../components/forecast/racepanel";
+import { PossibleStandings } from "../components/forecast/possiblestandings";
 import { TitlePanel } from "../components/forecast/titlepanel";
 import { TrackRecord } from "../components/forecast/trackrecord";
 import type { ForecastModelCard, ForecastReviewRow, NextForecasts, TitleForecast } from "../types/api";
@@ -22,8 +23,8 @@ export default function Forecast() {
   const favourite = upcoming?.drivers[0];
 
   return (
-    <div className="min-h-screen px-5 pb-32 pt-16 text-zinc-300 sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-5xl space-y-14">
+    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+      <div className="page space-y-14">
         <PageHead
           align="split"
           kicker="FORECAST"
@@ -51,12 +52,18 @@ export default function Forecast() {
           {title.loading ? <Skeleton className="h-[420px]" /> : title.data ? <TitlePanel data={title.data} /> : <ErrorState error={title.error} onRetry={title.reload} subject="championship forecast" />}
         </Block>
 
-        <Block id="record-h" n="03" title="Track" accent="record">
+        {title.data && title.data.drivers.some((d) => d.positions?.length) && (
+          <Block id="final-h" n="03" title="Final" accent="standings">
+            <PossibleStandings data={title.data} />
+          </Block>
+        )}
+
+        <Block id="record-h" n="04" title="Track" accent="record">
           {review.loading ? <Skeleton className="h-64" /> : review.data ? <TrackRecord rows={review.data} /> : null}
         </Block>
 
         <section id="accuracy" className="scroll-mt-20">
-          <Block id="accuracy-h" n="04" title="How" accent="accurate">
+          <Block id="accuracy-h" n="05" title="How" accent="accurate">
             {card.loading ? <Skeleton className="h-64" /> : card.data ? <Accuracy card={card.data} /> : null}
           </Block>
         </section>

@@ -16,8 +16,8 @@ export function PageLoader() {
 
 export function RaceSkeleton() {
   return (
-    <div className="min-h-screen px-6 pt-24" role="status" aria-label="Loading race">
-      <div className="mx-auto max-w-[1400px] space-y-8">
+    <div className="min-h-screen pt-24" role="status" aria-label="Loading race">
+      <div className="page space-y-8">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-16 w-2/3" />
         <div className="grid gap-4 md:grid-cols-3">

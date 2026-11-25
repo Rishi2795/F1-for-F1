@@ -40,8 +40,8 @@ export default function My() {
   const r = duel ? (duel.a.code === fav ? [duel.race.a, duel.race.b] : [duel.race.b, duel.race.a]) : null;
 
   return (
-    <div className="min-h-screen px-5 pb-32 pt-16 text-zinc-300 sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-5xl space-y-10">
+    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+      <div className="page space-y-10">
         <PageHead kicker="MY_F1" title="My" accent="driver" intro="Pick your driver once. This page becomes your weekend briefing: their chances next race, the title picture, and how they stack up against their teammate. Saved on this device only." />
         {ratings.loading && <Skeleton className="h-40" />}
         {ratings.error && <ErrorState error={ratings.error} onRetry={ratings.reload} subject="drivers" />}

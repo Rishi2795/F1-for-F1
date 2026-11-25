@@ -46,7 +46,7 @@ export default function AboutPage() {
 
       {/* ================= NUMBERS ================= */}
       <section aria-label="The data in numbers" className="border-b border-white/5">
-        <dl className="mx-auto grid max-w-[1300px] grid-cols-2 gap-px bg-white/10 md:grid-cols-4">
+        <dl className="page grid grid-cols-2 gap-px md:grid-cols-4">
           {[
             { v: seasons, l: "seasons covered" },
             { v: played, l: "races analysed" },
@@ -62,8 +62,8 @@ export default function AboutPage() {
       </section>
 
       {/* ================= WHAT YOU CAN DO ================= */}
-      <section id="what" className="scroll-mt-10 px-6 py-24 md:px-12">
-        <div className="mx-auto max-w-[1300px]">
+      <section id="what" className="scroll-mt-10 py-24">
+        <div className="page">
           <Reveal>
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.4em] text-red-500">What is here</p>
             <h2 className="max-w-3xl text-4xl font-black uppercase italic leading-[0.95] tracking-tighter md:text-6xl">Answers, not just <span className="text-red-500">tables.</span></h2>
@@ -85,8 +85,8 @@ export default function AboutPage() {
       </section>
 
       {/* ================= HOW THE DATA FLOWS ================= */}
-      <section className="border-t border-white/5 bg-zinc-950/70 px-6 py-24 md:px-12">
-        <div className="mx-auto max-w-[1300px]">
+      <section className="border-t border-white/5 bg-zinc-950/70 py-24">
+        <div className="page">
           <Reveal>
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.4em] text-red-500">How it works</p>
             <h2 className="max-w-3xl text-4xl font-black uppercase italic leading-[0.95] tracking-tighter md:text-6xl">From a timing feed to <span className="text-red-500">a number you can trust.</span></h2>
@@ -108,8 +108,8 @@ export default function AboutPage() {
       </section>
 
       {/* ================= HONEST LIMITS ================= */}
-      <section className="border-t border-white/5 px-6 py-24 md:px-12">
-        <div className="mx-auto grid max-w-[1300px] gap-14 lg:grid-cols-[0.8fr_1.2fr]">
+      <section className="border-t border-white/5 py-24">
+        <div className="page grid gap-14 lg:grid-cols-[0.8fr_1.2fr]">
           <Reveal>
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.4em] text-red-500">Straight talk</p>
             <h2 className="text-4xl font-black uppercase italic leading-[0.95] tracking-tighter md:text-5xl">What this site <span className="text-red-500">will not pretend.</span></h2>
@@ -126,8 +126,8 @@ export default function AboutPage() {
       </section>
 
       {/* ================= THE BUILDER ================= */}
-      <section className="border-t border-white/5 bg-zinc-950/70 px-6 py-24 md:px-12">
-        <div className="mx-auto grid max-w-[1300px] items-center gap-16 lg:grid-cols-2">
+      <section className="border-t border-white/5 bg-zinc-950/70 py-24">
+        <div className="page grid items-center gap-16 lg:grid-cols-2">
           <Reveal>
             <div className="group relative mx-auto w-full max-w-sm">
               <div className="absolute -inset-4 border border-white/5 transition duration-700 group-hover:border-red-600/30" />
@@ -156,7 +156,7 @@ export default function AboutPage() {
       </section>
 
       {/* ================= CTA ================= */}
-      <section className="relative overflow-hidden border-t border-white/5 px-6 py-32 text-center">
+      <section className="relative overflow-hidden border-t border-white/5 py-32 text-center">
         <motion.div aria-hidden="true" className="absolute left-1/2 top-1/2 -z-0 h-[26rem] w-[26rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600/15 blur-[120px]" animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 8, repeat: Infinity }} />
         <Reveal className="relative">
           <h2 className="mb-10 text-4xl font-black uppercase italic leading-[0.95] tracking-tighter md:text-7xl">Explore the data.<br /><span className="text-red-500">Understand the race.</span></h2>

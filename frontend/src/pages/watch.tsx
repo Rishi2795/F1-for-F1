@@ -26,8 +26,8 @@ export default function Watch() {
   }, [races.data, order]);
 
   return (
-    <div className="min-h-screen px-5 pb-32 pt-16 text-zinc-300 sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-5xl space-y-10">
+    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+      <div className="page space-y-10">
         <PageHead
           align="right"
           kicker="WATCH"

@@ -20,7 +20,7 @@ export function RaceHero({ race, accent }: { race: RaceDoc; accent: string }) {
   return (
     <>
       <nav aria-label="Race navigation" className="fixed left-0 top-0 z-50 w-full border-b border-white/10 bg-black/50 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
+        <div className="page flex items-center justify-between gap-4 py-3">
         <div className="flex min-w-0 items-center gap-4">
           <Link to="/explore" className="whitespace-nowrap text-xs font-black uppercase tracking-widest text-white transition-colors hover:text-red-500">All races</Link>
           <span aria-hidden="true" className="hidden h-3 w-px bg-white/10 sm:block" />

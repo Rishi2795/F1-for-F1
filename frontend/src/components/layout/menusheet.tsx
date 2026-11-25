@@ -7,7 +7,9 @@ const GROUPS: { name: string; entries: Entry[] }[] = [
   {
     name: "Follow the season",
     entries: [
-      { to: "/explore", title: "Races", note: "Every race: results, replay, pit stops and passes", match: (p) => p === "/explore" || p.startsWith("/race/") },
+      { to: "/schedule", title: "Schedule", note: "The calendar, countdown and session times in your time zone" },
+      { to: "/news", title: "News", note: "Headlines from the sport's publishers" },
+      { to: "/explore", title: "Race archive", note: "Every race: results, replay, pit stops and passes", match: (p) => p === "/explore" || p.startsWith("/race/") },
       { to: "/standings", title: "Standings", note: "Drivers and constructors, round by round", match: (p) => p.startsWith("/season/") || p === "/standings" },
       { to: "/drivers", title: "Drivers", note: "Every driver since 2020", match: (p) => p.startsWith("/driver") },
       { to: "/circuits", title: "Circuits", note: "Every track, drawn from a real lap", match: (p) => p.startsWith("/circuit") },
@@ -16,7 +18,7 @@ const GROUPS: { name: string; entries: Entry[] }[] = [
   {
     name: "Predict and analyse",
     entries: [
-      { to: "/forecast", title: "Forecast", note: "Win and title odds, scored in public" },
+      { to: "/forecast", title: "Forecast", note: "Next-race predictions, possible final standings, scored in public" },
       { to: "/watch", title: "Worth watching", note: "Was that race worth a replay? Spoiler-free" },
       { to: "/ratings", title: "Driver or car?", note: "How much of a result is the driver" },
       { to: "/duels", title: "Teammate duels", note: "Same car, head to head" },
@@ -76,7 +78,7 @@ export function MenuSheet({ onClose, onSearch }: { onClose: () => void; onSearch
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-xl" onClick={onClose}>
-      <div ref={panel} role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()} className="mx-auto flex h-full max-w-5xl flex-col overflow-y-auto px-5 pb-32 pt-6 sm:px-8">
+      <div ref={panel} role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()} className="page flex h-full flex-col overflow-y-auto pb-32 pt-6">
         <div className="mb-6 flex items-center justify-between gap-3">
           <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">Menu</h2>
           <div className="flex items-center gap-2">

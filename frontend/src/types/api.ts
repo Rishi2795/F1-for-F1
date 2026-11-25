@@ -125,7 +125,11 @@ export type RaceIndexEntry = {
   watch_tags?: string[];
   overtakes?: number | null;
   winner?: string | null;
+  sessions?: WeekendSession[];
 };
+
+/** One session of a race weekend; `starts` is UTC and is shown in the viewer's own time zone. */
+export type WeekendSession = { name: string; starts: string };
 
 export type SeasonSummary = {
   season: number;
@@ -301,7 +305,7 @@ export type ForecastDriver = ForecastDriverGrid & {
 export type RaceForecast = { season: number; round: number; event_name: string; date: string; mode: string; drivers: ForecastDriver[] };
 export type NextForecasts = { version: string; as_of_season: number; as_of_round: number; races: RaceForecast[] };
 
-export type TitleDriver = { code: string; name: string; team: string; team_color: string | null; points: number; champion: number; top3: number; exp_points: number };
+export type TitleDriver = { code: string; name: string; team: string; team_color: string | null; points: number; champion: number; top3: number; exp_points: number; positions?: number[]; points_lo?: number | null; points_hi?: number | null };
 export type TitleConstructor = { name: string; team_color: string | null; points: number; champion: number; exp_points: number };
 export type TitleForecast = {
   version: string;
@@ -408,3 +412,6 @@ export type ReplayDoc = { season: number; round: number; hz: number; n: number; 
 
 export type IncidentItem = { t: number | null; lap: number | null; kind: string; text: string; drivers: string[] };
 export type IncidentDoc = { season: number; round: number; source: string; items: IncidentItem[] };
+
+export type NewsItem = { title: string; link: string; source: string; published: string; summary: string | null };
+export type NewsDoc = { fetched_at: string; sources: string[]; items: NewsItem[] };

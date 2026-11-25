@@ -30,6 +30,8 @@ const My = lazy(() => import("./pages/my"));
 const RaceLab = lazy(() => import("./pages/racelab"));
 const TeamPace = lazy(() => import("./pages/teampace"));
 const Forecast = lazy(() => import("./pages/forecast"));
+const Schedule = lazy(() => import("./pages/schedule"));
+const News = lazy(() => import("./pages/news"));
 const Methodology = lazy(() => import("./pages/methodology"));
 const StandingsRedirect = lazy(() => import("./pages/standings").then((m) => ({ default: m.StandingsRedirect })));
 
@@ -60,6 +62,8 @@ export default function App() {
               <Route path="/" element={<About />} />
               <Route path="/simulation" element={<StrategySim />} />
               <Route path="/about_app" element={<AboutPage />} />
+              <Route path="/schedule" element={<Schedule />} />
+              <Route path="/news" element={<News />} />
               <Route path="/explore" element={<Home />} />
               <Route path="/race/:year/:round" element={<RaceDashboard />} />
               <Route path="/race/:year/:round/lab" element={<RaceLab />} />

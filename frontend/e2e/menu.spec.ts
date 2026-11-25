@@ -10,15 +10,24 @@ test.describe("menu", () => {
     await expect.poll(() => dock.evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
   });
 
+  test("the bar shows an icon and a label for each main place, and marks where you are", async ({ page }) => {
+    await page.goto("/season/2026");
+    const bar = page.getByRole("navigation", { name: "Main" });
+    for (const name of ["Home", "Schedule", "Standings", "News", "Pit Wall", "Sim"]) await expect(bar.getByRole("link", { name, exact: true })).toBeVisible();
+    await expect(bar.getByRole("link", { name: "Standings", exact: true })).toHaveAttribute("aria-current", "page");
+    await page.goto("/forecast"); // a Pit Wall tool: the Pit Wall tab stays lit
+    await expect(bar.getByRole("link", { name: "Pit Wall", exact: true })).toHaveAttribute("aria-current", "page");
+  });
+
   test("the menu lists every part of the site, opens a page, and closes", async ({ page }) => {
     await page.goto("/explore");
     await page.getByRole("button", { name: "Menu" }).click();
     const menu = page.getByRole("dialog", { name: "Menu" });
     await expect(menu).toBeVisible();
-    for (const name of ["Races", "Standings", "Drivers", "Circuits", "Forecast", "Worth watching", "Driver or car?", "Teammate duels", "Team pace", "Pit Wall", "Simulator", "Beat the model", "My driver", "About", "Methodology"]) {
+    for (const name of ["Schedule", "News", "Race archive", "Standings", "Drivers", "Circuits", "Forecast", "Worth watching", "Driver or car?", "Teammate duels", "Team pace", "Pit Wall", "Simulator", "Beat the model", "My driver", "About", "Methodology"]) {
       await expect(menu.getByRole("link", { name: new RegExp(`^${name.replace("?", "\\?")}`) })).toBeVisible(); // each link reads "Title description"
     }
-    await expect(menu.getByRole("link", { name: /^Races/ })).toHaveAttribute("aria-current", "page");
+    await expect(menu.getByRole("link", { name: /^Race archive/ })).toHaveAttribute("aria-current", "page");
     await menu.getByRole("link", { name: /^Circuits/ }).click();
     await expect(page).toHaveURL(/\/circuits$/);
     await expect(menu).toHaveCount(0); // going somewhere closes it
