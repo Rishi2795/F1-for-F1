@@ -155,7 +155,7 @@ export function TelemetryLab({ doc, drivers, outline }: Props) {
             <ZoomControls zoom={view.zoom} onIn={view.zoomIn} onOut={view.zoomOut} onReset={() => { setFollow(false); view.reset(); }} />
             <div className="absolute bottom-3 left-3 flex flex-wrap items-center gap-1.5">
               {sectors && [0, 1, 2].map((s) => (
-                <button key={s} type="button" onClick={() => goToSector(s)} aria-label={`Zoom to sector ${s + 1}`} className="border px-2.5 py-1 font-mono text-[10px] font-bold tracking-widest backdrop-blur focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600" style={{ borderColor: `${SECTOR_COLOURS[s]}${sector === s ? "ff" : "55"}`, color: SECTOR_COLOURS[s], backgroundColor: sector === s ? `${SECTOR_COLOURS[s]}26` : "#00000099" }}>S{s + 1}</button>
+                <button key={s} type="button" onClick={() => goToSector(s)} className="border px-2.5 py-1 font-mono text-[10px] font-bold tracking-widest backdrop-blur focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600" style={{ borderColor: `${SECTOR_COLOURS[s]}${sector === s ? "ff" : "55"}`, color: SECTOR_COLOURS[s], backgroundColor: sector === s ? `${SECTOR_COLOURS[s]}26` : "#00000099" }}><span aria-hidden="true">S{s + 1}</span><span className="sr-only">Zoom to sector {s + 1}</span></button>
               ))}
               <button type="button" aria-pressed={follow} onClick={() => { if (!follow) view.ensureZoom(3.5); setFollow((f) => !f); }} className={`${chip(follow)} !px-2.5 !py-1`}>FOLLOW CAR</button>
             </div>
@@ -167,7 +167,14 @@ export function TelemetryLab({ doc, drivers, outline }: Props) {
               <span>{d.code} {cur.name} trace{other ? ` vs ${other.code}` : ""}</span>
               <span className="flex items-center gap-3 normal-case tracking-normal text-zinc-500">{rivalValues && <><i aria-hidden="true" className="inline-block h-0.5 w-4" style={{ backgroundColor: colour(d.code) }} />{d.code}<i aria-hidden="true" className="inline-block h-0.5 w-4" style={{ backgroundColor: colour(other!.code) }} />{other!.code}</>}</span>
             </div>
-            <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${cur.name} round the lap, with a cursor at the chosen spot`} className="block w-full cursor-crosshair touch-none"
+            <svg viewBox={`0 0 ${W} ${H}`} role="slider" tabIndex={0} aria-label={`${cur.name} round the lap: move the cursor along the lap`} aria-orientation="horizontal" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(frac * 100)} aria-valuetext={`${Math.round(frac * 100)}% round the lap, ${Math.round(now.speed)} kilometres per hour, gear ${now.gear || "neutral"}`} className="block w-full cursor-crosshair touch-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600"
+              onKeyDown={(e) => {
+                const step = e.shiftKey ? 0.1 : 0.01;
+                const next = e.key === "ArrowRight" || e.key === "ArrowUp" ? frac + step : e.key === "ArrowLeft" || e.key === "ArrowDown" ? frac - step : e.key === "Home" ? 0 : e.key === "End" ? 0.999 : null;
+                if (next === null) return;
+                e.preventDefault();
+                scrubTo(Math.min(0.999, Math.max(0, next)));
+              }}
               onPointerDown={(e) => { (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId); const r = e.currentTarget.getBoundingClientRect(); scrubTo((e.clientX - r.left) / r.width); }}
               onPointerMove={(e) => { if (e.buttons === 0 && e.pointerType !== "mouse") return; const r = e.currentTarget.getBoundingClientRect(); if (e.pointerType === "mouse" && e.buttons === 0 && playing) return; scrubTo(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width))); }}>
               {sectors && [[0, sectors[0]], [sectors[0], sectors[1]], [sectors[1], 1]].map(([a, b], i) => <rect key={i} x={a * W} width={(b - a) * W} y="0" height={H} fill={SECTOR_COLOURS[i]} opacity="0.06" />)}
@@ -200,7 +207,7 @@ export function TelemetryLab({ doc, drivers, outline }: Props) {
               <h3 className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">Telemetry · {d.code}</h3>
               <div className="flex gap-1">
                 <button type="button" aria-pressed={playing} onClick={() => setPlaying((p) => !p)} className={`${chip(playing)} !px-2.5 !py-1`}>{playing ? "PAUSE" : "RUN LAP"}</button>
-                {RATES.map((r) => <button key={r} type="button" aria-pressed={rate === r} onClick={() => setRate(r)} aria-label={`${r} times speed`} className={`${chip(rate === r)} !px-2 !py-1`}>{r}×</button>)}
+                {RATES.map((r) => <button key={r} type="button" aria-pressed={rate === r} onClick={() => setRate(r)} className={`${chip(rate === r)} !px-2 !py-1`}><span aria-hidden="true">{r}×</span><span className="sr-only">{r} times speed</span></button>)}
               </div>
             </div>
             <div className="grid grid-cols-[1fr_auto] items-center gap-4">

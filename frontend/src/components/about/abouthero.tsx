@@ -89,7 +89,7 @@ export function AboutHero() {
             Every race since 2019, taken apart: who was really fast, which strategy worked, where a race was won or lost. Free, no login, and honest about what the data can and cannot say.
           </motion.p>
           <motion.div initial="hidden" animate="show" variants={fade} custom={1} className="mt-9 flex flex-wrap gap-3">
-            <Link to="/explore" className="group inline-flex items-center gap-3 bg-red-600 px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-black transition hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            <Link to="/explore" className="group inline-flex items-center gap-3 bg-red-500 px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-black transition hover:bg-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
               Explore the races <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
             </Link>
             <Link to="/forecast" className="inline-flex items-center border border-white/20 px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-white transition hover:border-white hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">

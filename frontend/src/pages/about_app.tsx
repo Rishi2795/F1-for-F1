@@ -160,7 +160,7 @@ export default function AboutPage() {
         <motion.div aria-hidden="true" className="absolute left-1/2 top-1/2 -z-0 h-[26rem] w-[26rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600/15 blur-[120px]" animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 8, repeat: Infinity }} />
         <Reveal className="relative">
           <h2 className="mb-10 text-4xl font-black uppercase italic leading-[0.95] tracking-tighter md:text-7xl">Explore the data.<br /><span className="text-red-500">Understand the race.</span></h2>
-          <Link to="/explore" className="inline-block skew-x-[-12deg] bg-red-600 px-12 py-5 font-mono text-xs font-black uppercase tracking-[0.25em] text-black transition hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+          <Link to="/explore" className="inline-block skew-x-[-12deg] bg-red-500 px-12 py-5 font-mono text-xs font-black uppercase tracking-[0.25em] text-black transition hover:bg-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
             <span className="inline-block skew-x-[12deg]">Go to the races</span>
           </Link>
         </Reveal>

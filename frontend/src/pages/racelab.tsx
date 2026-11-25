@@ -21,9 +21,17 @@ export default function RaceLab() {
   const { year = "", round = "" } = useParams();
   const race = useApi<RaceDoc>(`/seasons/${year}/races/${round}`);
   const laps = useApi<LapDoc>(`/seasons/${year}/races/${round}/laps`);
-  const telemetry = useApi<TelemetryDoc>(`/seasons/${year}/races/${round}/telemetry`).data; // absent before 2023: the section is simply left out
-  const replay = useApi<ReplayDoc>(`/seasons/${year}/races/${round}/replay`).data; // newest races only: older ones fall back to timing
-  const incidents = useApi<IncidentDoc>(`/seasons/${year}/races/${round}/incidents`).data; // race-control messages, where published
+  // The heavy files load in order of need so the lap data is never held up: laps first, then the real-position replay
+  // (about 0.8 MB compressed, newest races only), then the telemetry and the race-control messages. With the browser's
+  // data-saver on they are skipped and the replay falls back to lap timing, which it says on screen.
+  const saver = typeof navigator !== "undefined" && (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
+  const base = `/seasons/${year}/races/${round}`;
+  const lapsReady = !laps.loading;
+  const replayState = useApi<ReplayDoc>(lapsReady && !saver ? `${base}/replay` : null);
+  const replay = replayState.data; // absent for older races: the replay falls back to timing
+  const afterReplay = lapsReady && !replayState.loading;
+  const telemetry = useApi<TelemetryDoc>(afterReplay && !saver ? `${base}/telemetry` : null).data; // absent before 2023: section left out
+  const incidents = useApi<IncidentDoc>(afterReplay ? `${base}/incidents` : null).data; // race-control messages, where published
   const circuit = useApi<CircuitDoc>(race.data ? `/circuits/${slugify(race.data.location)}` : null).data;
   const [clock, setClock] = useState(0);
   const outline = circuit?.outline?.points;
@@ -43,7 +51,7 @@ export default function RaceLab() {
         {race.data && laps.data && (
           <>
             <Block id="replay-h" n="01" title="Track" accent="replay" note={outline ? "The race played back on the circuit" : "Scrub through the race lap by lap"}>
-              {outline ? <TrackReplay doc={laps.data} drivers={race.data.drivers} outline={outline} telemetry={telemetry} replay={replay} incidents={incidents} events={buildEvents(laps.data, race.data.drivers, incidents)} t={clock} setT={setClock} /> : <Replay doc={laps.data} drivers={race.data.drivers} />}
+              {outline && replayState.loading ? <Skeleton className="h-[480px]" /> : outline ? <TrackReplay doc={laps.data} drivers={race.data.drivers} outline={outline} telemetry={telemetry} replay={replay} incidents={incidents} events={buildEvents(laps.data, race.data.drivers, incidents)} t={clock} setT={setClock} /> : <Replay doc={laps.data} drivers={race.data.drivers} />}
             </Block>
             {outline && telemetry && telemetry.drivers.length > 0 && (
               <Block id="tel-h" n="02" title="Fastest lap" accent="telemetry" note="Zoom in and read the car at any point of the track">
