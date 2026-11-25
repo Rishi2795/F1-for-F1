@@ -1,9 +1,11 @@
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { chip } from "../ui/chipstyle";
 import type { Race } from "../../lib/sim/race";
 import { DRY, type Compound, type ModeKey, type SimCircuit, type SimModel } from "../../lib/sim/types";
 import { Tyre } from "./bits";
 import { NAMES, fmtGap, fmtRace, fmtTime } from "./format";
+import { ChequeredStrip, Confetti } from "./fx";
 import { SampleRace } from "./results";
 
 const SPEEDS = [
@@ -21,6 +23,8 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
   const [pit, setPit] = useState<Compound | null>(null);
   const [mode, setMode] = useState<ModeKey>("standard");
   const [announce, setAnnounce] = useState("");
+  const [toast, setToast] = useState("");
+  const still = useReducedMotion();
   const pitRef = useRef<Compound | null>(null);
   const modeRef = useRef<ModeKey>("standard");
   useEffect(() => {
@@ -32,9 +36,18 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
     if (race.finished) return;
     const out = race.step({ pit: pitRef.current, mode: modeRef.current });
     setPit(null);
-    if (out.events.length) setAnnounce(out.events.map((e) => e.text).join(". "));
+    if (out.events.length) {
+      setAnnounce(out.events.map((e) => e.text).join(". "));
+      setToast(out.events[out.events.length - 1].text);
+    }
     redraw();
   }, [race]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const id = window.setTimeout(() => setToast(""), 2600);
+    return () => window.clearTimeout(id);
+  }, [toast]);
 
   useEffect(() => {
     if (!playing || race.finished) return;
@@ -57,8 +70,20 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
   const results = race.finished ? race.results() : null;
   const myResult = results?.find((r) => r.player) ?? null;
 
+  const podium = !!myResult && !myResult.dnf && !myResult.dsq && myResult.position <= 3;
+
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6 overflow-hidden">
+      {wet > 0.12 && !race.finished && !still && <div aria-hidden="true" className="sim-rain pointer-events-none absolute inset-0 z-20" style={{ opacity: Math.min(0.32, wet * 0.5) }} />}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center">
+        <AnimatePresence>
+          {toast && (
+            <motion.p key={toast} initial={still ? false : { opacity: 0, y: -14, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={still ? undefined : { opacity: 0, y: -10 }} transition={{ duration: 0.25 }} className="rounded-sm border border-white/25 bg-black/85 px-4 py-2 font-mono text-xs uppercase tracking-[0.25em] text-white backdrop-blur">
+              {toast}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
       <div className="flex flex-wrap items-center gap-3">
         <p className="font-serif text-4xl leading-none text-white" aria-label={`Lap ${race.lap} of ${total}`}>
           {Math.min(race.lap + (race.finished ? 0 : 1), total)}<span className="text-xl text-zinc-400">/{total}</span>
@@ -85,10 +110,28 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
       </div>
       <p className="sr-only" role="status" aria-live="polite">{announce}</p>
 
+      <AnimatePresence initial={false}>
+        {!race.finished && flag !== "green" && (
+          <motion.div
+            key={flag}
+            initial={still ? false : { opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={still ? undefined : { opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className={`sim-pulse border px-4 py-3 font-mono text-xs uppercase tracking-[0.3em] ${flag === "sc" ? "border-amber-400 bg-amber-400/15 text-amber-200" : "border-yellow-300/60 bg-yellow-300/10 text-yellow-100"}`}>
+              {flag === "sc" ? "Safety car · the field bunches up, a pit stop costs about half as much" : "Virtual safety car · hold your delta"}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {results && myResult && (
-        <section aria-label="Result" className="glass space-y-4 border-l-2 border-red-500 p-5">
+        <section aria-label="Result" className="glass relative space-y-4 overflow-hidden border-l-2 border-red-500 p-5">
+          <ChequeredStrip />
+          {podium && <Confetti />}
           <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-red-400">Chequered flag</p>
-          <p className="font-serif text-3xl text-white sm:text-5xl">{myResult.dnf ? "Retired" : myResult.dsq ? "Disqualified" : `P${myResult.position}`}</p>
+          <motion.p initial={still ? false : { scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 16 }} className="origin-left font-serif text-3xl text-white sm:text-5xl">{myResult.dnf ? "Retired" : myResult.dsq ? "Disqualified" : `P${myResult.position}`}</motion.p>
           <p className="text-zinc-300">
             {myResult.dnf ? `Out on lap ${myResult.dnf}. It happens: retirements are random in this model.` : myResult.dsq ? "A dry race needs two different dry compounds." : `${myResult.gap === 0 ? "You won" : fmtGap(myResult.gap) + " behind the winner"} · ${myResult.stops} ${myResult.stops === 1 ? "stop" : "stops"} · ${fmtRace(myResult.total)}`}
           </p>
@@ -114,8 +157,8 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
             </tr></thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={r.code} className={`border-t border-white/10 ${r.player ? "bg-white/[0.08]" : ""} ${r.out ? "opacity-50" : ""}`} aria-current={r.player ? "true" : undefined}>
-                  <td className="py-1.5 pr-2 font-mono tabular-nums text-zinc-200">{i + 1}</td>
+                <motion.tr key={r.code} layout={!still} transition={{ type: "spring", stiffness: 420, damping: 40 }} className={`border-t border-white/10 ${r.player ? "bg-white/[0.08]" : ""} ${r.out ? "opacity-50" : ""}`} aria-current={r.player ? "true" : undefined}>
+                  <td className="py-1.5 pr-2 font-mono tabular-nums text-zinc-200">{i + 1}{!r.out && r.change !== 0 && <span className={`ml-1 text-[10px] ${r.change > 0 ? "text-emerald-400" : "text-red-400"}`} aria-label={`${r.change > 0 ? "up" : "down"} ${Math.abs(r.change)}`}>{r.change > 0 ? "▲" : "▼"}{Math.abs(r.change)}</span>}</td>
                   <td className="py-1.5 pr-2 text-white"><span aria-hidden="true" className="mr-2 inline-block h-3.5 w-1 rounded-full align-middle" style={{ backgroundColor: r.color ?? "#888" }} />{r.code}{r.player && <span className="ml-2 font-mono text-[9px] uppercase tracking-widest text-red-400">you</span>}</td>
                   <td className="py-1.5 pr-2">
                     {r.out ? <span className="font-mono text-xs text-zinc-400">OUT</span> : <span className="inline-flex items-center gap-1.5"><Tyre compound={r.compound} size={18} /><span className="sr-only">{NAMES[r.compound]}, </span><span className="font-mono text-xs tabular-nums text-zinc-300">{r.age}</span></span>}
@@ -123,7 +166,7 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
                   <td className="py-1.5 pr-2 text-right font-mono text-xs tabular-nums text-zinc-300">{i === 0 || r.out ? "" : fmtGap(r.interval)}</td>
                   <td className="py-1.5 pr-2 text-right font-mono text-xs tabular-nums text-zinc-300">{i === 0 || r.out ? "" : fmtGap(r.gap)}</td>
                   <td className="py-1.5 text-right font-mono text-xs tabular-nums text-zinc-300">{r.lastLap && !r.out ? fmtTime(r.lastLap) : ""}</td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>
@@ -133,7 +176,7 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
           {me && !race.finished && mine >= 0 && (
             <section aria-label="Your car" className="glass space-y-4 p-5">
               <div className="flex items-end justify-between">
-                <p className="font-serif text-6xl leading-none text-white">P{mine + 1}</p>
+                <motion.p key={mine} initial={still ? false : { y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="font-serif text-6xl leading-none text-white">P{mine + 1}</motion.p>
                 <p className="text-right text-sm text-zinc-300">{me.spec.name}<br /><span className="text-xs text-zinc-400">{me.pits.length} {me.pits.length === 1 ? "stop" : "stops"} so far</span></p>
               </div>
               <div>
@@ -141,7 +184,7 @@ export function LiveRace({ model, circuit, race, onExit, onAgain }: { model: Sim
                 {maxAge && (
                   <>
                     <div className="mt-2 h-2 w-full bg-white/10" role="img" aria-label={`Tyre life used: ${Math.round(wear * 100)}% of the longest run seen at this circuit`}>
-                      <div className={`h-full ${wear > 1 ? "bg-red-500" : wear > 0.75 ? "bg-amber-400" : "bg-emerald-400"}`} style={{ width: `${Math.min(100, wear * 100)}%` }} />
+                      <div className={`h-full transition-[width] duration-500 ${wear > 1 ? "bg-red-500" : wear > 0.75 ? "bg-amber-400" : "bg-emerald-400"}`} style={{ width: `${Math.min(100, wear * 100)}%` }} />
                     </div>
                     <p className="mt-1 text-xs text-zinc-400">{wear > 1 ? "Past anything seen here: the tyre is falling away." : `Longest run seen at ${circuit.location} on this tyre: ${maxAge} laps.`}</p>
                   </>

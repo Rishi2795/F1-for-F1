@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useMemo } from "react";
 import { chip } from "../ui/chipstyle";
 import { fitPlan, planProblem, previewLaps, type Suggestion } from "../../lib/sim/plan";
@@ -12,6 +13,7 @@ export function PlanBuilder({
 }: {
   model: SimModel; circuit: SimCircuit; plan: PlanStint[]; onChange: (p: PlanStint[]) => void; suggestions: Suggestion[]; car: number; trackTemp: number;
 }) {
+  const still = useReducedMotion();
   const total = circuit.laps;
   const problem = planProblem(plan, total);
   const used = plan.reduce((n, s) => n + s.laps, 0);
@@ -63,8 +65,16 @@ export function PlanBuilder({
       )}
 
       <ol aria-label="Stints" className="space-y-3">
+        <AnimatePresence initial={false}>
         {plan.map((s, i) => (
-          <li key={i} className="grid gap-3 border border-white/10 bg-black/30 p-3 sm:grid-cols-[auto_1fr_auto_auto] sm:items-center">
+          <motion.li
+            key={i}
+            layout={!still}
+            initial={still ? false : { opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={still ? undefined : { opacity: 0, x: 16 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="grid gap-3 border border-white/10 bg-black/30 p-3 sm:grid-cols-[auto_1fr_auto_auto] sm:items-center">
             <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">Stint {i + 1}</span>
             <div role="group" aria-label={`Stint ${i + 1} tyre`} className="flex flex-wrap gap-1.5">
               {ALL.map((c) => (
@@ -75,8 +85,9 @@ export function PlanBuilder({
                   aria-label={NAMES[c]}
                   title={NAMES[c]}
                   onClick={() => update(i, { compound: c })}
-                  className={`grid h-10 w-10 place-items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${s.compound === c ? "border-white bg-white/10" : "border-transparent hover:bg-white/10"}`}
+                  className={`relative grid h-10 w-10 place-items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${s.compound === c ? "border-white bg-white/10" : "border-transparent hover:bg-white/10"}`}
                 >
+                  {s.compound === c && !still && <motion.span layoutId={`ring-${i}`} aria-hidden="true" className="absolute h-10 w-10 rounded-full" style={{ boxShadow: `0 0 14px ${COMPOUND_COLOR[c]}88` }} transition={{ type: "spring", stiffness: 500, damping: 34 }} />}
                   <Tyre compound={c} size={26} />
                 </button>
               ))}
@@ -94,8 +105,9 @@ export function PlanBuilder({
               </select>
               {plan.length > 1 && <button type="button" onClick={() => removeStint(i)} aria-label={`Remove stint ${i + 1}`} className="grid h-9 w-9 place-items-center rounded-sm border border-white/15 text-zinc-300 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600">×</button>}
             </div>
-          </li>
+          </motion.li>
         ))}
+        </AnimatePresence>
       </ol>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -112,6 +124,7 @@ export function PlanBuilder({
 
 /** Clear-air lap time through the race: the tyre ring colours the line, and a pit lane shows as a spike. */
 function LapChart({ laps, pitLoss }: { laps: { time: number; compound: Compound; pit: boolean }[]; pitLoss: number }) {
+  const still = useReducedMotion();
   const W = 760;
   const H = 150;
   const times = laps.filter((l) => !l.pit).map((l) => l.time);
@@ -130,7 +143,7 @@ function LapChart({ laps, pitLoss }: { laps: { time: number; compound: Compound;
     <figure>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Clear-air lap time through the race for this plan, with tyre changes marked" className="h-auto w-full">
         {[0, 0.5, 1].map((f) => <line key={f} x1="8" x2={W - 8} y1={14 + f * (H - 28)} y2={14 + f * (H - 28)} stroke="#ffffff1a" />)}
-        {legs.map((l, i) => <polyline key={i} points={l.pts} fill="none" stroke={COMPOUND_COLOR[l.c]} strokeWidth="2.5" strokeLinejoin="round" />)}
+        {legs.map((l, i) => <motion.polyline key={`${l.c}-${i}-${l.pts.length}`} points={l.pts} fill="none" stroke={COMPOUND_COLOR[l.c]} strokeWidth="2.5" strokeLinejoin="round" initial={still ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, delay: i * 0.25, ease: "easeOut" }} />)}
         {laps.map((l, i) => l.pit && <line key={i} x1={x(i)} x2={x(i)} y1="6" y2={H - 8} stroke="#ffffff55" strokeDasharray="3 3" />)}
         <text x="8" y="9" fill="#a1a1aa" fontSize="6.5" fontFamily="monospace">{lo.toFixed(1)}–{hi.toFixed(1)} s a lap · dashed lines are stops</text>
       </svg>

@@ -82,6 +82,8 @@ export type Standing = {
   player: boolean;
   stops: number;
   out: boolean;
+  /** places gained (positive) or lost on the last lap */
+  change: number;
 };
 
 export const POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
@@ -346,6 +348,7 @@ export class Race {
         player: !!c.spec.player,
         stops: c.pits.length,
         out: c.outLap <= this.lap,
+        change: c.positions.length > 1 ? c.positions[c.positions.length - 2] - c.positions[c.positions.length - 1] : 0,
       };
     });
   }

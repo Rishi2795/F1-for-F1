@@ -1,7 +1,9 @@
+import { motion, useReducedMotion } from "framer-motion";
 import { COMPOUND_COLOR } from "../../lib/sim/types";
 import type { CarResult } from "../../lib/sim/race";
 import type { Summary } from "../../lib/sim/montecarlo";
 import { Stat } from "./bits";
+import { Reveal } from "./fx";
 import { pct0 } from "./format";
 
 export type WhatIf = { label: string; note: string; summary: Summary };
@@ -17,18 +19,20 @@ export function ResultsPanel({
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <Stat label="Average finish" value={place(mine.meanPosition)} />
-        <Stat label="Win" value={pct0(mine.win)} />
-        <Stat label="Podium" value={pct0(mine.podium)} />
-        <Stat label="Points" value={pct0(mine.points)} note={`${mine.meanPoints.toFixed(1)} on average`} />
-        <Stat label="Did not finish" value={pct0(mine.dnf)} note="mechanical or accident" />
+        {[
+          <Stat key="a" label="Average finish" value={mine.meanPosition} format={place} />,
+          <Stat key="b" label="Win" value={mine.win} format={pct0} />,
+          <Stat key="c" label="Podium" value={mine.podium} format={pct0} />,
+          <Stat key="d" label="Points" value={mine.points} format={pct0} note={`${mine.meanPoints.toFixed(1)} on average`} />,
+          <Stat key="e" label="Did not finish" value={mine.dnf} format={pct0} note="mechanical or accident" />,
+        ].map((tile, i) => <Reveal key={i} delay={i * 0.07}>{tile}</Reveal>)}
       </div>
-      {verdict && <p className="text-lg text-white" role="status">{verdict} <span className="text-sm text-zinc-400">(Compared with {referenceLabel}, same {runs} races of luck.)</span></p>}
+      {verdict && <Reveal delay={0.4}><p className="text-lg text-white" role="status">{verdict} <span className="text-sm text-zinc-400">(Compared with {referenceLabel}, same {runs} races of luck.)</span></p></Reveal>}
 
-      <Histogram finish={mine.finish} reference={reference?.finish ?? null} />
+      <Reveal delay={0.5}><Histogram finish={mine.finish} reference={reference?.finish ?? null} /></Reveal>
 
       {whatIf.length > 0 && (
-        <div>
+        <Reveal delay={0.7}>
           <h3 className="mb-3 font-mono text-[11px] uppercase tracking-[0.35em] text-zinc-300">What if the race changes?</h3>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[30rem] border-collapse text-left">
@@ -51,13 +55,14 @@ export function ResultsPanel({
               </tbody>
             </table>
           </div>
-        </div>
+        </Reveal>
       )}
     </div>
   );
 }
 
 function Histogram({ finish, reference }: { finish: number[]; reference: number[] | null }) {
+  const still = useReducedMotion();
   const max = Math.max(0.05, ...finish, ...(reference ?? []));
   return (
     <figure>
@@ -66,7 +71,14 @@ function Histogram({ finish, reference }: { finish: number[]; reference: number[
         {finish.map((p, i) => (
           <div key={i} className="relative flex h-full flex-1 flex-col justify-end" title={`P${i + 1}: ${pct0(p)}`}>
             {reference && <span aria-hidden="true" className="absolute inset-x-0 border-t-2 border-dashed border-zinc-300/70" style={{ bottom: `${(reference[i] / max) * 100}%` }} />}
-            <span aria-hidden="true" className={`block w-full ${i < 3 ? "bg-red-500" : i < 10 ? "bg-white/70" : "bg-white/25"}`} style={{ height: `${Math.max(1, (p / max) * 100)}%` }} />
+            <motion.span
+              aria-hidden="true"
+              className={`block w-full origin-bottom ${i < 3 ? "bg-red-500" : i < 10 ? "bg-white/70" : "bg-white/25"}`}
+              style={{ height: `${Math.max(1, (p / max) * 100)}%` }}
+              initial={still ? false : { scaleY: 0 }}
+              animate={{ scaleY: 1 }}
+              transition={{ duration: 0.7, delay: 0.55 + i * 0.03, ease: [0.22, 1, 0.36, 1] }}
+            />
           </div>
         ))}
       </div>
@@ -80,6 +92,7 @@ function Histogram({ finish, reference }: { finish: number[]; reference: number[
 
 /** One simulated race, drawn: the player's position every lap, tyres underneath, stops marked. */
 export function SampleRace({ result, total }: { result: CarResult; total: number }) {
+  const still = useReducedMotion();
   const W = 760;
   const H = 190;
   const n = Math.max(...result.positions, 22);
@@ -91,8 +104,8 @@ export function SampleRace({ result, total }: { result: CarResult; total: number
       <figcaption className="mb-3 font-mono text-[11px] uppercase tracking-[0.35em] text-zinc-300">One sample race</figcaption>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Sample race: ${result.name} starts and finishes P${result.positions[result.positions.length - 1] ?? "?"}`} className="h-auto w-full">
         {[1, 5, 10, 15, 20].filter((p) => p <= n).map((p) => <g key={p}><line x1="10" x2={W - 10} y1={y(p)} y2={y(p)} stroke="#ffffff14" /><text x="12" y={y(p) - 3} fill="#a1a1aa" fontSize="6" fontFamily="monospace">P{p}</text></g>)}
-        <path d={path} fill="none" stroke="#fff" strokeWidth="2.5" strokeLinejoin="round" />
-        {result.compounds.map((c, i) => <rect key={i} x={x(i + 1) - (W - 20) / total / 2} y={H - 28} width={(W - 20) / total + 0.5} height="8" fill={COMPOUND_COLOR[c]} />)}
+        <motion.path d={path} fill="none" stroke="#fff" strokeWidth="2.5" strokeLinejoin="round" initial={still ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 2.2, ease: "easeInOut" }} />
+        <motion.g initial={still ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.4 }}>{result.compounds.map((c, i) => <rect key={i} x={x(i + 1) - (W - 20) / total / 2} y={H - 28} width={(W - 20) / total + 0.5} height="8" fill={COMPOUND_COLOR[c]} />)}</motion.g>
         {result.pits.map((lap) => <g key={lap}><line x1={x(lap)} x2={x(lap)} y1="6" y2={H - 28} stroke="#ffffff55" strokeDasharray="3 3" /><text x={x(lap) + 3} y={H - 6} fill="#d4d4d8" fontSize="6.5" fontFamily="monospace">stop {lap}</text></g>)}
       </svg>
     </figure>

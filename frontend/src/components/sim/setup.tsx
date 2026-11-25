@@ -1,6 +1,7 @@
 import { chip } from "../ui/chipstyle";
 import type { SimCircuit, SimModel } from "../../lib/sim/types";
 import { Field, Slider } from "./bits";
+import { Reveal } from "./fx";
 import { control, pct0 } from "./format";
 
 export type WeatherKind = "dry" | "rain" | "drying" | "circuit";
@@ -36,7 +37,8 @@ export function SetupPanel({ model, circuit, value, onChange }: { model: SimMode
 
   return (
     <div className="grid gap-5 lg:grid-cols-3">
-      <section aria-labelledby="sim-circuit" className="glass space-y-5 p-5">
+      <Reveal delay={0} className="h-full">
+      <section aria-labelledby="sim-circuit" className="glass h-full space-y-5 p-5">
         <h2 id="sim-circuit" className="font-mono text-[11px] uppercase tracking-[0.35em] text-red-400">1 · Circuit</h2>
         <Field label="Grand Prix">
           {(id) => (
@@ -61,8 +63,10 @@ export function SetupPanel({ model, circuit, value, onChange }: { model: SimMode
           ))}
         </dl>
       </section>
+      </Reveal>
 
-      <section aria-labelledby="sim-car" className="glass space-y-5 p-5">
+      <Reveal delay={0.08} className="h-full">
+      <section aria-labelledby="sim-car" className="glass h-full space-y-5 p-5">
         <h2 id="sim-car" className="font-mono text-[11px] uppercase tracking-[0.35em] text-red-400">2 · Driver and car</h2>
         <Field label="Driver" hint={me ? `${me.team}: ${teamPace <= 0 ? "" : "+"}${teamPace.toFixed(2)} s a lap against the field's average car` : undefined}>
           {(id) => (
@@ -94,8 +98,10 @@ export function SetupPanel({ model, circuit, value, onChange }: { model: SimMode
           )}
         </Field>
       </section>
+      </Reveal>
 
-      <section aria-labelledby="sim-cond" className="glass space-y-5 p-5">
+      <Reveal delay={0.16} className="h-full">
+      <section aria-labelledby="sim-cond" className="glass h-full space-y-5 p-5">
         <h2 id="sim-cond" className="font-mono text-[11px] uppercase tracking-[0.35em] text-red-400">3 · Conditions</h2>
         <div>
           <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">Weather</p>
@@ -123,6 +129,7 @@ export function SetupPanel({ model, circuit, value, onChange }: { model: SimMode
           hint={`${circuit.name} has had one in ${pct0(circuit.sc_prob)} of races.`}
         />
       </section>
+      </Reveal>
     </div>
   );
 }

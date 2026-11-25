@@ -7,6 +7,7 @@ import { ResultsPanel, SampleRace, type WhatIf } from "../components/sim/results
 import { SetupPanel, type Setup } from "../components/sim/setup";
 import { LiveRace } from "../components/sim/live";
 import { ModelCard } from "../components/sim/modelcard";
+import { RaceProgress, Reveal, Swap } from "../components/sim/fx";
 import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { monteCarloAsync, runOnce, type Scenario, type Summary } from "../lib/sim/montecarlo";
@@ -18,7 +19,7 @@ import type { NextForecasts } from "../types/api";
 const RUNS = 300;
 const WHAT_IF_RUNS = 200;
 
-type Outcome = { signature: string; mine: Summary; reference: Summary | null; referenceLabel: string | null; whatIf: WhatIf[]; sample: CarResult | null };
+type Outcome = { id: number; signature: string; mine: Summary; reference: Summary | null; referenceLabel: string | null; whatIf: WhatIf[]; sample: CarResult | null };
 
 /** The strategy simulator: fitted tyre, fuel, heat and rain behaviour for every circuit, a full 22-car field, and two ways to
  *  use it: test a plan across hundreds of races, or take the calls yourself lap by lap. */
@@ -77,6 +78,8 @@ export default function StrategySim() {
   const signature = JSON.stringify([setup, plan]);
   const fresh = outcome && outcome.signature === signature ? outcome : null;
   const best = suggestions[0];
+  const isBestPlan = best && JSON.stringify(best.plan.map((p) => [p.compound, p.laps])) === JSON.stringify(plan.map((p) => [p.compound, p.laps]));
+  const totalRuns = RUNS * (isBestPlan ? 1 : 2) + WHAT_IF_RUNS * 4;
   const isBest = best && JSON.stringify(best.plan.map((s) => [s.compound, s.laps])) === JSON.stringify(plan.map((s) => [s.compound, s.laps]));
 
   const change = (patch: Partial<Setup>) => setEdit((e) => ({ ...e, ...patch }));
@@ -124,7 +127,7 @@ export default function StrategySim() {
       whatIf.push({ label: c.label, note: c.note, summary: r });
     }
     const sample = runOnce(s, 77, plan).runToEnd().find((c) => c.player) ?? null;
-    setOutcome({ signature, mine: summary, reference, referenceLabel: reference ? "the fastest plan on pace alone" : null, whatIf, sample });
+    setOutcome({ id: Date.now(), signature, mine: summary, reference, referenceLabel: reference ? "the fastest plan on pace alone" : null, whatIf, sample });
     setProgress(null);
   };
 
@@ -138,6 +141,7 @@ export default function StrategySim() {
       <div className="page space-y-14">
         <Head />
 
+        <Swap id={live ? "live" : "setup"}>
         {live ? (
           <section aria-label="Live race">
             <LiveRace key={live.cfg.seed} model={model} circuit={circuit} race={live} onExit={() => setLive(null)} onAgain={startLive} />
@@ -146,6 +150,7 @@ export default function StrategySim() {
           <>
             <SetupPanel model={model} circuit={circuit} value={setup} onChange={onSetup} />
 
+            <Reveal delay={0.2}>
             <section aria-labelledby="sim-plan" className="glass space-y-6 p-5 md:p-7">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
                 <h2 id="sim-plan" className="font-mono text-[11px] uppercase tracking-[0.35em] text-red-400">4 · Your strategy</h2>
@@ -161,13 +166,15 @@ export default function StrategySim() {
                 </button>
                 <p className="max-w-md text-xs text-zinc-400">Running tests your plan against {RUNS} versions of the same race with different luck: safety cars, retirements, rain and traffic. Racing live lets you make the calls.</p>
               </div>
+              {progress !== null && <RaceProgress done={Math.round(progress * totalRuns)} total={totalRuns} />}
             </section>
+            </Reveal>
 
             {outcome && !fresh && progress === null && (
               <p role="status" className="border border-white/10 bg-white/[0.04] p-4 text-sm text-zinc-300">The setup or plan has changed since the last run. Run the races again to see its results.</p>
             )}
             {fresh && (
-              <section aria-labelledby="sim-results" className="space-y-8">
+              <section key={fresh.id} aria-labelledby="sim-results" className="space-y-8">
                 <h2 id="sim-results" className="font-mono text-[11px] uppercase tracking-[0.35em] text-red-400">Results · {RUNS} races</h2>
                 <ResultsPanel mine={fresh.mine} reference={fresh.reference} referenceLabel={fresh.referenceLabel} whatIf={fresh.whatIf} runs={RUNS} />
                 {fresh.sample && <SampleRace result={fresh.sample} total={circuit.laps} />}
@@ -175,6 +182,7 @@ export default function StrategySim() {
             )}
           </>
         )}
+        </Swap>
 
         <details className="group glass p-5 md:p-7">
           <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.35em] text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600">How this simulator works, and what is assumed</summary>
