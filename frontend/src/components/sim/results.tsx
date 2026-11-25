@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { COMPOUND_COLOR } from "../../lib/sim/types";
 import type { CarResult } from "../../lib/sim/race";
 import type { Summary } from "../../lib/sim/montecarlo";
-import { Stat } from "./bits";
+import { StatBoard } from "../ui/statboard";
 import { Reveal } from "./fx";
 import { pct0 } from "./format";
 
@@ -18,15 +18,16 @@ export function ResultsPanel({
     !reference ? null : Math.abs(delta) < 0.15 ? "About level with the fastest plan." : delta > 0 ? `Better than the fastest plan by ${delta.toFixed(1)} places on average.` : `The fastest plan finishes ${(-delta).toFixed(1)} places higher on average.`;
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        {[
-          <Stat key="a" label="Average finish" value={mine.meanPosition} format={place} />,
-          <Stat key="b" label="Win" value={mine.win} format={pct0} />,
-          <Stat key="c" label="Podium" value={mine.podium} format={pct0} />,
-          <Stat key="d" label="Points" value={mine.points} format={pct0} note={`${mine.meanPoints.toFixed(1)} on average`} />,
-          <Stat key="e" label="Did not finish" value={mine.dnf} format={pct0} note="mechanical or accident" />,
-        ].map((tile, i) => <Reveal key={i} delay={i * 0.07}>{tile}</Reveal>)}
-      </div>
+      <StatBoard
+        label="Results of the simulated races"
+        items={[
+          { label: "Average finish", value: mine.meanPosition, format: place, sub: `over ${runs} races`, headline: true },
+          { label: "Win", value: mine.win, format: pct0, sub: "first place" },
+          { label: "Podium", value: mine.podium, format: pct0, sub: "top three" },
+          { label: "Points", value: mine.points, format: pct0, sub: `${mine.meanPoints.toFixed(1)} on average` },
+          { label: "Did not finish", value: mine.dnf, format: pct0, sub: "mechanical or accident" },
+        ]}
+      />
       {verdict && <Reveal delay={0.4}><p className="text-lg text-white" role="status">{verdict} <span className="text-sm text-zinc-400">(Compared with {referenceLabel}, same {runs} races of luck.)</span></p></Reveal>}
 
       <Reveal delay={0.5}><Histogram finish={mine.finish} reference={reference?.finish ?? null} /></Reveal>

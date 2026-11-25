@@ -1,6 +1,6 @@
 import type { RatingEntry } from "../types/api";
 
-export type Verdict = "beats" | "matched" | "carried";
+export type Verdict = "driver_leads" | "matched" | "car_leads";
 
 export type RatingView = {
   entry: RatingEntry;
@@ -12,9 +12,9 @@ export type RatingView = {
 };
 
 export const VERDICT_TEXT: Record<Verdict, { label: string; meaning: string }> = {
-  beats: { label: "Beats the car", meaning: "Ranks higher as a driver than their car does" },
-  matched: { label: "Matches the car", meaning: "Driver and car are about equally good" },
-  carried: { label: "Carried by the car", meaning: "The car ranks higher than the driver" },
+  driver_leads: { label: "Driver rating leads", meaning: "Rated higher as a driver than their car is" },
+  matched: { label: "In step with the car", meaning: "Driver and car are rated about equally" },
+  car_leads: { label: "Car rating leads", meaning: "The car is rated higher than the driver. Strategy, reliability and luck shape results too, so this is not a judgement of the driver" },
 };
 
 export const ordinal = (n: number): string => {
@@ -23,7 +23,7 @@ export const ordinal = (n: number): string => {
   return `${n}${suffix}`;
 };
 
-/** Turn the raw Elo-style numbers into ranks and a one-word verdict, which is what a reader can use.
+/** Turn the raw Elo-style numbers into ranks and a short label, which is what a reader can use.
  *  A verdict needs a clear gap (a quarter of the field) between the driver's and the car's standing. */
 export function rateAll(entries: RatingEntry[]): { views: RatingView[]; drivers: number; cars: number } {
   const byDriver = [...entries].sort((a, b) => b.driver - a.driver);
@@ -36,7 +36,7 @@ export function rateAll(entries: RatingEntry[]): { views: RatingView[]; drivers:
     const driverPos = drivers > 1 ? (driverRank - 1) / (drivers - 1) : 0;
     const carPos = cars > 1 ? (carRank - 1) / (cars - 1) : 0;
     const gap = carPos - driverPos; // positive: the driver stands higher than the car
-    const verdict: Verdict = gap > 0.25 ? "beats" : gap < -0.25 ? "carried" : "matched";
+    const verdict: Verdict = gap > 0.25 ? "driver_leads" : gap < -0.25 ? "car_leads" : "matched";
     return { entry, driverRank, carRank, verdict };
   });
   return { views, drivers, cars };

@@ -1,5 +1,4 @@
 import { useId, type ReactNode } from "react";
-import { AnimatedNumber } from "./fx";
 import { COMPOUND_COLOR, COMPOUND_LETTER, type Compound } from "../../lib/sim/types";
 import { control as _unused } from "./format";
 
@@ -39,18 +38,5 @@ export function Slider({ label, value, min, max, step, onChange, format, hint }:
         </div>
       )}
     </Field>
-  );
-}
-
-export function Stat({ label, value, format, note }: { label: string; value: number; format: (n: number) => string; note?: string }) {
-  return (
-    <div className="border border-white/10 bg-black/30 p-4">
-      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">{label}</p>
-      <p className="mt-2 font-serif text-4xl leading-none text-white">
-        <span className="sr-only">{format(value)}</span>
-        <span aria-hidden="true" className="tabular-nums"><AnimatedNumber value={value} format={format} /></span>
-      </p>
-      {note && <p className="mt-2 text-xs text-zinc-400">{note}</p>}
-    </div>
   );
 }

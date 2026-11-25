@@ -16,9 +16,9 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "car", label: "Best cars" },
 ];
 const VERDICT_STYLE: Record<Verdict, string> = {
-  beats: "border-white bg-white text-black",
+  driver_leads: "border-white bg-white text-black",
   matched: "border-white/25 text-zinc-300",
-  carried: "border-red-500/70 text-red-400",
+  car_leads: "border-white/60 text-white",
 };
 
 export default function Ratings() {
@@ -42,8 +42,8 @@ export default function Ratings() {
           </p>
           <h1 className="mt-4 text-5xl font-black uppercase italic leading-[0.95] tracking-tighter text-white md:text-7xl">Driver or <span className="text-red-500">car?</span></h1>
           <p className="mt-4 text-lg text-zinc-300">
-            A race result is part driver, part car. Using every result since 2020, we separate the two, so you can see who is
-            outdriving their car and who is being carried by it.
+            A race result is part driver, part car. Using every result since 2020, we separate the two, so you can see how much of
+            each driver's results comes from them and how much from the car. Strategy, reliability and luck matter too: this is a guide, not a verdict on anyone.
           </p>
           <p className="mt-2 text-sm text-zinc-500">
             {data && `Up to date after the ${data.season} season's round ${data.round}. `}

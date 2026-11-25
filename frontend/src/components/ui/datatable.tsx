@@ -5,10 +5,10 @@ import { readableOnDark } from "../../lib/color";
 
 /** One table look for the whole site, taken from the standings table: a soft rounded frame, small
  *  tracked header, hairline rows that light up on hover, an italic position and a team-colour bar. */
-export function DataTable({ caption, children }: { caption: string; children: ReactNode }) {
+export function DataTable({ caption, children, scroll = true }: { caption: string; children: ReactNode; scroll?: boolean }) {
   return (
     // relative: keeps the screen-reader caption inside the scroll box; tabIndex: keyboard users can scroll it.
-    <div tabIndex={0} role="region" aria-label={caption} className="table-fit relative overflow-x-auto rounded-sm glass">
+    <div tabIndex={0} role="region" aria-label={caption} className={`${scroll ? "table-fit " : ""}relative overflow-x-auto rounded-sm glass`}>
       <table className="w-full text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         {children}

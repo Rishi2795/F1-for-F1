@@ -57,7 +57,7 @@ export function TitlePanel({ data }: { data: TitleForecast }) {
         )}
       </div>
 
-      <DataTable caption={`${tab} championship odds after round ${data.as_of_round}`}>
+      <DataTable scroll={false} caption={`${tab} championship odds after round ${data.as_of_round}`}>
         <thead className={HEAD}>
           <tr>
             <th scope="col" className="px-4 py-3">RANK</th>

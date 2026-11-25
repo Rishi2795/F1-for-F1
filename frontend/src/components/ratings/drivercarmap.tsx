@@ -24,10 +24,10 @@ export function DriverCarMap({ views, drivers, cars }: { views: RatingView[]; dr
         {/* guides */}
         {AVERAGE > x0 && AVERAGE < x1 && <span aria-hidden="true" className="absolute inset-y-0 border-l border-dashed border-white/15" style={{ left: left(AVERAGE) }} />}
         {AVERAGE > y0 && AVERAGE < y1 && <span aria-hidden="true" className="absolute inset-x-0 border-t border-dashed border-white/15" style={{ top: top(AVERAGE) }} />}
-        <span aria-hidden="true" className="absolute left-2 top-1 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:text-xs">Beats the car</span>
+        <span aria-hidden="true" className="absolute left-2 top-1 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:text-xs">Driver rating leads</span>
         <span aria-hidden="true" className="absolute right-2 top-1 text-right font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:text-xs">Strong on both</span>
-        <span aria-hidden="true" className="absolute bottom-1 left-2 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:text-xs">Struggling</span>
-        <span aria-hidden="true" className="absolute bottom-1 right-2 text-right font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:text-xs">Carried by the car</span>
+        <span aria-hidden="true" className="absolute bottom-1 left-2 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:text-xs">Rated lower on both</span>
+        <span aria-hidden="true" className="absolute bottom-1 right-2 text-right font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:text-xs">Car rating leads</span>
 
         <ul aria-label="Drivers placed by car strength and driver skill" className="absolute inset-x-4 inset-y-7 sm:inset-x-6 sm:inset-y-8">
           {views.map((v, i) => {

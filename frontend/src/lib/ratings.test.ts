@@ -25,10 +25,10 @@ describe("rateAll", () => {
     expect([by.C.driverRank, by.A.driverRank, by.F.driverRank]).toEqual([1, 2, 5]);
     expect([by.A.carRank, by.B.carRank, by.E.carRank, by.C.carRank, by.F.carRank]).toEqual([1, 1, 2, 3, 4]);
   });
-  it("says whether a driver beats the car, matches it, or is carried by it", () => {
+  it("says whether the driver rating leads, the car rating leads, or they are level", () => {
     const by = Object.fromEntries(rateAll(field).views.map((v) => [v.entry.code, v.verdict]));
-    expect(by.C).toBe("beats"); // best driver, third-best car
-    expect(by.E).toBe("carried"); // worst driver, second-best car
+    expect(by.C).toBe("driver_leads"); // best driver, third-best car
+    expect(by.E).toBe("car_leads"); // lowest-rated driver, second-best car
     expect(by.A).toBe("matched");
   });
   it("copes with one driver", () => {

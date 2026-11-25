@@ -175,7 +175,7 @@ test.describe("driver and car ratings", () => {
     await expect(panel.getByText("AS_A_DRIVER", { exact: true })).toBeVisible();
     await expect(panel.getByText(/of \d+ rated drivers/)).toBeVisible();
     await expect(panel.getByText(/best of \d+ cars/)).toBeVisible();
-    await expect(panel.getByText(/Beats the car|Matches the car|Carried by the car/)).toBeVisible();
+    await expect(panel.getByText(/Driver rating leads|In step with the car|Car rating leads/)).toBeVisible();
     await expect(panel.getByRole("img", { name: /how good the driver and the car were/i })).toBeVisible();
   });
 

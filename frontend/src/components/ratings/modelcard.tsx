@@ -14,11 +14,11 @@ const ROWS: [string, string][] = [
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
 /** Methodology section for the ratings model. Numbers come from the published model card, never hard-coded. */
-export function RatingModelSection() {
+export function RatingModelSection({ n }: { n?: string }) {
   const { data: card, loading } = useApi<RatingModelCard>("/ratings/model");
   return (
     <section id="ratings" aria-labelledby="ratings-h" className="scroll-mt-20 space-y-4">
-      <h2 id="ratings-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">The ratings model</h2>
+      <h2 id="ratings-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">{n && <span aria-hidden="true" className="mr-3 font-mono text-xs font-black not-italic text-red-500">[{n}]</span>}The ratings model</h2>
       {loading && <Skeleton className="h-64" />}
       {card && <Body card={card} />}
     </section>

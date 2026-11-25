@@ -35,7 +35,7 @@ export function RatingChart({ history, name }: { history: RatingHistory["history
           </g>
         )}
         <text x={PAD.l - 8} y={PAD.t + 10} textAnchor="end" className="fill-zinc-500" fontSize="11">better</text>
-        <text x={PAD.l - 8} y={H - PAD.b - 2} textAnchor="end" className="fill-zinc-500" fontSize="11">worse</text>
+        <text x={PAD.l - 8} y={H - PAD.b - 2} textAnchor="end" className="fill-zinc-500" fontSize="11">lower</text>
         {years.filter((_, k) => k % 2 === 0 || years.length < 6).map(({ season, i }) => (
           <text key={season} x={x(i)} y={H - 6} textAnchor="start" className="fill-zinc-400" fontSize="11">{season}</text>
         ))}

@@ -3,6 +3,11 @@ import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { describeMissing } from "../lib/format";
 import { ErrorState, Skeleton } from "../components/ui/states";
+import { PageHead } from "../components/ui/pagehead";
+import { StatBoard } from "../components/ui/statboard";
+import { Chapter, Toc, type TocEntry } from "../components/methodology/chapter";
+import { ModelCard } from "../components/sim/modelcard";
+import type { SimModel } from "../lib/sim/types";
 import { ForecastModelSection } from "../components/forecast/modelsection";
 import { RatingModelSection } from "../components/ratings/modelcard";
 import type { BundleMeta, Coverage } from "../types/api";
@@ -38,130 +43,160 @@ const LIMITS = [
   "A few races have partial tyre data because no free source has it (listed above).",
 ];
 
+const TOC: TocEntry[] = [
+  { id: "sources", label: "Where it comes from" },
+  { id: "rules", label: "How gaps are handled" },
+  { id: "coverage", label: "How complete it is" },
+  { id: "analytics", label: "The extra analytics" },
+  { id: "ratings", label: "The ratings model" },
+  { id: "forecast", label: "The forecasts" },
+  { id: "simulator", label: "The strategy simulator" },
+  { id: "limits", label: "Things to keep in mind" },
+];
+const ACCENT = ["border-t-red-500", "border-t-white", "border-t-amber-400"];
+
 export default function Methodology() {
   useDocumentTitle("Methodology and data coverage");
   const coverage = useApi<Coverage>("/coverage");
   const meta = useApi<BundleMeta>("/meta").data;
+  const sim = useApi<SimModel>("/simulator/model");
 
   const seasons = coverage.data ? Object.entries(coverage.data.seasons).sort((a, b) => Number(b[0]) - Number(a[0])) : [];
   const partial = seasons.flatMap(([year, s]) => s.races.filter((r) => r.status === "partial").map((r) => ({ year, ...r })));
+  const complete = seasons.reduce((n, [, s]) => n + s.ok, 0);
 
   return (
-    <div className="min-h-screen pb-24 pt-10 md:pt-12 text-zinc-300">
-      <div className="page space-y-10 [&>*]:max-w-3xl">
-        <header>
-          <p className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] text-zinc-400">
-            <span aria-hidden="true" className="h-2 w-2 bg-red-600" />
-            REGISTRY // METHODOLOGY
-          </p>
-          <h1 className="mt-4 text-4xl font-black uppercase italic leading-[0.95] tracking-tighter text-white md:text-6xl">How the numbers are <span className="text-red-500">made</span></h1>
-          <p className="mt-3 text-zinc-400">Where the data comes from, how gaps are handled, and exactly how complete it is right now.</p>
-          {meta?.generated_at && <p className="mt-2 text-sm text-zinc-500">Data last built {new Date(meta.generated_at).toLocaleString()}.</p>}
-        </header>
+    <div className="min-h-screen pb-24 pt-10 text-zinc-300 md:pt-12">
+      <div className="page space-y-10">
+        <PageHead kicker="METHODOLOGY" title="How the numbers are" accent="made" intro="Where the data comes from, how gaps are handled, how each model works, and exactly how complete and how accurate it all is right now.">
+          {meta?.generated_at && <p className="mt-3 text-sm text-zinc-500">Data last built {new Date(meta.generated_at).toLocaleString()}.</p>}
+        </PageHead>
 
-        <section aria-labelledby="sources-h" className="space-y-4">
-          <h2 id="sources-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">Where the data comes from</h2>
-          <p>Everything is free and open; nothing needs an account, a key or a subscription.</p>
-          <ul className="grid gap-3 md:grid-cols-3">
-            {SOURCES.map((s) => (
-              <li key={s.name} className="rounded-sm glass p-4">
-                <p className="font-bold text-white">{s.name}</p>
-                <p className="text-xs text-zinc-500">{s.years}</p>
-                <p className="mt-2 text-sm">{s.gives}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <StatBoard
+          label="The numbers behind the numbers"
+          items={[
+            { label: "Races fully covered", value: complete, sub: seasons.length ? `across ${seasons.length} seasons` : "loading", headline: true },
+            { label: "Free sources", value: SOURCES.length, sub: "no account, no key" },
+            { label: "Models", value: 3, sub: "ratings, forecasts, simulator" },
+            { label: "Rule for gaps", value: "Blank", sub: "never a guess" },
+          ]}
+        />
 
-        <section aria-labelledby="rules-h" className="space-y-4">
-          <h2 id="rules-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">How gaps are handled</h2>
-          <dl className="space-y-4">
-            {RULES.map(([term, text]) => (
-              <div key={term}>
-                <dt className="font-semibold text-white">{term}</dt>
-                <dd className="text-zinc-400">{text}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-12">
+          <Toc entries={TOC} />
 
-        <section aria-labelledby="coverage-h" className="space-y-4">
-          <h2 id="coverage-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">How complete is it?</h2>
-          {coverage.loading && <Skeleton className="h-64" />}
-          {coverage.error && <ErrorState error={coverage.error} onRetry={coverage.reload} subject="report" />}
-          {coverage.data && (
-            <>
-              <div className="relative overflow-x-auto rounded-sm border border-white/10">
-                <table className="w-full text-left text-sm">
-                  <caption className="sr-only">Races by completeness for each season</caption>
-                  <thead className="bg-white/5 text-xs uppercase tracking-wide text-zinc-400">
-                    <tr>
-                      <th scope="col" className="px-4 py-3">SEASON</th>
-                      <th scope="col" className="px-4 py-3 text-right">COMPLETE</th>
-                      <th scope="col" className="px-4 py-3 text-right">PARTIAL</th>
-                      <th scope="col" className="px-4 py-3 text-right">UPCOMING</th>
-                      <th scope="col" className="px-4 py-3">COVERAGE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {seasons.map(([year, s]) => (
-                      <tr key={year} className="border-t border-white/5">
-                        <th scope="row" className="px-4 py-3 font-semibold text-white">{year}</th>
-                        <td className="px-4 py-3 text-right font-mono">{s.ok}</td>
-                        <td className="px-4 py-3 text-right font-mono">{s.partial}</td>
-                        <td className="px-4 py-3 text-right font-mono">{s.scheduled}</td>
-                        <td className="w-40 px-4 py-3">
-                          <span aria-hidden="true" className="flex h-2 overflow-hidden rounded-full bg-white/10">
-                            <span className="bg-white" style={{ width: `${(s.ok / s.expected_rounds) * 100}%` }} />
-                            <span className="bg-red-500" style={{ width: `${(s.partial / s.expected_rounds) * 100}%` }} />
-                          </span>
-                          <span className="sr-only">{s.ok} of {s.expected_rounds} complete</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {partial.length > 0 && (
-                <div>
-                  <h3 className="mb-2 font-semibold text-white">Races with partial data</h3>
-                  <ul className="space-y-1 text-sm">
-                    {partial.map((r) => (
-                      <li key={`${r.year}-${r.round}`}>
-                        <Link to={`/race/${r.year}/${r.round}`} className="text-red-400 underline-offset-4 hover:underline">
-                          {r.year} {r.event_name}
-                        </Link>{" "}
-                        <span className="text-zinc-500">· missing {describeMissing(r.missing)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+          <div className="min-w-0 space-y-14">
+            <Chapter id="sources" n="01" title="Where the data comes from" lead="Everything is free and open; nothing needs an account, a key or a subscription.">
+              <ul className="grid gap-3 md:grid-cols-3">
+                {SOURCES.map((s, i) => (
+                  <li key={s.name} className={`rounded-sm border border-white/10 border-t-2 ${ACCENT[i % ACCENT.length]} bg-white/[0.03] p-5`}>
+                    <p className="text-lg font-bold text-white">{s.name}</p>
+                    <p className="mt-1 inline-block rounded-sm border border-white/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-zinc-300">{s.years}</p>
+                    <p className="mt-3 text-sm text-zinc-300">{s.gives}</p>
+                  </li>
+                ))}
+              </ul>
+            </Chapter>
+
+            <Chapter id="rules" n="02" title="How gaps are handled" lead="Four rules that decide what you see when the data is incomplete.">
+              <ul className="grid gap-3 md:grid-cols-2">
+                {RULES.map(([term, text], i) => (
+                  <li key={term} className="flex gap-4 rounded-sm border border-white/10 bg-white/[0.03] p-5">
+                    <span aria-hidden="true" className="font-serif text-3xl leading-none text-red-500">{i + 1}</span>
+                    <div>
+                      <p className="font-semibold text-white">{term}</p>
+                      <p className="mt-1 text-sm text-zinc-400">{text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Chapter>
+
+            <Chapter id="coverage" n="03" title="How complete is it?" lead="Every race, season by season. White is complete, red is partial.">
+              {coverage.loading && <Skeleton className="h-64" />}
+              {coverage.error && <ErrorState error={coverage.error} onRetry={coverage.reload} subject="report" />}
+              {coverage.data && (
+                <>
+                  <div className="relative overflow-x-auto rounded-sm glass">
+                    <table className="w-full text-left text-sm">
+                      <caption className="sr-only">Races by completeness for each season</caption>
+                      <thead className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+                        <tr>
+                          <th scope="col" className="px-4 py-3 font-normal">SEASON</th>
+                          <th scope="col" className="px-4 py-3 text-right font-normal">COMPLETE</th>
+                          <th scope="col" className="px-4 py-3 text-right font-normal">PARTIAL</th>
+                          <th scope="col" className="px-4 py-3 text-right font-normal">UPCOMING</th>
+                          <th scope="col" className="px-4 py-3 font-normal">COVERAGE</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {seasons.map(([year, s]) => (
+                          <tr key={year} className="border-t border-white/[0.06] transition-colors hover:bg-white/[0.04]">
+                            <th scope="row" className="px-4 py-2.5 font-serif text-xl font-normal text-white">{year}</th>
+                            <td className="px-4 py-2.5 text-right font-mono text-white">{s.ok}</td>
+                            <td className={`px-4 py-2.5 text-right font-mono ${s.partial ? "text-red-400" : "text-zinc-500"}`}>{s.partial}</td>
+                            <td className="px-4 py-2.5 text-right font-mono text-zinc-400">{s.scheduled}</td>
+                            <td className="w-44 px-4 py-2.5">
+                              <span aria-hidden="true" className="flex h-2 overflow-hidden rounded-full bg-white/10">
+                                <span className="bg-white" style={{ width: `${(s.ok / s.expected_rounds) * 100}%` }} />
+                                <span className="bg-red-500" style={{ width: `${(s.partial / s.expected_rounds) * 100}%` }} />
+                              </span>
+                              <span className="sr-only">{s.ok} of {s.expected_rounds} complete</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {partial.length > 0 && (
+                    <div>
+                      <h3 className="mb-2 font-mono text-[11px] uppercase tracking-[0.3em] text-zinc-300">Races with partial data</h3>
+                      <ul className="flex flex-wrap gap-2 text-sm">
+                        {partial.map((r) => (
+                          <li key={`${r.year}-${r.round}`} className="rounded-sm border border-red-500/30 bg-red-500/[0.06] px-3 py-1.5">
+                            <Link to={`/race/${r.year}/${r.round}`} className="text-red-300 underline-offset-4 hover:underline">
+                              {r.year} {r.event_name}
+                            </Link>{" "}
+                            <span className="text-zinc-500">· missing {describeMissing(r.missing)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </section>
+            </Chapter>
 
-        <section id="analytics" aria-labelledby="analytics-h" className="scroll-mt-20 space-y-4">
-          <h2 id="analytics-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">THE_EXTRA_ANALYTICS</h2>
-          <ul className="space-y-3 text-zinc-400">
-            {ANALYTICS.map(([title, body]) => (
-              <li key={title}><b className="text-zinc-200">{title}</b> {body}</li>
-            ))}
-          </ul>
-        </section>
+            <Chapter id="analytics" n="04" title="The extra analytics" lead="The pages beyond results and standings, and the arithmetic behind each.">
+              <ul className="grid gap-3 md:grid-cols-2">
+                {ANALYTICS.map(([title, body]) => (
+                  <li key={title} className="rounded-sm border border-white/10 bg-white/[0.03] p-5">
+                    <p className="font-semibold text-white">{title.replace(/\.$/, "")}</p>
+                    <p className="mt-2 text-sm text-zinc-400">{body}</p>
+                  </li>
+                ))}
+              </ul>
+            </Chapter>
 
-        <RatingModelSection />
+            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5 md:p-7"><RatingModelSection n="05" /></div>
 
-        <ForecastModelSection />
+            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5 md:p-7"><ForecastModelSection n="06" /></div>
 
-        <section aria-labelledby="limits-h" className="space-y-3">
-          <h2 id="limits-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">Things to keep in mind</h2>
-          <ul className="list-disc space-y-2 pl-5 text-zinc-400">
-            {LIMITS.map((l) => (
-              <li key={l}>{l}</li>
-            ))}
-          </ul>
-        </section>
+            <Chapter id="simulator" n="07" title="The strategy simulator" lead="A model fitted from real laps, then used to play out whole races. What is measured and what is assumed are kept apart.">
+              {sim.loading && <Skeleton className="h-64" />}
+              {sim.data && <div className="rounded-sm border border-white/10 bg-white/[0.03] p-5 md:p-7"><ModelCard model={sim.data} /></div>}
+              <p className="text-sm text-zinc-400">Try it on the <Link to="/simulation" className="text-zinc-200 underline underline-offset-4 hover:text-white">strategy simulator</Link>.</p>
+            </Chapter>
+
+            <Chapter id="limits" n="08" title="Things to keep in mind">
+              <ul className="space-y-3">
+                {LIMITS.map((l) => (
+                  <li key={l} className="rounded-sm border border-white/10 border-l-[3px] border-l-amber-400 bg-amber-400/[0.05] p-4 text-sm text-zinc-300">{l}</li>
+                ))}
+              </ul>
+            </Chapter>
+          </div>
+        </div>
       </div>
     </div>
   );

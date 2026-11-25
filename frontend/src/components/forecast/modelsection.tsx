@@ -5,11 +5,11 @@ import { tag } from "../../lib/tag";
 import type { ForecastModelCard } from "../../types/api";
 
 /** Methodology section for the forecasts: what goes in, how odds are made, and where to see the scores. */
-export function ForecastModelSection() {
+export function ForecastModelSection({ n }: { n?: string }) {
   const { data: card, loading } = useApi<ForecastModelCard>("/predictions/model");
   return (
     <section id="forecast" aria-labelledby="forecast-h" className="scroll-mt-20 space-y-4">
-      <h2 id="forecast-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">{tag("The forecasts")}</h2>
+      <h2 id="forecast-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">{n && <span aria-hidden="true" className="mr-3 font-mono text-xs font-black not-italic text-red-500">[{n}]</span>}{tag("The forecasts")}</h2>
       {loading && <Skeleton className="h-40" />}
       {card && (
         <>

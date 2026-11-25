@@ -4,6 +4,7 @@ import type { Optimisation, Scored } from "../../lib/sim/optimise";
 import type { PlanStint } from "../../lib/sim/types";
 import { Tyre } from "./bits";
 import { pct0 } from "./format";
+import { StatBoard } from "../ui/statboard";
 import { Reveal } from "./fx";
 
 const P = (n: number) => `P${n.toFixed(1)}`;
@@ -34,17 +35,22 @@ export function OptimiserPanel({ data, total, current, onApply }: { data: Optimi
       <Reveal>
         <div className="glass relative space-y-4 border-l-2 border-red-500 p-5">
           <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-red-400">Best strategy for this race</p>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <div className="text-2xl text-white"><PlanChips plan={recommended.plan} /></div>
-            <p className="font-serif text-4xl text-white">{P(recommended.summary.meanPosition)}</p>
-          </div>
+          <div className="text-2xl text-white"><PlanChips plan={recommended.plan} /></div>
+          <StatBoard
+            label="Recommended plan, simulated results"
+            items={[
+              { label: "Average finish", value: recommended.summary.meanPosition, format: P, headline: true, sub: "best of the plans tried" },
+              { label: "Win", value: recommended.summary.win, format: pct0 },
+              { label: "Podium", value: recommended.summary.podium, format: pct0 },
+              { label: "Points", value: recommended.summary.points, format: pct0 },
+            ]}
+          />
           <p className="text-zinc-300" role="status">
             {same
               ? "Your plan is already the best of the options tried across the usual mix of safety cars, red flags and weather."
               : applied
                 ? `You have set this plan. It beat the plan you started with by ${gain.toFixed(1)} places on average (${P(yours.summary.meanPosition)} for that one).`
                 : `Beats your plan by ${gain.toFixed(1)} ${Math.abs(gain - 1) < 0.05 ? "place" : "places"} on average (${P(yours.summary.meanPosition)} for yours).`}
-            {" "}Win {pct0(recommended.summary.win)}, podium {pct0(recommended.summary.podium)}, points {pct0(recommended.summary.points)}.
           </p>
           {!same && !applied && <button type="button" onClick={() => onApply(recommended.plan)} className={chip(true)}>Use this plan</button>}
         </div>

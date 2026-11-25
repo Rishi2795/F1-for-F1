@@ -276,7 +276,7 @@ export default function Standings() {
           <h2 id="table-h" className="mb-4 text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">
             {tab === "drivers" ? "Drivers' championship" : "Constructors' championship"}
           </h2>
-          <div tabIndex={0} role="region" aria-label={`${tab === "drivers" ? "Drivers" : "Constructors"} standings table`} className="table-fit overflow-hidden rounded-sm glass">
+          <div className="overflow-hidden rounded-sm glass">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">
                 {tab} standings after round {view.last.round} of {data.season}
