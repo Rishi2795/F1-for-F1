@@ -36,6 +36,36 @@ export function ToolCarousel({ tools }: { tools: CarouselTool[] }) {
     return () => ro.disconnect();
   }, [n]);
 
+  // The mouse wheel or a trackpad swipe over the ring turns it, one card a time (a short pause after each, so a trackpad's
+  // coasting does not spin it round). Elsewhere on the page scrolling is untouched.
+  useEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    let acc = 0;
+    let last = -Infinity; // time of the last turn: the pause only follows a real turn
+    let idle = 0;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return; // a pinch-zoom
+      e.preventDefault();
+      window.clearTimeout(idle);
+      idle = window.setTimeout(() => (acc = 0), 160);
+      const now = performance.now();
+      if (now - last < 420) return;
+      acc += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (Math.abs(acc) >= 40) {
+        const dir = Math.sign(acc); // taken now: the updater below may run after `acc` is reset
+        setTurn((t) => t + dir);
+        acc = 0;
+        last = now;
+      }
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      window.clearTimeout(idle);
+      el.removeEventListener("wheel", onWheel);
+    };
+  }, []);
+
   const goTo = (i: number) => {
     let d = mod(i, n) - active;
     if (d > n / 2) d -= n;
@@ -90,7 +120,7 @@ export function ToolCarousel({ tools }: { tools: CarouselTool[] }) {
       <div
         ref={stage}
         tabIndex={0}
-        aria-label="Turn the ring with the arrow keys, or drag it"
+        aria-label="Turn the ring with the arrow keys, the scroll wheel, or drag it"
         onKeyDown={onKey}
         onPointerDown={down}
         onPointerMove={move}

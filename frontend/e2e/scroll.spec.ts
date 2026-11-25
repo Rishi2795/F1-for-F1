@@ -5,6 +5,7 @@ test.describe("scroll position", () => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto("/drivers");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.locator("main a[href^='/driver/']").last()).toBeVisible(); // the page is full length before we scroll it
     await page.evaluate(() => window.scrollTo(0, 1400));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(800);
 
@@ -45,4 +46,15 @@ test.describe("scroll position", () => {
     expect(box.rows).toBeGreaterThan(15);
     expect(box.h).toBeLessThanOrEqual(800);
   });
+
+  for (const [w, h] of [[360, 740], [768, 1024], [1024, 768]] as const) {
+    test(`no page scrolls sideways at ${w} wide`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      for (const path of ["/", "/pitwall", "/methodology", "/news", "/schedule", "/season/2026", "/simulation", "/ratings"]) {
+        await page.goto(path, { waitUntil: "load" });
+        await page.waitForTimeout(500);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${path} at ${w}px`).toBeLessThanOrEqual(0);
+      }
+    });
+  }
 });

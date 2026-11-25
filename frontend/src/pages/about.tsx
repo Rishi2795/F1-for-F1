@@ -200,23 +200,23 @@ export default function About() {
   </div>
 </section>
 {/* 09.5 THE PINNACLE - COMPACT OPTIMIZATION */}
-<section className="relative h-screen min-h-[650px] w-full flex items-center bg-[#050505] py-4 px-4 md:px-12 lg:px-24 border-b border-white/5 overflow-hidden">
+<section className="relative w-full flex items-center bg-[#050505] py-6 md:py-8 px-4 md:px-12 lg:px-24 border-b border-white/5 overflow-hidden">
   
   {/* Layer 1: Minimalist Texture */}
   <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
     style={{ backgroundImage: `radial-gradient(#fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }} 
   />
 
-  <div className="max-w-[1200px] mx-auto w-full h-full max-h-[850px] border border-white/5 relative z-10 bg-[#070707]/30 backdrop-blur-sm flex flex-col">
+  <div className="max-w-[1200px] mx-auto w-full border border-white/5 relative z-10 bg-[#070707]/30 backdrop-blur-sm flex flex-col">
     
     {/* HEADER BLOCK - Optimized Height */}
-    <div className="border-b border-white/5 p-4 md:p-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div className="border-b border-white/5 p-4 md:p-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <span className="w-1.5 h-1.5 bg-red-600" />
           <span className="text-[8px] md:text-[10px] font-mono tracking-[0.4em] text-zinc-400 uppercase">Ref_09.5</span>
         </div>
-        <h2 className="text-4xl md:text-7xl lg:text-8xl font-serif text-white uppercase leading-[0.8] tracking-tighter">
+        <h2 className="text-3xl md:text-5xl lg:text-6xl font-serif text-white uppercase leading-[0.85] tracking-tighter">
           Engineering <br />
           <span className="text-red-500">Marvel</span>
         </h2>
@@ -227,11 +227,11 @@ export default function About() {
     </div>
 
     {/* CONTENT GRID - Flexible Growth */}
-    <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden">
+    <div className="grid grid-cols-1 lg:grid-cols-12 flex-1">
       
       {/* LEFT: NARRATIVE (7 Columns) */}
-      <div className="lg:col-span-7 border-b lg:border-b-0 lg:border-r border-white/5 p-4 md:p-8 flex flex-col justify-between space-y-6">
-        <p className="text-lg md:text-3xl lg:text-4xl font-serif leading-tight text-zinc-300 tracking-tight">
+      <div className="lg:col-span-7 border-b lg:border-b-0 lg:border-r border-white/5 p-4 md:p-6 flex flex-col justify-between gap-5">
+        <p className="text-lg md:text-2xl lg:text-3xl font-serif leading-tight text-zinc-300 tracking-tight">
           "F1 is the world's fastest laboratory. A convergence of <span className="text-white underline decoration-red-600 decoration-1 underline-offset-4">sovereign wealth</span> and aerospace engineering."
         </p>
 
@@ -255,12 +255,12 @@ export default function About() {
       </div>
 
       {/* RIGHT: DATA VISUAL (5 Columns) */}
-      <div className="lg:col-span-5 p-4 md:p-8 bg-black/20 flex flex-col justify-between gap-8">
+      <div className="lg:col-span-5 p-4 md:p-6 bg-black/20 flex flex-col justify-between gap-5">
         <h3 className="font-mono text-[9px] uppercase tracking-[0.3em] text-zinc-400 flex items-center gap-3">
           <span className="w-6 h-[1px] bg-red-900" /> Capital_Allocation
         </h3>
 
-        <div className="space-y-6 md:space-y-8 lg:space-y-10">
+        <div className="space-y-5 md:space-y-6">
           {[
             { label: "Constructor", val: 45, color: "bg-red-600" },
             { label: "Partnerships", val: 35, color: "bg-zinc-200" },
@@ -287,7 +287,7 @@ export default function About() {
           ))}
         </div>
 
-        <div className="flex justify-between items-center pt-4">
+        <div className="flex justify-between items-center pt-2">
           <p className="text-[7px] font-mono text-zinc-800 uppercase tracking-[0.4em]">Terminal_Confirmed_2026</p>
           <div className="flex gap-1">
              <div className="w-1 h-1 bg-red-600/20" />
@@ -314,7 +314,7 @@ export default function About() {
   </header>
 
   <div className="flex-grow flex items-end justify-center px-4 md:px-10 pb-10 relative">
-    <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none">
+    <div className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.02] pointer-events-none">
       <span className="text-[22vw] font-black italic text-white">DYNASTY</span>
     </div>
 
@@ -653,7 +653,7 @@ export default function About() {
 {/* Removing py-40 (too big) and replacing with py-20 to fix "black space" gap */}
 <footer className="bg-black py-20 px-6 md:px-12 border-t border-white/5">
   <div className="max-w-6xl mx-auto">
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-20">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-x-8 lg:gap-x-20">
       
       {/* Brand Column */}
       <div className="md:col-span-6 space-y-6">
