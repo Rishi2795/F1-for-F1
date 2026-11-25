@@ -17,23 +17,25 @@ export function RatingChart({ history, name }: { history: RatingHistory["history
   const y = (v: number) => PAD.t + (1 - (v - lo) / (hi - lo || 1)) * (H - PAD.t - PAD.b);
   const line = (k: 2 | 3) => history.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[k]).toFixed(1)}`).join(" ");
   const last = history.length - 1;
-  const ticks = [lo, (lo + hi) / 2, hi];
+  const avg = 1500;
   const years = history.reduce<{ season: number; i: number }[]>((acc, p, i) => (acc.at(-1)?.season === p[0] ? acc : [...acc, { season: p[0], i }]), []);
-  const summary = `${name}: driver skill ${history[0][2]} to ${history[last][2]}, car strength ${history[0][3]} to ${history[last][3]} between ${history[0][0]} and ${history[last][0]}.`;
+  const summary = `${name}: how good the driver and the car were, race by race, from ${history[0][0]} to ${history[last][0]}.`;
 
   return (
     <figure>
       <ul className="mb-3 flex gap-5 text-xs text-zinc-300">
-        <li className="flex items-center gap-2"><span aria-hidden="true" className="h-0.5 w-5 rounded" style={{ background: DRIVER }} />Driver skill</li>
-        <li className="flex items-center gap-2"><span aria-hidden="true" className="h-0.5 w-5 rounded" style={{ background: CAR }} />Car strength</li>
+        <li className="flex items-center gap-2"><span aria-hidden="true" className="h-0.5 w-5 rounded" style={{ background: DRIVER }} />The driver</li>
+        <li className="flex items-center gap-2"><span aria-hidden="true" className="h-0.5 w-5 rounded" style={{ background: CAR }} />The car</li>
       </ul>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary} className="w-full">
-        {ticks.map((t) => (
-          <g key={t}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke="#ffffff" strokeOpacity="0.08" />
-            <text x={PAD.l - 8} y={y(t) + 4} textAnchor="end" className="fill-zinc-400" fontSize="11">{t}</text>
+        {avg > lo && avg < hi && (
+          <g>
+            <line x1={PAD.l} x2={W - PAD.r} y1={y(avg)} y2={y(avg)} stroke="#ffffff" strokeOpacity="0.18" strokeDasharray="4 4" />
+            <text x={PAD.l - 8} y={y(avg) + 4} textAnchor="end" className="fill-zinc-400" fontSize="11">avg</text>
           </g>
-        ))}
+        )}
+        <text x={PAD.l - 8} y={PAD.t + 10} textAnchor="end" className="fill-zinc-500" fontSize="11">better</text>
+        <text x={PAD.l - 8} y={H - PAD.b - 2} textAnchor="end" className="fill-zinc-500" fontSize="11">worse</text>
         {years.filter((_, k) => k % 2 === 0 || years.length < 6).map(({ season, i }) => (
           <text key={season} x={x(i)} y={H - 6} textAnchor="start" className="fill-zinc-400" fontSize="11">{season}</text>
         ))}

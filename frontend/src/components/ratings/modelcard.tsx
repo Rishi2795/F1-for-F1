@@ -18,7 +18,7 @@ export function RatingModelSection() {
   const { data: card, loading } = useApi<RatingModelCard>("/ratings/model");
   return (
     <section id="ratings" aria-labelledby="ratings-h" className="scroll-mt-20 space-y-4">
-      <h2 id="ratings-h" className="text-2xl font-extrabold text-white">The ratings model</h2>
+      <h2 id="ratings-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">The ratings model</h2>
       {loading && <Skeleton className="h-64" />}
       {card && <Body card={card} />}
     </section>
@@ -40,7 +40,7 @@ function Body({ card }: { card: RatingModelCard }) {
         Tuned on {card.tuning.seasons.join(", ")} only, then scored on {card.test.races} races from {card.test.seasons[0]} onward
         ({card.test.pairs.toLocaleString()} driver-vs-driver comparisons) that it never saw. Lower log loss is better; 0.693 is a coin flip.
       </p>
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full text-left text-sm">
           <caption className="sr-only">Prediction accuracy of each approach on held-out races</caption>
           <thead className="text-xs uppercase text-zinc-400">
@@ -57,7 +57,7 @@ function Body({ card }: { card: RatingModelCard }) {
           </tbody>
         </table>
       </div>
-      <p className="rounded-lg border border-white/10 bg-white/5 p-4 text-zinc-300">
+      <p className="rounded-sm border border-white/10 bg-white/5 p-4 text-zinc-300">
         {tied
           ? "Honest reading: once the starting grid is known, ratings add almost nothing over grid plus recent form. "
           : "Ratings improve on grid plus recent form. "}
@@ -66,7 +66,7 @@ function Body({ card }: { card: RatingModelCard }) {
         picking the highest-rated driver wins {pct(winner.best_rating.accuracy)}.
       </p>
       <h3 className="pt-2 font-semibold text-white">Is the probability honest?</h3>
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full text-left text-sm">
           <caption className="sr-only">Predicted versus observed win rate per probability band</caption>
           <thead className="text-xs uppercase text-zinc-400">

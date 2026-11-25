@@ -8,9 +8,9 @@ export function ServerNotice() {
   return (
     <div
       role="status"
-      className="fixed bottom-24 left-1/2 z-[60] w-[min(92vw,26rem)] -translate-x-1/2 rounded-xl border border-amber-400/30 bg-zinc-950/95 px-4 py-3 text-sm shadow-2xl backdrop-blur"
+      className="fixed bottom-24 left-1/2 z-[60] w-[min(92vw,26rem)] -translate-x-1/2 rounded-sm border border-red-500/50 bg-zinc-950/95 px-4 py-3 text-sm"
     >
-      <p className="font-semibold text-amber-300">Waking the server…</p>
+      <p className="font-semibold text-red-400">Waking the server…</p>
       <p className="mt-0.5 text-zinc-300">Free hosting sleeps when it&apos;s idle, so the first request can take up to a minute. Everything loads once it&apos;s awake.</p>
     </div>
   );

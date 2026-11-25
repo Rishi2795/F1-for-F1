@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 
 import AppLayout from "./components/layout/Applayout";
 import FloatingDock from "./components/floatingdock";
+import { CommandPalette } from "./components/search/commandpalette";
 import CurveScrollRail from "./components/curvescroll";
 import { ErrorBoundary } from "./components/ui/errorboundary";
 import { PageLoader } from "./components/ui/states";
@@ -19,6 +20,16 @@ const AboutPage = lazy(() => import("./pages/about_app"));
 const NotFound = lazy(() => import("./pages/notfound"));
 const Standings = lazy(() => import("./pages/standings"));
 const Ratings = lazy(() => import("./pages/ratings"));
+const PitWall = lazy(() => import("./pages/pitwall"));
+const Watch = lazy(() => import("./pages/watch"));
+const Duels = lazy(() => import("./pages/duels"));
+const Circuits = lazy(() => import("./pages/circuits"));
+const Circuit = lazy(() => import("./pages/circuit"));
+const Play = lazy(() => import("./pages/play"));
+const My = lazy(() => import("./pages/my"));
+const RaceLab = lazy(() => import("./pages/racelab"));
+const TeamPace = lazy(() => import("./pages/teampace"));
+const Forecast = lazy(() => import("./pages/forecast"));
 const Methodology = lazy(() => import("./pages/methodology"));
 const StandingsRedirect = lazy(() => import("./pages/standings").then((m) => ({ default: m.StandingsRedirect })));
 
@@ -39,6 +50,7 @@ export default function App() {
       {/* Global components (always visible) */}
       <CurveScrollRail />
       <FloatingDock />
+      <CommandPalette />
       <ServerNotice />
 
       <ErrorBoundary>
@@ -50,8 +62,18 @@ export default function App() {
               <Route path="/about_app" element={<AboutPage />} />
               <Route path="/explore" element={<Home />} />
               <Route path="/race/:year/:round" element={<RaceDashboard />} />
+              <Route path="/race/:year/:round/lab" element={<RaceLab />} />
 
               <Route path="/ratings" element={<Ratings />} />
+              <Route path="/forecast" element={<Forecast />} />
+              <Route path="/pitwall" element={<PitWall />} />
+              <Route path="/team-pace" element={<TeamPace />} />
+              <Route path="/watch" element={<Watch />} />
+              <Route path="/duels" element={<Duels />} />
+              <Route path="/circuits" element={<Circuits />} />
+              <Route path="/circuit/:slug" element={<Circuit />} />
+              <Route path="/play" element={<Play />} />
+              <Route path="/my" element={<My />} />
               <Route path="/methodology" element={<Methodology />} />
               <Route path="/standings" element={<StandingsRedirect />} />
               <Route path="/season/:year" element={<Standings />} />

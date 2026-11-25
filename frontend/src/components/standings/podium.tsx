@@ -1,4 +1,4 @@
-import type { CSSProperties, PointerEvent } from "react";
+import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useCountUp } from "../../hooks/useCountUp";
 import { ChampionBadge } from "../ui/championbadge";
@@ -32,11 +32,6 @@ function Points({ value, className }: { value: number; className: string }) {
   );
 }
 
-const follow = (e: PointerEvent<HTMLElement>) => {
-  const r = e.currentTarget.getBoundingClientRect();
-  e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
-  e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
-};
 
 /** The top three, arranged like a podium: P2 – P1 – P3, the leader tallest. Reading order stays P1, P2, P3. */
 export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; leaderPoints: number }) {
@@ -51,25 +46,14 @@ export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; lead
         const lead = i === 0;
         const card = (
           <div
-            onPointerMove={follow}
-            className={`f1-spot f1-rise group relative h-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.015] shadow-[0_20px_60px_-30px_rgba(0,0,0,0.9)] transition-colors hover:border-white/25 ${place[i]}`}
+            className={`f1-rise group relative h-full overflow-hidden rounded-sm glass transition-colors hover:border-white/25 ${place[i]}`}
             style={{ "--d": `${i * 110}ms` } as CSSProperties}
           >
-            {/* Team colour: a soft corner glow and a hairline, nothing heavier. */}
-            <span aria-hidden="true" className="absolute -bottom-28 -left-20 h-64 w-64 rounded-full opacity-[0.22] blur-3xl" style={{ backgroundColor: e.color }} />
-            <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[2px]" style={{ background: `linear-gradient(90deg, ${e.color}, transparent 85%)` }} />
-            {/* Oversized outline numeral: the driver's race number, or the team's position. */}
-            <span
-              aria-hidden="true"
-              className="f1-outline pointer-events-none absolute right-3 -top-5 select-none text-[9rem] font-black italic leading-none"
-              style={{ "--stroke": `${e.color}99` } as CSSProperties}
-            >
-              {e.number ?? e.position}
-            </span>
-
+            {/* Team colour: one flat hairline. */}
+            <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[2px]" style={{ backgroundColor: e.color }} />
             <div className="relative z-10 flex h-full flex-col p-6">
               <div className="flex items-center gap-3 text-xs">
-                <span className="rounded-full border border-white/20 px-2.5 py-0.5 font-semibold tracking-widest text-zinc-200">P{e.position ?? i + 1}</span>
+                <span className="rounded-sm border border-white/20 px-2.5 py-0.5 font-semibold tracking-widest text-zinc-200">P{e.position ?? i + 1}</span>
                 <span className="text-zinc-400">
                   {e.wins} {e.wins === 1 ? "win" : "wins"}
                 </span>
@@ -84,7 +68,7 @@ export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; lead
                   </p>
                 )}
                 <p className="mt-4 flex items-baseline gap-2">
-                  <Points value={e.points} className={`font-black leading-none tracking-tight text-white ${lead ? "text-6xl md:text-7xl" : "text-5xl"}`} />
+                  <Points value={e.points} className={`font-serif leading-none text-white ${lead ? "text-6xl md:text-7xl" : "text-5xl"}`} />
                   <span className="text-sm text-zinc-400">pts</span>
                 </p>
                 {!lead && <p className="mt-2 text-sm text-zinc-400">−{leaderPoints - e.points} behind the leader</p>}
@@ -95,7 +79,7 @@ export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; lead
         return (
           <li key={e.id} className={`${place[i]} md:flex`}>
             {e.href ? (
-              <Link to={e.href} onMouseEnter={() => e.prefetch && prefetch(e.prefetch)} className="block w-full rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600">
+              <Link to={e.href} onMouseEnter={() => e.prefetch && prefetch(e.prefetch)} className="block w-full rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600">
                 {card}
               </Link>
             ) : (

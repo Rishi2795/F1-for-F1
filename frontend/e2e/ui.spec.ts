@@ -41,45 +41,45 @@ test.describe("calendar", () => {
 });
 
 test.describe("race page", () => {
-  test("driver rows expand and collapse with mouse and keyboard; tyre bar is readable", async ({ page }) => {
+  test("the tyre strategy chart describes each driver's race in words", async ({ page }) => {
     const errors = trackErrors(page);
     await page.goto("/race/2025/6");
-    const row = page.getByRole("button", { name: /\bPIA\b/ }).first();
-    await row.scrollIntoViewIfNeeded();
-    await expect(row).toHaveAttribute("aria-expanded", "false");
-    await row.click();
-    await expect(row).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByRole("img", { name: /Tyre strategy: MEDIUM \d+ laps, then HARD \d+ laps/ }).first()).toBeVisible();
-    await row.press("Enter");
-    await expect(row).toHaveAttribute("aria-expanded", "false");
-    await row.press(" ");
-    await expect(row).toHaveAttribute("aria-expanded", "true");
+    const list = page.getByRole("list", { name: "Tyre strategy by driver, in finishing order" });
+    await list.scrollIntoViewIfNeeded();
+    await expect(list.getByRole("img", { name: /Oscar Piastri: Medium for \d+ laps, then Hard for \d+ laps/ })).toBeVisible();
     expect(errors).toEqual([]);
   });
 
-  test("compare tool shows two drivers side by side", async ({ page }) => {
+  test("head to head: two chips pick two drivers, a third replaces the oldest, and a chip toggles off", async ({ page }) => {
     await page.goto("/race/2024/8");
-    const selects = page.locator("select");
-    await selects.nth(0).selectOption("LEC");
-    await selects.nth(1).selectOption("VER");
-    await expect(page.getByText("VERSUS")).toBeVisible();
+    const pick = page.getByRole("group", { name: "Pick two drivers to compare" });
+    await pick.scrollIntoViewIfNeeded();
+    await expect(page.getByText("Choose two drivers above.")).toBeVisible();
+    await pick.getByRole("button", { name: "LEC" }).click();
+    await expect(page.getByText("Choose one more driver.")).toBeVisible();
+    await pick.getByRole("button", { name: "VER" }).click();
+    await expect(page.getByRole("term").filter({ hasText: "Finished" })).toBeVisible();
+    await expect(page.getByText("Charles Leclerc").last()).toBeVisible();
+    await pick.getByRole("button", { name: "NOR" }).click(); // replaces LEC, the oldest pick
+    await expect(pick.getByRole("button", { name: "LEC" })).toHaveAttribute("aria-pressed", "false");
+    await pick.getByRole("button", { name: "NOR" }).click(); // toggles off
+    await expect(page.getByText("Choose one more driver.")).toBeVisible();
   });
 
-  test("team grid has no empty filler cells: every row is fully covered", async ({ page }) => {
+  test("race header links to the previous and next race, and names the winner", async ({ page }) => {
+    await page.goto("/race/2024/8");
+    await expect(page.getByRole("link", { name: /Previous race: Emilia Romagna/ })).toBeVisible();
+    await page.getByRole("link", { name: /Next race: Canadian/ }).click();
+    await expect(page).toHaveURL(/\/race\/2024\/9$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Canadian");
+    await expect(page.getByRole("link", { name: /winner/i })).toBeVisible();
+  });
+
+  test("every team in a race gets a card", async ({ page }) => {
     await page.goto("/race/2026/11");
-    const grid = page.locator('section:has-text("Constructor") div.flex.flex-wrap').first();
-    await expect(grid.locator("> div").first()).toBeVisible();
-    const rows = await grid.evaluate((el) => {
-      const byRow = new Map<number, { w: number; n: number }>();
-      for (const c of Array.from(el.children)) {
-        const r = c.getBoundingClientRect();
-        const key = Math.round(r.top);
-        const cur = byRow.get(key) ?? { w: 0, n: 0 };
-        byRow.set(key, { w: cur.w + r.width, n: cur.n + 1 });
-      }
-      return { width: el.getBoundingClientRect().width, rows: [...byRow.values()] };
-    });
-    for (const r of rows.rows) expect(r.w + (r.n - 1)).toBeGreaterThan(rows.width - 2); // card widths + 1px gaps
+    const teams = page.getByRole("list", { name: "Teams in this race" }).getByRole("listitem");
+    await expect(teams.first()).toBeVisible();
+    expect(await teams.count()).toBeGreaterThanOrEqual(10);
   });
 
   test("a partial-data race says so instead of showing guesses", async ({ page }) => {
@@ -162,7 +162,7 @@ test.describe("drivers", () => {
     await page.getByLabel("Search drivers").fill("ham");
     await page.locator('a[href="/driver/HAM"]').click();
     await expect(page.getByRole("heading", { name: "Lewis Hamilton" })).toBeVisible();
-    await expect(page.locator("tbody tr")).toHaveCount(7);
+    await expect(page.locator("tbody tr")).toHaveCount(8); // 2019-2026
     await expect(page).toHaveTitle(/Lewis Hamilton/);
   });
 });
@@ -263,7 +263,7 @@ test.describe("standings", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/season/2024");
     await expect(page.getByRole("columnheader", { name: "Points" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Gap" })).toBeHidden();
+    await expect(page.getByRole("columnheader", { name: "BEHIND_LEADER" })).toBeHidden();
     await expect(page.locator("tbody tr").first()).toContainText("437");
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
@@ -279,7 +279,7 @@ test.describe("standings", () => {
   });
 
   test("bad seasons explain themselves", async ({ page }) => {
-    for (const path of ["/season/abc", "/season/1999", "/season/2019"]) {
+    for (const path of ["/season/abc", "/season/1999", "/season/2017"]) {
       await page.goto(path);
       await expect(page.getByRole("heading", { name: "We couldn't find that season" }), path).toBeVisible();
     }

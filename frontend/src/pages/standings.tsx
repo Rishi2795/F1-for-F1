@@ -1,5 +1,6 @@
 import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { tag } from "../lib/tag";
 import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { ApiRequestError, prefetch } from "../lib/api";
@@ -24,7 +25,7 @@ export function StandingsRedirect() {
 
 function PageSkeleton() {
   return (
-    <div className="min-h-screen bg-[#050505] px-4 pt-20 md:px-8" role="status" aria-label="Loading standings">
+    <div className="min-h-screen px-4 pt-20 md:px-8" role="status" aria-label="Loading standings">
       <div className="mx-auto max-w-5xl space-y-4">
         <Skeleton className="h-12 w-1/2" />
         <Skeleton className="h-10 w-72" />
@@ -45,7 +46,7 @@ function Bad({ missing = false }: { missing?: boolean }) {
     ? new ApiRequestError("No standings are published for this season.", 404, "not_available", null, null)
     : new ApiRequestError("Invalid link", 422, "invalid_request", null, null);
   return (
-    <div className="min-h-screen bg-[#050505]">
+    <div className="min-h-screen">
       <ErrorState error={error} subject="season" backTo={{ href: "/explore", label: "All races" }} />
     </div>
   );
@@ -87,7 +88,7 @@ export default function Standings() {
   if (!valid) return <Bad />;
   if (error) {
     return (
-      <div className="min-h-screen bg-[#050505]">
+      <div className="min-h-screen">
         <ErrorState error={error} onRetry={reload} subject="season" backTo={{ href: "/explore", label: "All races" }} />
       </div>
     );
@@ -125,30 +126,26 @@ export default function Standings() {
   const second = view.rows[1];
 
   return (
-    <div className="f1-carbon relative min-h-screen overflow-hidden px-4 pb-32 pt-16 text-zinc-200 md:px-8">
-      {/* Depth: a pool of the leader's colour at the top, and a vignette at the edges. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(60% 45% at 78% 0%, ${leader.color}33, transparent 70%), radial-gradient(120% 80% at 50% 100%, transparent 40%, #000 100%)` }} />
+    <div className="relative min-h-screen overflow-hidden px-4 pb-32 pt-16 text-zinc-200 md:px-8">
 
       <div className="relative mx-auto max-w-5xl space-y-12">
         <header className="relative min-h-[12rem]">
-          {/* The car (the site's own artwork), faded into the page, with the leader's colour pooled beneath it. */}
+          {/* The car: the site's own artwork. */}
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-6 hidden w-[36rem] md:block">
-            <div className="absolute inset-x-16 bottom-4 h-16 rounded-[100%] opacity-60 blur-2xl" style={{ backgroundColor: leader.color }} />
             <img
               src="/f1_new-hd.webp"
               alt=""
               decoding="async"
               className="f1-drive relative w-full select-none"
-              style={{ maskImage: "linear-gradient(to right, transparent 0%, #000 28%)", WebkitMaskImage: "linear-gradient(to right, transparent 0%, #000 28%)" }}
             />
           </div>
 
-          <p className="relative flex items-center gap-3 font-mono text-xs uppercase tracking-[0.3em] text-red-500">
-            <span aria-hidden="true" className="h-px w-10 bg-red-600" />
-            Championship
+          <p className="relative flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] text-zinc-400">
+            <span aria-hidden="true" className="h-2 w-2 bg-red-600" />
+            REGISTRY // CHAMPIONSHIP
           </p>
-          <h1 className="relative mt-3 text-6xl font-black italic leading-[0.95] tracking-tight md:text-7xl">
-            <span className="text-white">{data.season}</span> <span className="f1-outline" style={{ "--stroke": "rgba(255,255,255,0.55)" } as CSSProperties}>standings</span>
+          <h1 className="relative mt-4 text-6xl font-black uppercase italic leading-[0.95] tracking-tighter md:text-7xl">
+            <span className="text-white">{data.season}</span> <span className="f1-outline" style={{ "--stroke": "#dc2626" } as CSSProperties}>standings</span>
           </h1>
           <p className="relative mt-4 max-w-md text-sm text-zinc-400">
             After round {view.last.round}, the {view.last.event_name}. Official points, sprints included.
@@ -157,7 +154,7 @@ export default function Standings() {
 
         {/* One filter row above everything it scopes. */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div role="tablist" aria-label="Standings type" className="inline-flex rounded-full border border-white/15 bg-white/[0.04] p-1 backdrop-blur" onKeyDown={onTabKey}>
+          <div role="tablist" aria-label="Standings type" className="inline-flex rounded-sm border border-white/15 bg-white/[0.04] p-1" onKeyDown={onTabKey}>
             {(["drivers", "constructors"] as const).map((t) => (
               <button
                 key={t}
@@ -165,7 +162,7 @@ export default function Standings() {
                 aria-selected={tab === t}
                 tabIndex={tab === t ? 0 : -1}
                 onClick={() => setTab(t)}
-                className={`rounded-full px-5 py-2 text-sm font-semibold capitalize transition-colors ${tab === t ? "bg-white text-black" : "text-zinc-400 hover:text-white"}`}
+                className={`rounded-sm px-5 py-2 text-xs font-bold uppercase tracking-widest transition-colors ${tab === t ? "bg-white text-black" : "text-zinc-400 hover:text-white"}`}
               >
                 {t}
               </button>
@@ -173,7 +170,7 @@ export default function Standings() {
           </div>
           <button
             onClick={copyLink}
-            className="ml-auto rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 transition-colors hover:text-white"
+            className="ml-auto rounded-sm border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-bold uppercase tracking-widest text-zinc-300 transition-colors hover:text-white"
           >
             {copied ? "Link copied" : "Copy link to this view"}
           </button>
@@ -187,7 +184,7 @@ export default function Standings() {
                 for (const k of ["tab", "view"]) if (params.get(k)) keep.set(k, params.get(k) as string);
                 navigate({ pathname: `/season/${e.target.value}`, search: keep.toString() });
               }}
-              className="ml-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-white backdrop-blur"
+              className="ml-2 rounded-sm border border-white/15 bg-white/[0.04] px-4 py-2 text-white"
             >
               {(seasons.length ? seasons : [data.season]).map((y) => (
                 <option key={y} value={y} className="bg-black">
@@ -200,17 +197,16 @@ export default function Standings() {
 
         <Podium entries={view.podium} leaderPoints={leader.points} />
 
-        <section aria-label="Summary" className="f1-rise grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-4" style={{ "--d": "380ms" } as CSSProperties}>
-          <Stat label="Lead over 2nd" value={second ? `${leader.points - second.points} pts` : "—"} sub={second?.label} />
-          <Stat label="Lead changes" value={String(view.leadChanges)} sub={`through round ${view.last.round}`} />
-          <Stat label="Rounds scored" value={String(view.last.round)} sub={`through ${view.last.event_name.replace("Grand Prix", "GP")}`} />
-          <Stat label="Wins by leader" value={String(leader.wins)} sub="Grand Prix victories" />
+        <section aria-label="Summary" className="f1-rise grid grid-cols-1 gap-px overflow-hidden rounded-sm border border-white/10 bg-white/10 sm:grid-cols-3" style={{ "--d": "380ms" } as CSSProperties}>
+          <Stat label={view.last.round === roundCount && data.complete ? "Winning margin" : "Lead over 2nd"} value={second ? `${leader.points - second.points} pts` : "—"} sub={`over ${second?.label ?? "—"}`} />
+          <Stat label="Rounds run" value={String(view.last.round)} sub={view.last.event_name.replace("Grand Prix", "GP")} />
+          <Stat label={`${tab === "drivers" ? leader.label.split(" ").at(-1) : leader.label} wins`} value={String(leader.wins)} sub="Grand Prix victories" />
         </section>
 
         <section aria-labelledby="progress-h" className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 id="progress-h" className="text-2xl font-extrabold tracking-tight text-white">
+              <h2 id="progress-h" className="text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">
                 {mode === "points" ? "Points after each round" : "Points behind the leader"}
               </h2>
               <p className="text-sm text-zinc-400">
@@ -222,13 +218,13 @@ export default function Standings() {
                 )}
               </p>
             </div>
-            <div role="group" aria-label="Chart view" className="inline-flex rounded-full border border-white/15 bg-white/[0.04] p-1 backdrop-blur">
+            <div role="group" aria-label="Chart view" className="inline-flex rounded-sm border border-white/15 bg-white/[0.04] p-1">
               {([["points", "Total points"], ["gap", "Gap to leader"]] as const).map(([m, label]) => (
                 <button
                   key={m}
                   aria-pressed={mode === m}
                   onClick={() => update({ view: m === "gap" ? "gap" : null })}
-                  className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${mode === m ? "bg-white text-black" : "text-zinc-400 hover:text-white"}`}
+                  className={`rounded-sm px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-colors ${mode === m ? "bg-white text-black" : "text-zinc-400 hover:text-white"}`}
                 >
                   {label}
                 </button>
@@ -248,7 +244,7 @@ export default function Standings() {
                   onMouseLeave={() => setHighlight(null)}
                   onFocus={() => setHighlight(s.id)}
                   onBlur={() => setHighlight(null)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-all ${on ? "border-white/25 bg-white/[0.07] text-white" : "border-white/10 text-zinc-500 opacity-55 hover:opacity-100"}`}
+                  className={`flex items-center gap-2 rounded-sm border px-3 py-1 text-xs transition-all ${on ? "border-white/25 bg-white/[0.07] text-white" : "border-white/10 text-zinc-500 hover:border-white/30 hover:text-white"}`}
                 >
                   <svg width="18" height="6" aria-hidden="true">
                     <line x1="0" x2="18" y1="3" y2="3" stroke={s.color} strokeWidth="3" strokeDasharray={s.dashed ? "5 3" : undefined} />
@@ -260,7 +256,7 @@ export default function Standings() {
           </div>
 
           {shown.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-white/15 p-8 text-center text-sm text-zinc-400">Pick at least one line to show the chart.</p>
+            <p className="rounded-sm border border-dashed border-white/15 p-8 text-center text-sm text-zinc-400">Pick at least one line to show the chart.</p>
           ) : (
             <ProgressionChart
               series={shown}
@@ -276,22 +272,22 @@ export default function Standings() {
         </section>
 
         <section aria-labelledby="table-h">
-          <h2 id="table-h" className="mb-4 text-2xl font-extrabold tracking-tight text-white">
+          <h2 id="table-h" className="mb-4 text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">
             {tab === "drivers" ? "Drivers' championship" : "Constructors' championship"}
           </h2>
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-sm">
+          <div className="overflow-hidden rounded-sm glass">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">
                 {tab} standings after round {view.last.round} of {data.season}
               </caption>
-              <thead className="text-[11px] uppercase tracking-[0.15em] text-zinc-500">
+              <thead className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">
                 <tr>
-                  <th scope="col" className="px-4 py-4">Pos</th>
+                  <th scope="col" className="px-4 py-4">POS</th>
                   <th scope="col" className="px-3 py-4">{tab === "drivers" ? "Driver" : "Team"}</th>
-                  {tab === "drivers" && <th scope="col" className="hidden px-3 py-4 md:table-cell">Team</th>}
-                  <th scope="col" className="px-3 py-4 text-right">Points</th>
-                  <th scope="col" className="hidden px-3 py-4 text-right sm:table-cell">Gap</th>
-                  <th scope="col" className="hidden px-4 py-4 text-right sm:table-cell">Wins</th>
+                  {tab === "drivers" && <th scope="col" className="hidden px-3 py-4 md:table-cell">TEAM</th>}
+                  <th scope="col" className="px-3 py-4 text-right">POINTS</th>
+                  <th scope="col" className="hidden px-3 py-4 text-right sm:table-cell">BEHIND_LEADER</th>
+                  <th scope="col" className="hidden px-4 py-4 text-right sm:table-cell">WINS</th>
                 </tr>
               </thead>
               <tbody>
@@ -299,10 +295,11 @@ export default function Standings() {
                   <tr key={row.id} className="group border-t border-white/[0.06] transition-colors hover:bg-white/[0.04]">
                     <td className="px-4 py-3.5" style={row.position !== null && row.position <= 3 ? { boxShadow: `inset 3px 0 0 ${row.color}` } : undefined}>
                       <span className={`text-xl font-black italic leading-none ${row.position === 1 ? "text-white" : row.position !== null && row.position <= 3 ? "text-zinc-200" : "text-zinc-500"}`}>{row.position ?? "—"}</span>
+                      {row.moved ? <span aria-label={`${row.moved > 0 ? "up" : "down"} ${Math.abs(row.moved)} since the last round`} className={`ml-2 font-mono text-[10px] ${row.moved > 0 ? "text-white" : "text-red-500"}`}>{row.moved > 0 ? "▲" : "▼"}{Math.abs(row.moved)}</span> : null}
                     </td>
                     <td className="px-3 py-3.5">
                       <span className="flex items-center gap-3">
-                        <span className="h-8 w-1 rounded-full" style={{ backgroundColor: row.color }} aria-hidden="true" />
+                        <span className="h-8 w-1 rounded-sm" style={{ backgroundColor: row.color }} aria-hidden="true" />
                         <span className="min-w-0">
                           {row.href ? (
                             <Link to={row.href} onMouseEnter={() => row.prefetch && prefetch(row.prefetch)} className="font-semibold text-white transition-colors hover:text-red-400">
@@ -319,7 +316,7 @@ export default function Standings() {
                     <td className="w-32 px-3 py-3.5 text-right sm:w-44">
                       <span className="font-mono text-base font-bold text-white">{row.points}</span>
                       <span aria-hidden="true" className="mt-1.5 block h-1 rounded-full bg-white/[0.07]">
-                        <span className="block h-full rounded-full" style={{ width: `${leader.points ? (row.points / leader.points) * 100 : 0}%`, background: `linear-gradient(90deg, ${row.color}99, ${row.color})` }} />
+                        <span className="block h-full rounded-sm" style={{ width: `${leader.points ? (row.points / leader.points) * 100 : 0}%`, backgroundColor: row.color }} />
                       </span>
                     </td>
                     <td className="hidden px-3 py-3.5 text-right font-mono text-zinc-400 sm:table-cell">{row.position === 1 ? "—" : `−${leader.points - row.points}`}</td>
@@ -338,15 +335,15 @@ export default function Standings() {
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-[#0a0a0b] px-5 py-4">
-      <p className="text-xs text-zinc-500">{label}</p>
-      <p className="mt-1 truncate text-2xl font-extrabold tracking-tight text-white">{value}</p>
+    <div className="glass-cell px-5 py-4">
+      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">{tag(label)}</p>
+      <p className="mt-2 truncate font-serif text-3xl text-white">{value}</p>
       {sub && <p className="truncate text-xs text-zinc-400">{sub}</p>}
     </div>
   );
 }
 
-type Row = { id: string; label: string; number: number | null; team: string | null; color: string; position: number | null; points: number; wins: number; href?: string; prefetch?: string };
+type Row = { id: string; label: string; number: number | null; team: string | null; color: string; position: number | null; points: number; wins: number; moved: number | null; href?: string; prefetch?: string };
 
 const isDriver = (r: StandingsDriver | StandingsConstructor): r is StandingsDriver => "code" in r;
 const SUFFIX = /\b(Racing|F1|Team|Kick|Scuderia)\b/g;
@@ -364,6 +361,9 @@ function derive(data: SeasonStandings, tab: Tab, round: number) {
   const finals = tab === "drivers" ? last.drivers : last.constructors;
   const keyOf = (r: StandingsDriver | StandingsConstructor) => (isDriver(r) ? r.code : r.name);
 
+  // Places gained (+) or lost (-) since the round before; none for the first round.
+  const before = round > 1 ? (tab === "drivers" ? rounds[round - 2].drivers : rounds[round - 2].constructors) : [];
+  const previous = new Map(before.map((r) => [keyOf(r), r.position]));
   const rows: Row[] = [...finals]
     .sort((a, b) => (a.position ?? 99) - (b.position ?? 99))
     .map((r) => ({
@@ -375,6 +375,7 @@ function derive(data: SeasonStandings, tab: Tab, round: number) {
       position: r.position,
       points: r.points,
       wins: r.wins,
+      moved: previous.get(keyOf(r)) != null && r.position != null ? (previous.get(keyOf(r)) as number) - r.position : null,
       href: isDriver(r) ? `/driver/${r.code}` : undefined,
       prefetch: isDriver(r) ? `/drivers/${r.code}` : undefined,
     }));
@@ -416,7 +417,5 @@ function derive(data: SeasonStandings, tab: Tab, round: number) {
   const pointSeries = make((i) => base[i].points);
   const gapSeries = make((i) => base[i].points.map((p, r) => (p === null ? null : -(leaderAt[r] - p))));
 
-  const leaders = rounds.slice(0, round).map((rd) => (tab === "drivers" ? rd.drivers : rd.constructors).find((x) => x.position === 1)?.name ?? null);
-  const leadChanges = leaders.reduce((n, cur, i) => (i > 0 && cur !== leaders[i - 1] ? n + 1 : n), 0);
-  return { rows, podium, pointSeries, gapSeries, last, leadChanges };
+  return { rows, podium, pointSeries, gapSeries, last };
 }

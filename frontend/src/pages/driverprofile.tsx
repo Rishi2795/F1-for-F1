@@ -5,6 +5,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { ErrorState, Skeleton } from "../components/ui/states";
 import { ChampionBadge } from "../components/ui/championbadge";
 import { fmt, fmtSigned } from "../lib/format";
+import { WeekendPanel } from "../components/driver/weekendpanel";
 import { RatingPanel } from "../components/ratings/ratingpanel";
 import type { DriverProfile } from "../types/api";
 
@@ -41,7 +42,7 @@ export default function DriverPage() {
 
   if (stats.loading) {
     return (
-      <div className="min-h-screen bg-[#050505] px-4 py-14 md:px-8">
+      <div className="min-h-screen px-4 py-14 md:px-8">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-12">
           <Skeleton className="h-[420px] lg:col-span-4" />
           <Skeleton className="h-[420px] lg:col-span-8" />
@@ -51,7 +52,7 @@ export default function DriverPage() {
   }
   if (!stats.data) {
     return (
-      <div className="min-h-screen bg-[#050505]">
+      <div className="min-h-screen">
         <ErrorState error={stats.error} onRetry={stats.reload} subject="driver" backTo={{ href: "/drivers", label: "All drivers" }} />
       </div>
     );
@@ -60,7 +61,7 @@ export default function DriverPage() {
   const s = driver.stats;
 
   return (
-    <div className="min-h-screen bg-[#050505] px-4 py-14 text-zinc-200 md:px-8">
+    <div className="min-h-screen px-4 py-14 text-zinc-200 md:px-8">
       <div className="mx-auto mb-10 flex max-w-7xl justify-between">
         <Link to="/drivers" className="text-xs font-mono text-zinc-400 hover:text-white">
           ← ALL DRIVERS
@@ -70,12 +71,11 @@ export default function DriverPage() {
 
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <div className="overflow-hidden rounded-xl border border-white/10 bg-[#080808]">
-            <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-gradient-to-br from-zinc-800 to-black">
-              <span aria-hidden="true" className="text-9xl font-black italic text-white/10">
+          <div className="overflow-hidden rounded-sm border border-white/10 bg-[#080808]">
+            <div className="relative flex h-[320px] items-center justify-center overflow-hidden glass-cell">
+              <span aria-hidden="true" className="f1-outline text-9xl font-black italic">
                 {driver.code}
               </span>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             </div>
             <div className="space-y-3 p-6">
               <h1 className="text-3xl font-black italic text-white">{driver.name}</h1>
@@ -118,6 +118,8 @@ export default function DriverPage() {
             </Grid4>
           </Panel>
 
+          {driver.latest_season >= 2026 && <WeekendPanel code={driver.code} />}
+
           {driver.rating && <RatingPanel code={driver.code} name={driver.name} rating={driver.rating} />}
 
           <Panel title="BY SEASON">
@@ -126,12 +128,12 @@ export default function DriverPage() {
                 <caption className="sr-only">Season-by-season results for {driver.name}</caption>
                 <thead className="text-xs uppercase text-zinc-500">
                   <tr>
-                    <th scope="col" className="py-2 pr-4">Season</th>
-                    <th scope="col" className="pr-4">Team</th>
-                    <th scope="col" className="pr-4">Races</th>
-                    <th scope="col" className="pr-4">Wins</th>
-                    <th scope="col" className="pr-4">Podiums</th>
-                    <th scope="col">Race pts</th>
+                    <th scope="col" className="py-2 pr-4">SEASON</th>
+                    <th scope="col" className="pr-4">TEAM</th>
+                    <th scope="col" className="pr-4">RACES</th>
+                    <th scope="col" className="pr-4">WINS</th>
+                    <th scope="col" className="pr-4">PODIUMS</th>
+                    <th scope="col">RACE_PTS</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -185,7 +187,7 @@ function Panel({ children, title }: { children: ReactNode; title?: string }) {
     <div className="
       bg-[#080808]
       border border-white/10
-      rounded-xl
+      rounded-sm
       p-6
     ">
 
@@ -224,7 +226,7 @@ function Mini({ label, value, signed }: { label: string; value: string | number;
     signed === undefined || signed === null
       ? "text-white"
       : signed >= 0
-        ? "text-green-500"
+        ? "text-white"
         : "text-red-500";
 
   return (
@@ -249,9 +251,9 @@ function Bar({ label, value }: { label: string; value: number }) {
 
   const color =
     v > 80
-      ? "bg-green-500"
+      ? "bg-white"
       : v > 65
-      ? "bg-yellow-500"
+      ? "bg-zinc-400"
       : "bg-red-500";
 
   return (

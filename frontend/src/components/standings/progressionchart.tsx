@@ -88,7 +88,7 @@ export function ProgressionChart({ series, rounds, ariaLabel, mode, leaderId, hi
   return (
     <div
       ref={box}
-      className="relative rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600"
+      className="relative rounded-sm glass p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600"
       style={{ touchAction: "pan-y" }}
       tabIndex={0}
       onKeyDown={onKey}
@@ -122,9 +122,6 @@ export function ProgressionChart({ series, rounds, ariaLabel, mode, leaderId, hi
             </text>
           ) : null,
         )}
-        <text x={M.l} y={H - 1} fontSize="11" fill="#71717a">
-          Round
-        </text>
 
         <g clipPath={`url(#${clipId})`}>
           {series.map((s) => {
@@ -186,13 +183,13 @@ export function ProgressionChart({ series, rounds, ariaLabel, mode, leaderId, hi
         )}
       </svg>
       <p className="px-1 pt-1 text-xs text-zinc-500">
-        {mode === "gap" ? "Points behind the leader after each round; the leader sits on the top line. " : "Round number along the bottom. "}
-        Hover, or focus and use the arrow keys, for exact values.
+        {mode === "gap" ? "Points behind the leader; the leader sits on the top line. " : "Along the bottom: round number. "}
+        Hover, or use the arrow keys, for exact values.
       </p>
 
       {hover !== null && (
         <div
-          className="pointer-events-none absolute top-4 z-10 min-w-[11.5rem] rounded-lg border border-white/15 bg-zinc-950/95 p-3 text-xs shadow-2xl backdrop-blur"
+          className="pointer-events-none absolute top-4 z-10 min-w-[11.5rem] rounded-sm border border-white/15 bg-zinc-950/95 p-3 text-xs"
           style={{ left: `${(x(hover) / W) * 100}%`, transform: x(hover) / W > 0.55 ? "translateX(-106%)" : "translateX(8%)" }}
         >
           <p className="mb-2 font-medium text-zinc-400">

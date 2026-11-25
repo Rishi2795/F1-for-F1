@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 
+const TOOLS = ["/pitwall", "/team-pace", "/forecast", "/watch", "/duels", "/ratings", "/circuits", "/circuit/", "/play", "/my", "/simulation"];
+
 const items = [
   { label: "Home", path: "/" },
   { label: "Races", path: "/explore" },
   { label: "Standings", path: "/standings" },
-  { label: "Ratings", path: "/ratings" },
-  { label: "Sim", path: "/simulation" },
+  { label: "Pit Wall", path: "/pitwall" },
   { label: "About", path: "/about_app" },
 ];
 
@@ -52,17 +53,20 @@ export default function FloatingDock() {
     >
       <div
         className="
-          flex items-center gap-6
-          px-8 py-3
+          flex max-w-[calc(100vw-1rem)] items-center gap-3.5 sm:gap-6
+          px-4 py-3 sm:px-8
           rounded-full
-          bg-white/5
-          backdrop-blur-xl
+          bg-white/[0.06] backdrop-blur-xl
+         
           border border-white/10
-          shadow-xl shadow-black/40
+         
         "
       >
         {items.map((item) => {
-          const active = pathname === item.path || (item.path === "/standings" && pathname.startsWith("/season/"));
+          const active =
+            pathname === item.path ||
+            (item.path === "/standings" && pathname.startsWith("/season/")) ||
+            (item.path === "/pitwall" && TOOLS.some((t) => pathname.startsWith(t)));
 
           return (
             <Link
@@ -71,7 +75,7 @@ export default function FloatingDock() {
               aria-current={active ? "page" : undefined}
               className={`
                 relative
-                text-sm font-medium
+                text-[13px] font-medium sm:text-sm
                 transition-all
                 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-600
                 ${active ? "text-red-500" : "text-zinc-300 hover:text-white"}
@@ -95,6 +99,14 @@ export default function FloatingDock() {
             </Link>
           );
         })}
+        <button
+          type="button"
+          aria-label="⌘K: open search"
+          onClick={() => window.dispatchEvent(new Event("f1:search"))}
+          className="rounded-sm border border-white/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-zinc-300 transition-colors hover:border-white hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-600"
+        >
+          ⌘K
+        </button>
       </div>
     </nav>
   );

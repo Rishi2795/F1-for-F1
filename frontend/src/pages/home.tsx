@@ -44,7 +44,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#020202] text-white antialiased selection:bg-red-600/30">
       
       {/* GLOBAL HEADER */}
-      <header className="w-full border-b border-white/[0.08] bg-black/60 backdrop-blur-xl sticky top-0 z-50">
+      <header className="w-full border-b border-white/[0.08] bg-black/60 sticky top-0 z-50">
   <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4 md:gap-10">
     
     {/* LOGO */}
@@ -62,7 +62,7 @@ export default function Home() {
         onChange={(e) => setSearch(e.target.value)}
         aria-label="Search races"
         placeholder="Search..."
-        className="w-full bg-white text-black rounded-full py-2 px-4 sm:px-6 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase outline-none ring-4 ring-white/5 focus:ring-red-600/20 transition-all placeholder:text-black/40 shadow-lg"
+        className="w-full bg-white text-black rounded-full py-2 px-4 sm:px-6 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase outline-none ring-4 ring-white/5 focus:ring-red-600/20 transition-all placeholder:text-black/40"
       />
     </div>
     
@@ -97,7 +97,7 @@ export default function Home() {
         {error && <ErrorState error={error} onRetry={() => { seasonsApi.reload(); racesApi.reload(); }} />}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5">
           {loading ? (
-            [...Array(10)].map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)
+            [...Array(10)].map((_, i) => <Skeleton key={i} className="h-36 rounded-sm" />)
           ) : (
             filteredRaces.map((race) => {
               const note = STATUS_LABEL[race.data_status];
@@ -109,7 +109,7 @@ export default function Home() {
                   onClick={() => navigate(`/race/${race.season}/${race.round}`)}
                   onMouseEnter={() => !disabled && prefetch(`/seasons/${race.season}/races/${race.round}`)}
                   onFocus={() => !disabled && prefetch(`/seasons/${race.season}/races/${race.round}`)}
-                  className="group relative flex flex-col bg-[#0A0A0A] border border-white/[0.05] rounded-2xl p-6 text-left transition-all duration-500 enabled:hover:bg-white enabled:hover:text-black enabled:active:scale-[0.96] disabled:opacity-50 shadow-xl"
+                  className="group relative flex flex-col bg-[#0A0A0A] border border-white/[0.05] rounded-sm p-6 text-left transition-all duration-500 enabled:hover:bg-white enabled:hover:text-black enabled:active:scale-[0.96] disabled:opacity-50"
                 >
                   <span className="text-[11px] font-mono font-bold opacity-50 group-enabled:group-hover:text-red-500 group-enabled:group-hover:opacity-100 transition-all mb-8">
                     R{race.round.toString().padStart(2, "0")} · {race.date}
@@ -122,7 +122,13 @@ export default function Home() {
                     <p className="text-[10px] font-medium opacity-50 uppercase tracking-[0.2em] truncate">
                       {race.location}
                     </p>
-                    {note && <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-amber-500">{note}</p>}
+                    {race.excitement != null && (
+                      <p className="mt-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] opacity-70">
+                        <span aria-hidden="true" className="h-1 w-8 bg-current/20"><span className="block h-full bg-red-600" style={{ width: `${race.excitement * 10}%` }} /></span>
+                        <span>WATCH {race.excitement.toFixed(1)}</span>
+                      </p>
+                    )}
+                    {note && <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-red-500">{note}</p>}
                   </div>
                 </button>
               );
@@ -135,10 +141,10 @@ export default function Home() {
 
         {/* DROPDOWN MENU FOR SEASON (Absolute positioned) */}
         {open && (
-          <div role="dialog" aria-modal="true" aria-label="Choose a season" className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-in fade-in">
+          <div role="dialog" aria-modal="true" aria-label="Choose a season" className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 animate-in fade-in">
             <div className="max-w-xs w-full grid grid-cols-2 gap-2">
               {seasons.map(y => (
-                <button key={y} onClick={() => { setSeason(y); setOpen(false); setSearch(""); }} className={`px-6 py-4 rounded-xl text-xs font-black tracking-widest transition-all ${season === y ? 'bg-red-600 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}>
+                <button key={y} onClick={() => { setSeason(y); setOpen(false); setSearch(""); }} className={`px-6 py-4 rounded-sm text-xs font-black tracking-widest transition-all ${season === y ? 'bg-red-600 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}>
                   {y}
                 </button>
               ))}

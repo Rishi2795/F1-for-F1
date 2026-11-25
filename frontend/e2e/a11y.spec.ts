@@ -13,6 +13,18 @@ const PAGES = [
   "/season/2021?tab=constructors",
   "/methodology",
   "/ratings",
+  "/forecast",
+  "/pitwall",
+  "/team-pace",
+  "/race/2024/8/lab",
+  "/race/2019/11/lab",
+  "/watch",
+  "/duels",
+  "/circuits",
+  "/circuit/monte-carlo",
+  "/play",
+  "/my",
+  "/race/2024/10",
   "/definitely-not-a-page",
 ];
 

@@ -28,16 +28,6 @@ body {
 
 /* ---- Standings page effects (all decorative; skipped for reduced motion) ---- */
 
-/* Carbon-fibre weave, very faint. */
-.f1-carbon {
-  background-color: #050505;
-  background-image:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.022) 25%, transparent 25%) -3px 0 / 6px 6px,
-    linear-gradient(225deg, rgba(255, 255, 255, 0.022) 25%, transparent 25%) -3px 0 / 6px 6px,
-    linear-gradient(315deg, rgba(255, 255, 255, 0.022) 25%, transparent 25%) 0 0 / 6px 6px,
-    linear-gradient(45deg, rgba(255, 255, 255, 0.022) 25%, transparent 25%) 0 0 / 6px 6px;
-}
-
 /* Outlined display numerals / words. */
 .f1-outline {
   color: transparent;
@@ -75,32 +65,130 @@ body {
   animation: f1-drive 1100ms cubic-bezier(0.22, 1, 0.36, 1) 150ms both;
 }
 
-/* Spotlight that follows the pointer over a card (the page sets --mx / --my). */
-.f1-spot {
-  position: relative;
-  isolation: isolate;
-}
-.f1-spot::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 250ms;
-  background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 30%), rgba(255, 255, 255, 0.1), transparent 65%);
-  z-index: 1;
-}
-.f1-spot:hover::before {
-  opacity: 1;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .f1-rise,
   .f1-drive {
     animation: none;
   }
-  .f1-spot::before {
+}
+
+/* Race detail: small, quiet motion. Bars grow from their baseline, sections fade up as they scroll in. */
+@keyframes f1-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes f1-grow-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.f1-grow-x {
+  transform-origin: left center;
+  animation: f1-grow-x 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.f1-grow-y {
+  transform-origin: center bottom;
+  animation: f1-grow-y 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.f1-in {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 600ms ease-out, transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.f1-in.is-in {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .f1-grow-x,
+  .f1-grow-y {
+    animation: none;
+  }
+  .f1-in {
+    opacity: 1;
+    transform: none;
     transition: none;
+  }
+}
+
+/* Dots on the driver/car map pop in one after another. */
+@keyframes f1-pop {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.f1-pop {
+  animation: f1-pop 520ms cubic-bezier(0.22, 1.4, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .f1-pop {
+    animation: none;
+  }
+}
+
+/* ---- Glass: translucent, blurred, hairline-bordered surfaces over a faint dot field. No gradients. ---- */
+.f1-dots {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='1.5' cy='1.5' r='1' fill='white' fill-opacity='0.09'/%3E%3C/svg%3E");
+  background-size: 24px 24px;
+  background-attachment: fixed;
+}
+.glass {
+  background-color: rgba(255, 255, 255, 0.04);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: border-color 300ms ease, background-color 300ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.glass-hover:hover {
+  background-color: rgba(255, 255, 255, 0.075);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+/* A cell inside a hairline grid (gap-px on a white/10 background): darker glass so the hairlines read. */
+.glass-cell {
+  background-color: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  transition: background-color 300ms ease;
+}
+.glass-cell:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Route changes: the new page eases in. */
+@keyframes f1-page-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.f1-page {
+  animation: f1-page-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .f1-page {
+    animation: none;
+  }
+  .glass,
+  .glass-cell {
+    transition: none;
+  }
+  .glass-hover:hover {
+    transform: none;
+  }
+}
+
+/* A circuit outline drawing itself, then a marker circling it. */
+@keyframes f1-draw {
+  to { stroke-dashoffset: 0; }
+}
+.f1-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: f1-draw 2400ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .f1-draw {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }

@@ -33,3 +33,17 @@ const MISSING_LABELS: Record<string, string> = {
 export function describeMissing(missing: string[]): string {
   return missing.map((m) => MISSING_LABELS[m] ?? m).join(", ");
 }
+
+/** 91.488 -> "1:31.488"; null -> dash. */
+export function fmtLap(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined) return DASH;
+  const m = Math.floor(seconds / 60);
+  const s = (seconds - m * 60).toFixed(3).padStart(6, "0");
+  return m > 0 ? `${m}:${s}` : s;
+}
+
+/** Gap to the winner: "+11.825s", or "+1:02.300" past a minute. Null stays a dash. */
+export function fmtGap(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined) return DASH;
+  return seconds < 60 ? `+${seconds.toFixed(3)}s` : `+${fmtLap(seconds)}`;
+}
