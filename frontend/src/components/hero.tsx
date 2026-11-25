@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { hideBroken } from "../lib/images";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
-const STREAKS = [14, 26, 38, 52, 63, 75, 86]; // % from the top
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -21,8 +20,8 @@ const Hero = () => {
      page below arrives as the next scene instead of a hard cut. */
   const { scrollYProgress } = useScroll({ target: section, offset: ["start start", "end start"] });
   const move = (to: number) => (still ? 0 : to);
-  const carY = useTransform(scrollYProgress, [0, 1], [0, move(200)]);
-  const carScale = useTransform(scrollYProgress, [0, 1], [1, still ? 1 : 1.22]);
+  const carY = useTransform(scrollYProgress, [0, 1], [0, move(140)]);
+  const carScale = useTransform(scrollYProgress, [0, 1], [1, still ? 1 : 1.08]);
   const carOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
   const titleY = useTransform(scrollYProgress, [0, 1], [0, move(-150)]);
   const titleOpacity = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
@@ -34,9 +33,9 @@ const Hero = () => {
   const py = useMotionValue(0);
   const sx = useSpring(px, { stiffness: 70, damping: 18 });
   const sy = useSpring(py, { stiffness: 70, damping: 18 });
-  const carX = useTransform(sx, [-0.5, 0.5], [still ? 0 : 26, still ? 0 : -26]);
-  const carShift = useTransform(sy, [-0.5, 0.5], [still ? 0 : 8, still ? 0 : -8]);
-  const titleX = useTransform(sx, [-0.5, 0.5], [still ? 0 : -14, still ? 0 : 14]);
+  const carX = useTransform(sx, [-0.5, 0.5], [still ? 0 : 14, still ? 0 : -14]);
+  const carShift = useTransform(sy, [-0.5, 0.5], [still ? 0 : 5, still ? 0 : -5]);
+  const titleX = useTransform(sx, [-0.5, 0.5], [still ? 0 : -8, still ? 0 : 8]);
   const onMove = (e: MouseEvent<HTMLElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     px.set((e.clientX - r.left) / r.width - 0.5);
@@ -49,43 +48,22 @@ const Hero = () => {
           DESKTOP VIEW
       ========================================== */}
       <div className="hidden md:block absolute inset-0 bg-black">
-        {/* Layer 1: base background, slowly pushing in */}
-        <motion.div style={{ y: bgY }} className="absolute inset-0 z-0">
+        {/* Layer 1: base background. Shifted down with layout (top/bottom), because an animated transform would replace a CSS translate. */}
+        <motion.div style={{ y: bgY }} className="absolute inset-x-0 -bottom-[100px] top-[100px] z-0">
           <motion.img
-            initial={{ opacity: 0, scale: 1.2 }}
-            animate={{ opacity: 1, scale: 1.1 }}
-            transition={{ duration: 2.4, ease: EASE }}
+            initial={{ opacity: 0, scale: 1.14 }}
+            animate={{ opacity: 1, scale: 1.08 }}
+            transition={{ duration: 2.2, ease: EASE }}
             src={assets.desktopBg}
             referrerPolicy="no-referrer"
             onError={hideBroken}
-            className="w-full h-full translate-y-[100px] object-cover object-center brightness-[0.25]"
+            className="h-full w-full object-cover object-center brightness-[0.25]"
             alt=""
           />
         </motion.div>
 
-        {/* Speed lines: one fast sweep as the car arrives, then a slow idle drift */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5]">
-          {STREAKS.map((top, i) => (
-            <motion.span
-              key={top}
-              className="absolute h-px bg-gradient-to-r from-transparent via-red-500/70 to-transparent"
-              style={{ top: `${top}%`, width: `${28 + (i % 3) * 12}%` }}
-              initial={{ left: "-45%", opacity: 0 }}
-              animate={still ? { left: "-45%", opacity: 0 } : { left: ["-45%", "130%"], opacity: [0, 0.9, 0] }}
-              transition={{ duration: 1.1, delay: 0.5 + i * 0.07, ease: "easeIn" }}
-            />
-          ))}
-          {!still && STREAKS.slice(0, 4).map((top, i) => (
-            <motion.span
-              key={`idle-${top}`}
-              className="absolute h-px bg-gradient-to-r from-transparent via-white/25 to-transparent"
-              style={{ top: `${top + 5}%`, width: "24%" }}
-              initial={{ left: "-30%" }}
-              animate={{ left: "125%" }}
-              transition={{ duration: 7 + i * 1.5, repeat: Infinity, ease: "linear", delay: 3 + i * 1.7 }}
-            />
-          ))}
-        </div>
+        {/* The shifted background would leave a hard edge at the top: blend it into the page */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-44 bg-gradient-to-b from-black via-black/80 to-transparent" />
 
         {/* Layer 2: headline, each line rising out of a mask */}
         <motion.div style={{ y: titleY, x: titleX, opacity: titleOpacity }} className="absolute inset-0 z-10 flex flex-col justify-start pt-[4dvh] px-16 pointer-events-none">
@@ -103,28 +81,26 @@ const Hero = () => {
           </h2>
         </motion.div>
 
-        {/* A red pool of light under the car that breathes */}
+        {/* A soft red rim light behind the car: it fades up once, then stays put */}
         <motion.div
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-[10%] left-[22%] z-[15] h-[14%] w-[56%] rounded-full bg-red-600/30 blur-3xl"
+          className="pointer-events-none absolute bottom-[8%] left-[18%] z-[15] h-[40%] w-[62%] rounded-full bg-red-700/25 blur-[110px]"
           initial={{ opacity: 0 }}
-          animate={still ? { opacity: 0.5 } : { opacity: [0, 0.75, 0.45, 0.75] }}
-          transition={still ? { duration: 1 } : { duration: 5, delay: 1, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 2.4, delay: 0.7, ease: "easeOut" }}
         />
 
-        {/* Layer 3: the car. Scroll and pointer move it, a slow float sits on top, and the entrance slides it in out of a blur. */}
-        <motion.div style={{ x: carX, y: carY, scale: carScale, opacity: carOpacity }} className="absolute inset-0 z-20 pointer-events-none">
+        {/* Layer 3: the car. It slides in and settles; after that only scroll and a light pointer drift move it. */}
+        <motion.div style={{ x: carX, y: carY, scale: carScale, opacity: carOpacity }} className="pointer-events-none absolute inset-x-0 -bottom-[100px] top-[100px] z-20">
           <motion.div style={{ y: carShift }} className="h-full w-full">
-            <motion.div className="h-full w-full translate-y-[100px]" animate={still ? undefined : { y: [0, -9, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}>
-              <motion.img
-                initial={{ opacity: 0, x: 220, scale: 1.06, filter: "blur(16px)" }}
-                animate={{ opacity: 1, x: 0, scale: 1, filter: "blur(0px)" }}
-                transition={{ duration: 1.5, delay: 0.35, ease: EASE }}
-                src={assets.desktopCutout}
-                className="w-full h-full object-cover object-center drop-shadow-[0_30px_60px_rgba(0,0,0,1)]"
-                alt="A 2026-era Formula 1 car"
-              />
-            </motion.div>
+            <motion.img
+              initial={{ opacity: 0, x: 160 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ opacity: { duration: 0.9, delay: 0.35, ease: "easeOut" }, x: { duration: 1.6, delay: 0.35, ease: EASE } }}
+              src={assets.desktopCutout}
+              className="h-full w-full object-cover object-center drop-shadow-[0_30px_60px_rgba(0,0,0,1)]"
+              alt="A 2026-era Formula 1 car"
+            />
           </motion.div>
         </motion.div>
       </div>
@@ -148,8 +124,8 @@ const Hero = () => {
 
         <motion.div style={{ y: carY, scale: carScale, opacity: carOpacity }} className="absolute inset-0 z-10">
           <motion.img
-            initial={{ scale: 1.1, opacity: 0, y: 40, filter: "blur(10px)" }}
-            animate={{ scale: 1, opacity: 1, y: 0, filter: "blur(0px)" }}
+            initial={{ scale: 1.06, opacity: 0, y: 30 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
             transition={{ duration: 1.3, delay: 0.3, ease: EASE }}
             src={assets.mobileCutout}
             className="w-full h-full object-cover object-center pointer-events-none"
