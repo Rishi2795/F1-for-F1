@@ -196,6 +196,8 @@ class Publisher:
                     name=last_drv.driver_name,
                     team=last_drv.team,
                     country=None,
+                    number=last_drv.driver_number,
+                    team_color=last_drv.team_color,
                     titles=len(title_years),
                     latest_season=latest.season,
                     rating=float(rated[code].overall) if code in rated else None,

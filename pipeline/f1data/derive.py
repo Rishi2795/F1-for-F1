@@ -317,6 +317,7 @@ def build_circuits(publisher: Publisher) -> int:
                     winner_team=win.team if win else None,
                     pole=pole.driver_code if pole else None,
                     excitement=doc.excitement.score if doc.excitement else None,
+                    laps=doc.derived.total_laps,
                 )
             )
         scores = [r.excitement for r in races if r.excitement is not None]

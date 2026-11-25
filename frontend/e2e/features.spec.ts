@@ -303,7 +303,10 @@ test.describe("pit wall tools", () => {
     await page.getByLabel("FIND_A_CIRCUIT").fill("monaco");
     await page.getByRole("link", { name: /Monte Carlo/ }).click();
     await expect(page).toHaveURL(/\/circuit\/monte-carlo$/);
-    await expect(page.getByText("POLE_TO_WIN")).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Track", selected: true })).toBeVisible();
+    await expect(page.getByText("POLE_TO_WIN").first()).toBeVisible();
+    await page.getByRole("tab", { name: "Records" }).click(); // past races live on the Records tab
+    await expect(page).toHaveURL(/tab=records/);
     await expect(page.getByRole("region", { name: /Past races at Monte Carlo/ })).toBeVisible();
   });
 
@@ -493,7 +496,8 @@ test.describe("map replay and analysis", () => {
   test("circuit pages draw the track from a real lap; the list shows thumbnails", async ({ page }) => {
     await page.goto("/circuit/monte-carlo");
     await expect(page.getByRole("img", { name: /Outline of Monte Carlo, \d\.\d+ kilometres/ })).toBeVisible();
-    await expect(page.getByText(/DRAWN_FROM/)).toBeVisible();
+    await expect(page.getByText(/drawn from one real lap of car position data/)).toBeVisible();
+    await expect(page.getByText("Circuit length")).toBeVisible();
     await page.goto("/circuits");
     await expect(page.getByRole("link", { name: /Monza/ })).toBeVisible();
     expect(await page.locator('a[href^="/circuit/"] svg').count()).toBeGreaterThan(15);

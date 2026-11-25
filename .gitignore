@@ -62,3 +62,6 @@ pipeline/.cache/
 # Playwright
 frontend/test-results/
 frontend/playwright-report/
+
+# Commons photo review output
+scripts/out/

@@ -521,6 +521,7 @@ class CircuitRace(_Model):
     winner_team: str | None
     pole: str | None
     excitement: float | None
+    laps: int | None = None  # scheduled race distance in laps
 
 
 class CircuitStat(_Model):
@@ -630,6 +631,8 @@ class DriverListEntry(_Model):
     team: str | None
     country: str | None
     image: str | None = None
+    number: int | None = None  # the number raced with in their latest season
+    team_color: str | None = None
     rating: float | None = None
     titles: int | None = None
     latest_season: int

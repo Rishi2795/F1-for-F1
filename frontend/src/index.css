@@ -192,3 +192,31 @@ body {
     stroke-dashoffset: 0;
   }
 }
+
+/* ---- Dot look ------------------------------------------------------------------------------------------------------
+   Display type (headlines and big numbers of at least 24px) in Doto, a free dot-matrix face (SIL OFL), in the spirit of
+   dot-matrix phone type. src/lib/theme.ts marks the elements that are big enough with data-dot, from their real size.
+   Body text, small labels and anything small keep their own faces: dots are for sizes where they can be read. */
+:root {
+  --font-dot: "Doto Variable", "Doto", ui-monospace, monospace;
+}
+[data-theme="dot"] [data-dot],
+[data-theme="dot"] [data-dot] * {
+  font-family: var(--font-dot);
+  font-style: normal !important;
+  font-weight: 700;
+  font-variation-settings: "ROND" 100; /* round dots */
+  letter-spacing: 0.02em;
+}
+/* An outlined headline word becomes red dots, so the whole headline is one dot-matrix piece. */
+[data-theme="dot"] [data-dot] :is(.f1-outline, [class*="text-stroke"], [class*="text-transparent"]) {
+  -webkit-text-stroke: 0 !important;
+  color: #ef4444 !important;
+}
+/* A small unit or note inside a big number ("km", "pts") stays in the normal face. */
+[data-theme="dot"] [data-dot] :is(.font-sans, [class~="text-xs"], [class~="text-sm"], [class~="text-base"], [class~="text-lg"]) {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-weight: 500;
+  font-variation-settings: normal;
+  letter-spacing: normal;
+}

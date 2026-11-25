@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
@@ -6,6 +6,8 @@ import { prefetch } from "../lib/api";
 import { ErrorState, Skeleton } from "../components/ui/states";
 import { ChampionBadge } from "../components/ui/championbadge";
 import { chip } from "../components/ui/chipstyle";
+import { readableOnDark } from "../lib/color";
+import { useDriverPhotos, type Photo } from "../lib/driverphotos";
 import type { DriverListEntry } from "../types/api";
 
 type Show = "all" | "grid" | "champions";
@@ -20,6 +22,7 @@ export default function Drivers() {
   const [search, setSearch] = useState("");
   const [show, setShow] = useState<Show>("all");
   useDocumentTitle("Drivers");
+  const photos = useDriverPhotos();
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -53,12 +56,25 @@ export default function Drivers() {
 
       {error && <ErrorState error={error} onRetry={reload} />}
 
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {loading && Array.from({ length: 10 }, (_, i) => <Skeleton key={i} className="h-[320px] rounded-sm" />)}
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 lg:grid-cols-5">
+        {loading && Array.from({ length: 10 }, (_, i) => <Skeleton key={i} className="aspect-[3/4] rounded-sm" />)}
         {filtered.map((d) => (
-          <DriverCard key={d.code} d={d} />
+          <DriverCard key={d.code} d={d} photo={photos[d.code]} />
         ))}
       </div>
+      {Object.keys(photos).length > 0 && (
+        <details className="mx-auto mt-10 max-w-7xl text-xs text-zinc-500">
+          <summary className="cursor-pointer">Photo credits</summary>
+          <ul className="mt-2 space-y-1">
+            {Object.entries(photos).map(([code, p]) => (
+              <li key={code}>
+                {code}: © {p.credit}, {p.licenceUrl ? <a href={p.licenceUrl} className="underline" rel="noopener noreferrer">{p.licence}</a> : p.licence}
+                {p.source ? <> · <a href={p.source} className="underline" rel="noopener noreferrer">Wikimedia Commons</a></> : null} · resized and cropped
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {!loading && !error && filtered.length === 0 && (
         <p className="text-center text-sm text-zinc-500">No driver matches “{search}”.</p>
       )}
@@ -66,31 +82,41 @@ export default function Drivers() {
   );
 }
 
-function DriverCard({ d }: { d: DriverListEntry }) {
+function DriverCard({ d, photo }: { d: DriverListEntry; photo?: Photo }) {
+  const colour = `#${(d.team_color ?? "888888").replace("#", "")}`;
+  const text = readableOnDark(colour);
   return (
     <Link
       to={`/driver/${d.code}`}
       onMouseEnter={() => prefetch(`/drivers/${d.code}`)}
-      className="group relative h-[320px] overflow-hidden rounded-sm glass transition-all hover:scale-[1.02]"
+      className="group relative block aspect-[3/4] overflow-hidden rounded-sm border border-white/10 bg-[#080808] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--team)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+      style={{ "--team": colour, backgroundImage: `linear-gradient(165deg, ${colour}55 0%, ${colour}18 38%, #050505 78%)` } as CSSProperties}
     >
-      {/* No photo is shipped (rights + hotlinks); the code is the avatar. */}
-      <span
-        aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center f1-outline text-8xl font-black italic"
-      >
-        {d.code}
-      </span>
-
-
-      <div className="absolute bottom-0 left-0 right-0 z-20 space-y-2 p-4">
-        <h2 className="text-xl font-black leading-tight text-white">{d.name}</h2>
-        <p className="text-xs uppercase tracking-wide text-zinc-400">{d.team ?? "—"}</p>
-        <div className="flex items-center justify-between text-[11px] text-zinc-400">
-          <span>Last raced {d.latest_season}</span>
+      {/* the number, huge and outlined: top-right behind a photo, or centred when there is no photo */}
+      {d.number !== null && d.number !== undefined && (
+        <span
+          aria-hidden="true"
+          className={`f1-outline absolute font-black italic leading-none ${photo ? "-right-2 top-1 text-[7.5rem] sm:text-[9rem]" : "inset-x-0 top-[8%] text-center text-[8.5rem] sm:text-[10.5rem]"}`}
+          style={{ "--stroke": `${colour}${photo ? "66" : "88"}` } as CSSProperties}
+        >
+          {d.number}
+        </span>
+      )}
+      {photo && <img src={`/drivers/${photo.file}`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: photo.focus ?? "50% 22%" }} />}
+      <span className="absolute left-3 top-3 z-10 rounded-sm border border-white/20 bg-black/40 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-widest text-zinc-200">{d.code}</span>
+      <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black via-black/70 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 z-10 space-y-1.5 p-3 sm:p-4">
+        <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider sm:text-xs" style={{ color: text }}>
+          <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: colour }} />
+          <span className="truncate">{d.team ?? "—"}</span>
+        </p>
+        <h2 className="text-lg font-black leading-tight text-white sm:text-xl">{d.name}</h2>
+        <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-400">
+          <span>{d.latest_season === new Date().getFullYear() || d.latest_season >= 2026 ? `Raced ${d.latest_season}` : `Last raced ${d.latest_season}`}</span>
           {d.titles !== null && d.titles > 0 && <ChampionBadge titles={d.titles} compact />}
         </div>
       </div>
-      <div className="absolute inset-0 bg-red-600/10 opacity-0 transition group-hover:opacity-100" />
+      {photo && <span className="absolute right-1.5 top-1.5 z-10 max-w-[80%] truncate rounded-sm bg-black/60 px-1.5 py-0.5 text-[9px] text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">© {photo.credit}</span>}
     </Link>
   );
 }

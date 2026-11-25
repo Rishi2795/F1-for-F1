@@ -149,6 +149,8 @@ export type DriverListEntry = {
   team: string | null;
   country: string | null;
   image: string | null;
+  number?: number | null;
+  team_color?: string | null;
   rating: number | null;
   titles: number | null;
   latest_season: number;
@@ -360,7 +362,7 @@ export type Duel = {
 };
 export type DuelsDoc = { season: number; duels: Duel[] };
 
-export type CircuitRace = { season: number; round: number; event_name: string; date: string; winner: string | null; winner_name: string | null; winner_team: string | null; pole: string | null; excitement: number | null };
+export type CircuitRace = { season: number; round: number; event_name: string; date: string; winner: string | null; winner_name: string | null; winner_team: string | null; pole: string | null; excitement: number | null; laps?: number | null };
 export type CircuitDoc = {
   slug: string;
   name: string;

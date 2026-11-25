@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useApi } from "../../hooks/useApi";
+import { ThemeToggle } from "../ui/themetoggle";
 import type { BundleMeta } from "../../types/api";
 
 const SOURCES = [
@@ -18,6 +19,7 @@ export function Footer() {
         <div>
           <p className="font-bold text-white">F1 for F1</p>
           <p className="mt-2 max-w-xs">An unofficial fan project. Not affiliated with, or endorsed by, Formula 1, the FIA or any team.</p>
+          <div className="mt-4 flex items-center gap-3"><span className="text-xs uppercase tracking-widest text-zinc-500">Typeface</span><ThemeToggle /></div>
         </div>
         <div>
           <p className="font-semibold text-white">Data</p>
