@@ -174,3 +174,41 @@ def test_ratings_endpoints(client):
     assert missing.status_code == 404 and missing.json()["error"] == "not_available"
     assert client.get("/api/ratings/TOOLONG").status_code == 422
     assert client.get("/api/ratings/model").headers["cache-control"].startswith("public")
+
+
+def test_forecast_endpoints(client):
+    assert client.get("/api/predictions/next").json()["races"][0]["round"] == 22
+    assert client.get("/api/predictions/championship").json()["version"] == "forecast-v1"
+    assert client.get("/api/predictions/review").json() == []
+    assert client.get("/api/predictions/model").json()["version"] == "forecast-v1"
+    assert client.head("/api/predictions/next").headers["etag"]
+    assert client.get("/api/predictions/model").headers["cache-control"].startswith("public")
+    assert client.get("/api/predictions/unknown").status_code == 404
+
+
+def test_forecasts_say_not_available_when_unpublished(client, tmp_path):
+    for path in (tmp_path / "predictions").glob("*.json"):
+        path.unlink()
+    response = client.get("/api/predictions/next")
+    assert response.status_code == 404 and response.json()["error"] == "not_available"
+
+
+def test_duels_and_circuits(client):
+    assert client.get("/api/seasons/2024/duels").json() == {"season": 2024, "duels": []}
+    assert client.get("/api/seasons/2030/duels").status_code == 404
+    assert client.get("/api/circuits").json()[0]["slug"] == "sakhir"
+    assert client.get("/api/circuits/sakhir").json()["slug"] == "sakhir"
+    assert client.get("/api/circuits/nowhere").status_code == 404
+    assert client.get("/api/circuits/Bad_Slug!").status_code == 422
+    assert client.head("/api/circuits").headers["etag"]
+
+
+def test_lap_detail(client):
+    assert client.get("/api/seasons/2024/races/1/laps").json()["laps"] == 57
+    assert client.get("/api/seasons/2024/races/9/laps").status_code == 404
+    assert client.head("/api/seasons/2024/races/1/laps").headers["etag"]
+
+
+def test_team_pace(client):
+    assert client.get("/api/seasons/2024/team-pace").json()["teams"] == []
+    assert client.get("/api/seasons/2030/team-pace").status_code == 404

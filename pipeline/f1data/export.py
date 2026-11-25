@@ -19,12 +19,19 @@ from .models import (
     Champions,
     DriverListEntry,
     DriverProfile,
+    DuelsDoc,
+    IncidentDoc,
+    LapDoc,
+    NextForecasts,
     RaceDoc,
     RaceIndex,
     RatingsCurrent,
     RatingSummary,
+    ReplayDoc,
     SeasonStandings,
     SeasonSummary,
+    TelemetryDoc,
+    TitleForecast,
 )
 
 log = get_logger("export")
@@ -70,13 +77,24 @@ class Publisher:
         if not doc.drivers:
             return "kept_previous" if self.race_path(doc.season, doc.round).exists() else "unchanged"
         existing = self.load_race(doc.season, doc.round)
+        if existing:
+            doc = _carry_extras(existing, doc)
         if existing and RANK[existing.quality.status] > RANK[doc.quality.status]:
             log.warning(
                 "keeping previous %s R%d (%s) - new build is only %s",
-                doc.season, doc.round, existing.quality.status, doc.quality.status,
+                doc.season,
+                doc.round,
+                existing.quality.status,
+                doc.quality.status,
             )
             return "kept_previous"
         return "written" if write_if_changed(self.race_path(doc.season, doc.round), dumps(doc)) else "unchanged"
+
+    def write_telemetry(self, doc: TelemetryDoc) -> bool:
+        return write_if_changed(self.root / "telemetry" / str(doc.season) / f"{doc.round}.json", dumps(doc))
+
+    def write_laps(self, doc: LapDoc) -> bool:
+        return write_if_changed(self.root / "laps" / str(doc.season) / f"{doc.round}.json", dumps(doc))
 
     def write_race(self, doc: RaceDoc) -> bool:
         """Rewrite an existing race document (used by season-wide clean-ups; no quality comparison)."""
@@ -118,7 +136,9 @@ class Publisher:
         if existing and len(existing.rounds) > len(standings.rounds):
             log.warning(
                 "keeping previous %d standings (%d rounds): new build only has %d",
-                standings.season, len(existing.rounds), len(standings.rounds),
+                standings.season,
+                len(existing.rounds),
+                len(standings.rounds),
             )
             return "kept_previous"
         if not standings.rounds:
@@ -158,16 +178,26 @@ class Publisher:
                 if c.code == code and c.name == last_drv.driver_name
             )
             profile = DriverProfile(
-                code=code, name=last_drv.driver_name, team=last_drv.team, number=last_drv.driver_number,
-                latest_season=latest.season, titles=len(title_years), title_years=title_years,
+                code=code,
+                name=last_drv.driver_name,
+                team=last_drv.team,
+                number=last_drv.driver_number,
+                latest_season=latest.season,
+                titles=len(title_years),
+                title_years=title_years,
                 rating=_rating_summary(rated.get(code), ratings),
-                stats=latest, seasons=summaries,
+                stats=latest,
+                seasons=summaries,
             )
             write_if_changed(self.root / "drivers" / f"{code}.json", dumps(profile))
             listing.append(
                 DriverListEntry(
-                    code=code, name=last_drv.driver_name, team=last_drv.team, country=None,
-                    titles=len(title_years), latest_season=latest.season,
+                    code=code,
+                    name=last_drv.driver_name,
+                    team=last_drv.team,
+                    country=None,
+                    titles=len(title_years),
+                    latest_season=latest.season,
                     rating=float(rated[code].overall) if code in rated else None,
                 )
             )
@@ -211,6 +241,11 @@ class Publisher:
         for season in seasons:
             problems.extend(self._standings_problems(season))
         problems.extend(self._ratings_problems())
+        problems.extend(self._predictions_problems())
+        problems.extend(self._derived_problems())
+        problems.extend(self._telemetry_problems())
+        problems.extend(self._replay_problems())
+        problems.extend(self._incident_problems())
         manifest = self.root / "manifest.json"
         if not manifest.exists():
             problems.append("manifest.json missing")
@@ -250,6 +285,80 @@ class Publisher:
                 found.append(f"{where} {d.code}: standings points {d.points} < race points {race_points[d.code]}")
         return found
 
+    def _incident_problems(self) -> list[str]:
+        found: list[str] = []
+        for path in sorted((self.root / "incidents").glob("*/*.json")):
+            where = f"incidents {path.parent.name} R{path.stem}"
+            try:
+                doc = IncidentDoc.model_validate_json(path.read_text(encoding="utf-8"))
+            except ValueError as exc:
+                found.append(f"{where}: invalid ({type(exc).__name__})")
+                continue
+            race = self.load_race(doc.season, doc.round)
+            if race is None:
+                found.append(f"{where}: no matching race")
+                continue
+            codes = {d.driver_code for d in race.drivers}
+            for item in doc.items:
+                if any(c not in codes for c in item.drivers):
+                    found.append(f"{where}: names a driver who is not in the race")
+                    break
+        return found
+
+    def _replay_problems(self) -> list[str]:
+        """Replay files must parse, match their race, and hold possible values."""
+        found: list[str] = []
+        for path in sorted((self.root / "replay").glob("*/*.json")):
+            where = f"replay {path.parent.name} R{path.stem}"
+            try:
+                doc = ReplayDoc.model_validate_json(path.read_text(encoding="utf-8"))
+            except ValueError as exc:
+                found.append(f"{where}: invalid ({type(exc).__name__})")
+                continue
+            race = self.load_race(doc.season, doc.round)
+            if race is None:
+                found.append(f"{where}: no matching race")
+                continue
+            codes = {d.driver_code for d in race.drivers}
+            for d in doc.drivers:
+                cols = (d.f, d.speed, d.throttle, d.brake, d.gear, d.rpm, d.drs)
+                if d.code not in codes:
+                    found.append(f"{where} {d.code}: not in the race")
+                elif any(len(c) != doc.n for c in cols):
+                    found.append(f"{where} {d.code}: column length is not {doc.n}")
+                elif any(v is not None and not 0 <= v < 10_000 for v in d.f):
+                    found.append(f"{where} {d.code}: position outside the lap")
+                elif any(v is not None and not 0 <= v <= 400 for v in d.speed):
+                    found.append(f"{where} {d.code}: impossible speed")
+        return found
+
+    def _telemetry_problems(self) -> list[str]:
+        """Every telemetry file must parse, line up with its race, and hold physically possible readings."""
+        found: list[str] = []
+        for path in sorted((self.root / "telemetry").glob("*/*.json")):
+            where = f"telemetry {path.parent.name} R{path.stem}"
+            try:
+                doc = TelemetryDoc.model_validate_json(path.read_text(encoding="utf-8"))
+            except ValueError as exc:
+                found.append(f"{where}: invalid ({type(exc).__name__})")
+                continue
+            race = self.load_race(doc.season, doc.round)
+            if race is None:
+                found.append(f"{where}: no matching race")
+                continue
+            codes = {d.driver_code for d in race.drivers}
+            for d in doc.drivers:
+                lists = (d.t_ms, d.speed, d.throttle, d.brake, d.gear, d.rpm, d.drs)
+                if d.code not in codes:
+                    found.append(f"{where} {d.code}: not in the race")
+                elif any(len(x) != doc.n for x in lists):
+                    found.append(f"{where} {d.code}: channel length is not {doc.n}")
+                elif any(b < a for a, b in zip(d.t_ms, d.t_ms[1:], strict=False)):
+                    found.append(f"{where} {d.code}: clock goes backwards")
+                elif not 100 <= max(d.speed) <= 400 or min(d.speed) < 0 or max(d.throttle) > 100:
+                    found.append(f"{where} {d.code}: impossible readings")
+        return found
+
     def _ratings_problems(self) -> list[str]:
         ratings = self.load_ratings()
         if ratings is None:
@@ -267,6 +376,65 @@ class Publisher:
                 found.append(f"ratings: history missing for {r.code}")
             if abs((r.driver - 1500) + (r.car - 1500) - (r.overall - 1500)) > 2:  # rounding only
                 found.append(f"ratings {r.code}: overall is not driver + car")
+        return found
+
+    def _predictions_problems(self) -> list[str]:
+        root = self.root / "predictions"
+        if not root.exists():
+            return []
+        found: list[str] = []
+        for name in ("next.json", "championship.json", "model.json", "review.json"):
+            if not (root / name).exists():
+                found.append(f"predictions: {name} missing")
+        if found:
+            return found
+        nxt = NextForecasts.model_validate_json((root / "next.json").read_text(encoding="utf-8"))
+        for race in nxt.races:
+            where = f"predictions {race.season} R{race.round}"
+            for field, expected in (("win", 1.0), ("podium", 3.0)):
+                total = sum(getattr(d, field) for d in race.drivers)
+                if abs(total - expected) > 0.05:
+                    found.append(f"{where}: {field} probabilities add up to {total:.3f}, not {expected}")
+            if any(not 0.0 <= d.win <= d.podium + 1e-9 <= 1.0 + 1e-9 for d in race.drivers):
+                found.append(f"{where}: a win chance exceeds the podium chance, or a probability is out of range")
+        title = TitleForecast.model_validate_json((root / "championship.json").read_text(encoding="utf-8"))
+        if abs(sum(d.champion for d in title.drivers) - 1.0) > 0.02:
+            found.append("predictions: driver title odds do not add up to 1")
+        if abs(sum(c.champion for c in title.constructors) - 1.0) > 0.02:
+            found.append("predictions: constructor title odds do not add up to 1")
+        if title.races_left != len(title.remaining):
+            found.append("predictions: races_left does not match the remaining races")
+        return found
+
+    def _derived_problems(self) -> list[str]:
+        found: list[str] = []
+        for season in self.published_seasons():
+            for path in (self.root / "seasons" / str(season)).glob("race_*.json"):
+                doc = self.load_race(season, int(path.stem.split("_")[1]))
+                if doc is None:
+                    continue
+                where = f"{season} R{doc.round}"
+                if doc.excitement and not 0.0 <= doc.excitement.score <= 10.0:
+                    found.append(f"{where}: excitement score out of range")
+                quali = [d.quali_position for d in doc.drivers if d.quali_position is not None]
+                if quali and len(quali) != len(set(quali)):
+                    found.append(f"{where}: duplicate qualifying positions")
+                if any(d.quali_gap_pct is not None and d.quali_gap_pct < 0 for d in doc.drivers):
+                    found.append(f"{where}: a driver is faster than the pole lap")
+                if doc.tyre_model and not -0.12 <= doc.tyre_model.fuel_s_per_lap <= 0.0:
+                    found.append(f"{where}: tyre model has an impossible fuel effect")
+            duels_path = self.root / "duels" / f"{season}.json"
+            if duels_path.exists():
+                for duel in DuelsDoc.model_validate_json(duels_path.read_text(encoding="utf-8")).duels:
+                    if duel.qualifying.a + duel.qualifying.b > duel.qualifying.races:
+                        found.append(f"duels {season} {duel.a.code}/{duel.b.code}: more qualifying wins than sessions")
+                    if duel.race.a + duel.race.b > duel.race.races:
+                        found.append(f"duels {season} {duel.a.code}/{duel.b.code}: more race wins than races")
+        index = self.root / "circuits" / "index.json"
+        if index.exists():
+            for entry in json.loads(index.read_text(encoding="utf-8")):
+                if not (self.root / "circuits" / f"{entry['slug']}.json").exists():
+                    found.append(f"circuits: {entry['slug']} listed but missing")
         return found
 
     def content_hash(self) -> str:
@@ -311,6 +479,26 @@ class Publisher:
         return content_hash
 
 
+def _carry_extras(old: RaceDoc, new: RaceDoc) -> RaceDoc:
+    """A rebuild must not erase qualifying and sprint results, which come from a different source and stage."""
+    prior = {d.driver_code: d for d in old.drivers}
+    drivers = []
+    for d in new.drivers:
+        o = prior.get(d.driver_code)
+        if o is not None and d.quali_position is None and d.sprint_position is None:
+            d = d.model_copy(
+                update={
+                    "quali_position": o.quali_position,
+                    "quali_gap_pct": o.quali_gap_pct,
+                    "sprint_position": o.sprint_position,
+                    "sprint_points": o.sprint_points,
+                }
+            )
+        drivers.append(d)
+    extras = {"excitement": old.excitement} if new.excitement is None and old.excitement is not None else {}
+    return new.model_copy(update={"drivers": drivers, **extras})
+
+
 def _structural_problems(season: int, rnd: int, doc: RaceDoc) -> list[str]:
     """Internal-consistency checks on one race document."""
     found: list[str] = []
@@ -338,6 +526,13 @@ def _structural_problems(season: int, rnd: int, doc: RaceDoc) -> list[str]:
                 found.append(f"{where} {d.driver_code}: compound_source set on unknown compound")
         if d.grid is not None and d.pit_lane_start:
             found.append(f"{where} {d.driver_code}: grid and pit_lane_start both set")
+        if d.gap_to_winner_s is not None and (d.gap_to_winner_s <= 0 or d.finish in (None, 1)):
+            found.append(f"{where} {d.driver_code}: impossible gap to the winner")
+        if d.lap_positions and any(p is not None and not 1 <= p <= len(doc.drivers) + 2 for p in d.lap_positions):
+            found.append(f"{where} {d.driver_code}: lap position outside the field")
+    gaps = [(d.finish, d.gap_to_winner_s) for d in doc.drivers if d.gap_to_winner_s is not None and d.finish]
+    if any(b[1] < a[1] for a, b in zip(sorted(gaps), sorted(gaps)[1:], strict=False)):
+        found.append(f"{where}: gaps to the winner do not increase with finishing position")
     return found
 
 
@@ -349,8 +544,13 @@ def _rating_summary(row, ratings) -> RatingSummary | None:
     if row is None or ratings is None:
         return None
     return RatingSummary(
-        overall=row.overall, driver=row.driver, car=row.car, rank=row.rank, races=row.races,
-        provisional=row.provisional, as_of=f"{ratings.season} R{ratings.round}",
+        overall=row.overall,
+        driver=row.driver,
+        car=row.car,
+        rank=row.rank,
+        races=row.races,
+        provisional=row.provisional,
+        as_of=f"{ratings.season} R{ratings.round}",
     )
 
 

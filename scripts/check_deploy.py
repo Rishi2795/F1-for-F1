@@ -127,6 +127,15 @@ def run(base: str, origin: str | None, expect_season: int | None) -> int:
     ratings = request(f"{api}/ratings")
     rated = (ratings.data() or {}).get("ratings", []) if ratings.status == 200 else []
     r.check(len(rated) >= 10, "driver and car ratings are served", f"{len(rated)} drivers")
+    forecast = request(f"{api}/predictions/next")
+    races = (forecast.data() or {}).get("races", []) if forecast.status == 200 else []
+    r.check(forecast.status in (200, 404), "race forecasts are served (or cleanly absent)", f"{len(races)} race(s)")
+    title = request(f"{api}/predictions/championship")
+    r.check(title.status in (200, 404), "championship forecast is served (or cleanly absent)")
+    circuits = request(f"{api}/circuits")
+    r.check(circuits.status in (200, 404), "circuit profiles are served (or cleanly absent)")
+    duels = request(f"{api}/seasons/2024/duels")
+    r.check(duels.status in (200, 404), "teammate duels are served (or cleanly absent)")
     card = request(f"{api}/ratings/model")
     r.check(card.status == 200 and "metrics" in (card.data() or {}), "the ratings model card (accuracy report) is served")
 

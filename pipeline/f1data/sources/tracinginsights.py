@@ -50,6 +50,9 @@ class Lap:
     track_temp: float | None
     humidity: float | None
     rainfall: bool | None
+    session_end: float | None = None  # seconds into the session when the lap was completed
+    sectors: tuple[float | None, float | None, float | None] = (None, None, None)
+    top_speed: float | None = None  # speed-trap reading, km/h (the highest of the lap's trap and finish-line speeds)
 
 
 @dataclass
@@ -198,6 +201,8 @@ def parse_laps(payload: dict[str, Any]) -> list[Lap]:
     life_c, fresh_c, pos_c, status_c = col("life"), col("fresh"), col("pos"), col("status")
     pin_c, pout_c, del_c, team_c = col("pin"), col("pout"), col("del"), col("team")
     at_c, tt_c, h_c, r_c = col("wAT"), col("wTT"), col("wH"), col("wR")
+    end_c, s1_c, s2_c, s3_c = col("sesT"), col("s1"), col("s2"), col("s3")
+    vi1_c, vi2_c, vfl_c, vst_c = col("vi1"), col("vi2"), col("vfl"), col("vst")
 
     rows: list[Lap] = []
     for i in range(n):
@@ -227,6 +232,12 @@ def parse_laps(payload: dict[str, Any]) -> list[Lap]:
                 track_temp=to_float(tt_c[i]),
                 humidity=to_float(h_c[i]),
                 rainfall=to_bool(r_c[i]),
+                session_end=to_float(end_c[i]),
+                sectors=(to_float(s1_c[i]), to_float(s2_c[i]), to_float(s3_c[i])),
+                top_speed=max(
+                    (v for v in map(to_float, (vst_c[i], vfl_c[i], vi1_c[i], vi2_c[i])) if v is not None),
+                    default=None,
+                ),
             )
         )
     rows.sort(key=lambda r: r.lap)

@@ -63,6 +63,7 @@ def run_ingest(
     skip_sync: bool,
     use_openf1: bool = True,
     today: date | None = None,
+    models: bool = True,
 ) -> int:
     today = today or datetime.now(UTC).date()
     audit, publisher = AuditLog(), Publisher()
@@ -106,6 +107,7 @@ def run_ingest(
                     doc = _build_one(entry, results.get(entry.round, []), jolpica, tracing, openf1, events,
                                      season, ttl, refresh, use_openf1)
                     outcome = publisher.publish_race(doc)
+                    _publish_laps(publisher, tracing, events, entry, season, doc)
                     tally[outcome] += 1
                     if outcome == "kept_previous":
                         doc = existing
@@ -147,11 +149,29 @@ def run_ingest(
     finished = {int(y) for y, b in coverage["seasons"].items() if b["expected_rounds"] and not b["scheduled"]}
     _ingest_champions(jolpica, publisher, today, finished, refresh)
     drivers = publisher.rebuild_drivers()
-    run_ratings(publisher, audit)
+    if models:
+        run_ratings(publisher, audit)
+        run_predict(publisher, audit)
     digest = publisher.publish_manifest({"upstream_commits": upstream})
     audit.record("publish.bundle", str(config.PUBLISHED_DIR.name), "success",
                  details={"content_sha256": digest, "drivers": drivers, "seasons": sorted(blocks)})
     return 1 if failures else 0
+
+
+def _publish_laps(publisher, tracing, events, entry, season, doc) -> None:
+    """The per-lap file for a race, if lap data exists (a separate, lazily fetched file)."""
+    from .lapdoc import build_lap_doc
+
+    folder = _match_event(entry, events)
+    if not folder or not doc.drivers:
+        return
+    try:
+        laps = tracing.race(season, folder)
+    except F1DataError:
+        return
+    lap_doc = build_lap_doc(season, entry.round, laps.drivers, laps.total_laps)
+    if lap_doc is not None:
+        publisher.write_laps(lap_doc)
 
 
 def run_ratings(publisher: Publisher, audit: AuditLog) -> None:
@@ -173,6 +193,135 @@ def run_ratings(publisher: Publisher, audit: AuditLog) -> None:
         "ratings.build", "ratings", "success",
         details={"version": card["version"], "drivers": rated, "test_pairs": card["test"]["pairs"],
                  "log_loss": {k: v["log_loss"] for k, v in card["metrics"].items()}},
+    )
+
+
+def run_predict(publisher: Publisher, audit: AuditLog) -> None:
+    """Fit the forecast model on the published races, backtest it, and publish forecasts for the races to come."""
+    from .predict.publish import publish_forecasts
+    from .predict.report import build
+
+    built = build(publisher)
+    counts = publish_forecasts(publisher, built)
+    card = built["card"]
+    best = card["variants"][card["forecast_variant"]]
+    log.info(
+        "forecast: %d upcoming race(s), %d title contenders; winner log loss %.3f vs %.3f for a random pick",
+        counts["races"], counts["title_drivers"], best["winner_log_loss"], card["uniform_winner_log_loss"],
+    )
+    audit.record(
+        "forecast.build", "predictions", "success",
+        details={"version": card["version"], **counts, "winner_log_loss": best["winner_log_loss"]},
+    )
+
+
+def run_refresh(seasons: list[int], skip_sync: bool, refresh: bool) -> int:
+    """Everything, in the right order: results, qualifying/sprints, derived stats, models, then the safety checks.
+
+    One command for a scheduled job or a laptop. It stops with a non-zero exit code if any gate fails, so a bad
+    refresh is never published.
+    """
+    audit = AuditLog()
+    code = run_ingest(seasons, None, refresh, skip_sync, models=False)
+    run_enrich(seasons, refresh)
+    run_telemetry_step(seasons, limit=REFRESH_TELEMETRY_LIMIT)
+    run_replay_step(seasons, limit=REFRESH_REPLAY_LIMIT)
+    run_derive(audit)
+    publisher = Publisher()
+    run_ratings(publisher, audit)
+    run_predict(publisher, audit)
+    publisher.publish_manifest({})
+    problems = publisher.validate()
+    for problem in problems:
+        log.error("data problem: %s", problem)
+    ok, count, problem = AuditLog().verify()
+    if not ok:
+        log.error("audit chain BROKEN after %d entries: %s", count, problem)
+    log.info("refresh finished: %s", "healthy" if not problems and ok and not code else "NEEDS ATTENTION")
+    return 0 if not problems and ok and not code else 1
+
+
+REFRESH_TELEMETRY_LIMIT = 3  # newest races only, so a scheduled refresh stays quick
+
+
+REFRESH_REPLAY_LIMIT = 2  # the newest races only
+
+
+def run_replay_step(seasons: list[int], limit: int = REFRESH_REPLAY_LIMIT) -> int:
+    """Real-position replay data (OpenF1, 2023+) for the newest races. A source outage never fails the refresh."""
+    from .replay import run_replay
+
+    audit = AuditLog()
+    publisher = Publisher()
+    try:
+        written = run_replay(publisher, seasons, limit=limit)
+    except F1DataError as exc:
+        log.error("replay data unavailable (%s)", exc)
+        audit.record("replay.bundle", "published", "failure", reason=str(exc))
+        return 0
+    publisher.publish_manifest({})
+    audit.record("replay.bundle", "published", "success", details={"seasons": seasons, "files_written": written})
+    return written
+
+
+def run_telemetry_step(seasons: list[int], limit: int | None = None) -> int:
+    """Fastest-lap car data (OpenF1, 2023+) for races that lack it. A source outage never fails the refresh."""
+    from .telemetry import run_telemetry
+
+    audit = AuditLog()
+    publisher = Publisher()
+    try:
+        written = run_telemetry(publisher, seasons, limit=limit)
+    except F1DataError as exc:
+        log.error("telemetry unavailable (%s)", exc)
+        audit.record("telemetry.bundle", "published", "failure", reason=str(exc))
+        return 0
+    publisher.publish_manifest({})
+    audit.record("telemetry.bundle", "published", "success", details={"seasons": seasons, "files_written": written})
+    return written
+
+
+def run_enrich(seasons: list[int], refresh: bool, today: date | None = None) -> None:
+    """Add qualifying and sprint results (needs the network) to the races already published."""
+    from .extras import enrich_season
+
+    today = today or datetime.now(UTC).date()
+    publisher, jolpica, audit = Publisher(), JolpicaSource(), AuditLog()
+    total = 0
+    for season in seasons:
+        ttl = config.CURRENT_SEASON_TTL if season >= today.year else None
+        try:
+            quali = jolpica.qualifying(season, ttl=ttl, refresh=refresh)
+            sprint = jolpica.sprints(season, ttl=ttl, refresh=refresh) if season >= 2021 else {}
+        except F1DataError as exc:
+            log.error("season %d: qualifying/sprint unavailable (%s)", season, exc)
+            audit.record("enrich.season", f"season/{season}", "failure", reason=str(exc))
+            continue
+        total += enrich_season(publisher, season, quali, sprint)
+    from .maps import build_outlines
+
+    outlines = build_outlines(publisher)
+    publisher.rebuild_drivers()
+    publisher.publish_manifest({})
+    audit.record(
+        "enrich.bundle", "published", "success",
+        details={"seasons": seasons, "files_updated": total, "outlines_added": outlines},
+    )
+
+
+def run_derive(audit: AuditLog) -> None:
+    """Excitement scores, teammate duels and circuit profiles, worked out from the published races (offline)."""
+    from .derive import build_circuits, build_duels, build_excitement, build_team_pace
+
+    publisher = Publisher()
+    scored = build_excitement(publisher)
+    duels = build_duels(publisher)
+    build_team_pace(publisher)
+    circuits = build_circuits(publisher)  # after excitement: it reports average excitement per circuit
+    publisher.publish_manifest({})
+    audit.record(
+        "derive.build", "derived", "success",
+        details={"races_scored": scored, "duels": duels, "circuits": circuits},
     )
 
 
@@ -274,6 +423,21 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("verify-audit", help="check the audit log hash chain")
     sub.add_parser("validate", help="validate the published data bundle (CI data-quality gate)")
     sub.add_parser("ratings", help="rebuild driver and car ratings from the published races")
+    enrich = sub.add_parser("enrich", help="add qualifying and sprint results to published races (needs network)")
+    enrich.add_argument("--seasons", default=None)
+    enrich.add_argument("--refresh", action="store_true")
+    refresh = sub.add_parser("refresh", help="the whole pipeline in order (what the scheduled job runs)")
+    refresh.add_argument("--seasons", default=None, help="default: the current season")
+    refresh.add_argument("--skip-sync", action="store_true")
+    refresh.add_argument("--refresh", action="store_true", help="ignore caches and re-fetch")
+    tel = sub.add_parser("telemetry", help="fastest-lap car data for published races that lack it (needs network)")
+    tel.add_argument("--seasons", default=None, help="default: 2023 to the current season")
+    tel.add_argument("--limit", type=int, default=None, help="at most this many races, newest first")
+    rep = sub.add_parser("replay", help="real-position replay data for the newest races (needs network)")
+    rep.add_argument("--seasons", default=None, help="default: 2023 to the current season")
+    rep.add_argument("--limit", type=int, default=REFRESH_REPLAY_LIMIT, help="how many of the newest races (default 2)")
+    sub.add_parser("derive", help="excitement, teammate duels and circuit profiles from the published races")
+    sub.add_parser("predict", help="rebuild race and championship forecasts from the published races")
     parser.add_argument("--log-level", default=None)
     args = parser.parse_args(argv)
     setup_logging(args.log_level)
@@ -285,6 +449,29 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         log.error("audit chain BROKEN after %d entries: %s", count, problem)
         return 2
+    if args.command == "enrich":
+        seasons = _parse_seasons(args.seasons) if args.seasons else list(range(2020, config.DEFAULT_LAST_SEASON + 1))
+        run_enrich(seasons, args.refresh)
+        return 0
+    if args.command == "refresh":
+        seasons = _parse_seasons(args.seasons) if args.seasons else [config.DEFAULT_LAST_SEASON]
+        return run_refresh(seasons, args.skip_sync, args.refresh)
+    if args.command == "telemetry":
+        seasons = _parse_seasons(args.seasons) if args.seasons else list(range(2023, config.DEFAULT_LAST_SEASON + 1))
+        run_telemetry_step(seasons, limit=args.limit)
+        return 0
+    if args.command == "replay":
+        seasons = _parse_seasons(args.seasons) if args.seasons else list(range(2023, config.DEFAULT_LAST_SEASON + 1))
+        run_replay_step(seasons, limit=args.limit)
+        return 0
+    if args.command == "derive":
+        run_derive(AuditLog())
+        return 0
+    if args.command == "predict":
+        publisher = Publisher()
+        run_predict(publisher, AuditLog())
+        publisher.publish_manifest({})
+        return 0
     if args.command == "ratings":
         publisher = Publisher()
         run_ratings(publisher, AuditLog())

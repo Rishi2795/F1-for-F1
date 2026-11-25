@@ -40,6 +40,60 @@ def get_standings(request: Request, year: Year, store: PublishedStore = Depends(
     return json_response(request, blob)
 
 
+@router.api_route("/{year}/team-pace", methods=["GET", "HEAD"])
+def get_team_pace(request: Request, year: Year, store: PublishedStore = Depends(get_store)):
+    """Each team's race pace round by round, as a gap to the quickest car."""
+    blob = store.get("teampace", f"{year}.json")
+    if blob is None:
+        raise not_available(f"Team pace for {year}")
+    return json_response(request, blob)
+
+
+@router.api_route("/{year}/duels", methods=["GET", "HEAD"])
+def get_duels(request: Request, year: Year, store: PublishedStore = Depends(get_store)):
+    """Teammate head-to-heads for a season: qualifying, race results, race pace and points."""
+    blob = store.get("duels", f"{year}.json")
+    if blob is None:
+        raise not_available(f"Teammate duels for {year}")
+    return json_response(request, blob)
+
+
+@router.api_route("/{year}/races/{round_number}/laps", methods=["GET", "HEAD"])
+def get_laps(request: Request, year: Year, round_number: Round, store: PublishedStore = Depends(get_store)):
+    """Lap-by-lap detail for the race lab: lap times, gap to the leader, flags, sector bests, top speeds, undercuts."""
+    blob = store.get("laps", str(year), f"{round_number}.json")
+    if blob is None:
+        raise not_available(f"Lap data for {year} round {round_number}")
+    return json_response(request, blob)
+
+
+@router.api_route("/{year}/races/{round_number}/telemetry", methods=["GET", "HEAD"])
+def get_telemetry(request: Request, year: Year, round_number: Round, store: PublishedStore = Depends(get_store)):
+    """Each driver's fastest lap laid along the circuit: speed, throttle, brake, gear, RPM and DRS at 240 points."""
+    blob = store.get("telemetry", str(year), f"{round_number}.json")
+    if blob is None:
+        raise not_available(f"Telemetry for {year} round {round_number}")
+    return json_response(request, blob)
+
+
+@router.api_route("/{year}/races/{round_number}/replay", methods=["GET", "HEAD"])
+def get_replay(request: Request, year: Year, round_number: Round, store: PublishedStore = Depends(get_store)):
+    """Where every car was once a second for the whole race, with its sensors (newest races only)."""
+    blob = store.get("replay", str(year), f"{round_number}.json")
+    if blob is None:
+        raise not_available(f"Replay data for {year} round {round_number}")
+    return json_response(request, blob)
+
+
+@router.api_route("/{year}/races/{round_number}/incidents", methods=["GET", "HEAD"])
+def get_incidents(request: Request, year: Year, round_number: Round, store: PublishedStore = Depends(get_store)):
+    """Race-control messages that explain the race: collisions, stopped cars, penalties, safety cars."""
+    blob = store.get("incidents", str(year), f"{round_number}.json")
+    if blob is None:
+        raise not_available(f"Incident messages for {year} round {round_number}")
+    return json_response(request, blob)
+
+
 @router.api_route("/{year}/races/{round_number}", methods=["GET", "HEAD"])
 def get_race(request: Request, year: Year, round_number: Round, store: PublishedStore = Depends(get_store)):
     blob = store.get("seasons", str(year), f"race_{round_number}.json")

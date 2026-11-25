@@ -18,7 +18,7 @@ from app.core.errors import install_error_handlers
 from app.core.logging_setup import setup_logging
 from app.core.store import PublishedStore
 from app.middleware import RequestContextMiddleware
-from app.routers import drivers, meta, ratings, seasons
+from app.routers import circuits, drivers, meta, predictions, ratings, seasons
 
 log = logging.getLogger("app")
 
@@ -81,7 +81,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         seasons_available = store.seasons()
         return {"status": "ok" if seasons_available else "degraded", "seasons": seasons_available}
 
-    for router in (seasons.router, drivers.router, ratings.router, meta.router):
+    for router in (seasons.router, drivers.router, ratings.router, predictions.router, circuits.router, meta.router):
         app.include_router(router, prefix="/api")
         # Old frontend builds used a base URL without /api; keep until Vercel env is confirmed.
         app.include_router(router, include_in_schema=False)

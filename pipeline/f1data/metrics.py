@@ -240,3 +240,85 @@ def derive_race_meta(
         elif avg_longest <= 15:
             tags.append("Short Stints")
     return recipe, tags
+
+
+# -- race detail ---------------------------------------------------------------
+def best_lap(laps: list[Lap]) -> float | None:
+    """Quickest valid lap (not deleted, not a pit lap, lap 1 excluded). None when there is none."""
+    times = [
+        lap.time_s
+        for lap in laps
+        if lap.time_s is not None and lap.lap > 1 and not lap.deleted and not lap.pit_in and not lap.pit_out
+    ]
+    return min(times) if times else None
+
+
+def median_clean_lap(laps: list[Lap]) -> float | None:
+    times = clean_lap_times(laps)
+    return round(statistics.median(times), 3) if len(times) >= MIN_CLEAN_LAPS else None
+
+
+def lap_positions(laps: list[Lap], total_laps: int | None) -> list[int | None] | None:
+    """Position at the end of every lap, index 0 = lap 1. A lap without a position stays None."""
+    by_lap = {lap.lap: lap.position for lap in laps if lap.position}
+    if not by_lap:
+        return None
+    last = max(by_lap.keys() | {total_laps or 0})
+    return [by_lap.get(n) for n in range(1, last + 1)]
+
+
+def lead_changes(positions: list[list[int | None]]) -> int | None:
+    """How many times the race leader changed hands between consecutive laps (pit-cycle swaps count)."""
+    if not positions:
+        return None
+    laps = max(len(p) for p in positions)
+    leaders: list[int] = []
+    for n in range(laps):
+        for index, p in enumerate(positions):
+            if n < len(p) and p[n] == 1:
+                leaders.append(index)
+                break
+    return sum(1 for a, b in zip(leaders, leaders[1:], strict=False) if a != b) if len(leaders) > 1 else None
+
+
+def _slope(points: list[tuple[int, float]]) -> float:
+    xs, ys = [p[0] for p in points], [p[1] for p in points]
+    mx, my = statistics.fmean(xs), statistics.fmean(ys)
+    var = sum((x - mx) ** 2 for x in xs)
+    return sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=True)) / var if var else 0.0
+
+
+def tyre_wear(all_laps: list[list[Lap]], min_clean: int = 8, min_stints: int = 3):
+    """Median lap-time slope against tyre age per compound, from clean laps of whole stints.
+
+    Net of fuel burn (cars get lighter), hence a lower bound on real wear. Compounds seen in fewer
+    than ``min_stints`` stints are left out rather than estimated from noise.
+    """
+    slopes: dict[str, list[float]] = {}
+    for laps in all_laps:
+        by_stint: dict[tuple[int | None, str | None], list[Lap]] = {}
+        for lap in laps:
+            if lap.compound and lap.tyre_life is not None and lap.stint is not None:
+                by_stint.setdefault((lap.stint, lap.compound), []).append(lap)
+        for (_, compound), stint_laps in by_stint.items():
+            clean = clean_lap_times(stint_laps)
+            if len(clean) < min_clean:
+                continue
+            keep = {t for t in clean}
+            points = [
+                (lap.tyre_life, lap.time_s)
+                for lap in stint_laps
+                if lap.time_s in keep
+                and lap.lap > 1
+                and lap.track_status == _GREEN
+                and not lap.pit_in
+                and not lap.pit_out
+                and not lap.deleted
+            ]
+            if len(points) >= min_clean:
+                slopes.setdefault(compound, []).append(_slope(points))
+    return [
+        (compound, round(statistics.median(values), 3), len(values))
+        for compound, values in sorted(slopes.items())
+        if len(values) >= min_stints and compound in {"SOFT", "MEDIUM", "HARD"}
+    ]

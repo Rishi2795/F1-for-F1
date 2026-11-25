@@ -6,14 +6,19 @@ import statistics
 from collections import Counter
 from dataclasses import dataclass, field
 
-from . import metrics
+from . import metrics, tyres
 from .logging_setup import get_logger
 from .models import (
+    Analysis,
     Derived,
     DriverRace,
+    FastestLap,
+    LapRef,
+    PitStop,
     Quality,
     RaceDoc,
     Stint,
+    TyreWear,
     Weather,
     Winner,
 )
@@ -41,9 +46,14 @@ def _stints_from_openf1(items: list[OpenF1Stint], total_laps: int | None) -> lis
             continue
         out.append(
             Stint(
-                number=i, compound=s.compound, compound_source="openf1" if s.compound else None,
-                lap_start=s.lap_start, lap_end=end, laps=end - s.lap_start + 1,
-                tyre_age_start=s.tyre_age_at_start, fresh=None,
+                number=i,
+                compound=s.compound,
+                compound_source="openf1" if s.compound else None,
+                lap_start=s.lap_start,
+                lap_end=end,
+                laps=end - s.lap_start + 1,
+                tyre_age_start=s.tyre_age_at_start,
+                fresh=None,
             )
         )
     return out
@@ -147,6 +157,18 @@ def build_race(inputs: RaceInputs) -> RaceDoc:
 
     team_lookup = _team_lookup(inputs.results, laps)
 
+    # Per-driver detail: pace from clean laps, official gaps and fastest laps, pit-stop log.
+    winner_ms = winner_row.race_time_ms if winner_row else None
+    winner_laps = winner_row.laps if winner_row else None
+    medians = {c: metrics.median_clean_lap(ls) for c, ls in laps_by_code.items()}
+    ranked = sorted((v, c) for c, v in medians.items() if v is not None)
+    pace_rank = {c: i + 1 for i, (_, c) in enumerate(ranked)}
+    quickest_median = ranked[0][0] if ranked else None
+    stops_by_driver: dict[str, list[PitStop]] = {}
+    for stop in inputs.pit_stops:
+        entry_ = PitStop(stop=stop.stop, lap=stop.lap, duration_s=stop.duration_s)
+        stops_by_driver.setdefault(stop.driver_id, []).append(entry_)
+
     for row in inputs.results:
         dl = _find_laps(row, laps)
         stints = stints_by_code[row.driver_code]
@@ -154,14 +176,11 @@ def build_race(inputs: RaceInputs) -> RaceDoc:
         official = pit_counts.get(row.driver_id, 0) if have_pit_data else None
         if stops is not None and official is not None and stops != official:
             warnings.append(f"stops_mismatch:{row.driver_code}(stints={stops},official={official})")
-        gained = (
-            row.grid - row.finish
-            if row.grid is not None and row.finish is not None and row.classified
-            else None
-        )
+        gained = row.grid - row.finish if row.grid is not None and row.finish is not None and row.classified else None
         sequence = [s.compound or "UNKNOWN" for s in stints] if stints else None
         longest = max((s.laps for s in stints), default=None) if stints else None
         team, color = team_lookup(row)
+        on_lead_lap = row.laps == winner_laps and row.classified and row.status == "Finished"
         drivers.append(
             DriverRace(
                 driver_code=row.driver_code,
@@ -186,9 +205,38 @@ def build_race(inputs: RaceInputs) -> RaceDoc:
                 consistency_index=metrics.consistency_index(dl.laps) if dl else None,
                 strategy_risk=metrics.strategy_risk(stops, gained, avg_stops),
                 strategy_simulation=metrics.strategy_simulation(stops, gained, winner_stops),
+                # Jolpica times a lapped car against its own lap count, so a time is only meaningful (and
+                # only published) for cars on the winner's lap.
+                race_time_s=round(row.race_time_ms / 1000, 3) if row.race_time_ms and on_lead_lap else None,
+                gap_to_winner_s=(
+                    round((row.race_time_ms - winner_ms) / 1000, 3)
+                    if row.race_time_ms and winner_ms and row.finish and row.finish > 1 and on_lead_lap
+                    else None
+                ),
+                fastest_lap=(
+                    FastestLap(
+                        rank=row.fastest_rank,
+                        lap=row.fastest_lap,
+                        time_s=row.fastest_time_s,
+                        avg_speed_kph=row.fastest_speed_kph,
+                    )
+                    if row.fastest_time_s is not None
+                    else None
+                ),
+                pit_stops=stops_by_driver.get(row.driver_id) if have_pit_data else None,
+                best_lap_s=metrics.best_lap(dl.laps) if dl else None,
+                median_lap_s=medians.get(row.driver_code),
+                pace_rank=pace_rank.get(row.driver_code),
+                pace_gap_s=(
+                    round(medians[row.driver_code] - quickest_median, 3)
+                    if medians.get(row.driver_code) is not None and quickest_median is not None
+                    else None
+                ),
+                lap_positions=metrics.lap_positions(dl.laps, row.laps) if dl else None,
             )
         )
     drivers.sort(key=lambda d: (d.finish is None, d.finish or 0))
+    _drop_out_of_order_gaps(drivers)
 
     # --- race-level -----------------------------------------------------------
     winner = next((d for d in drivers if d.finish == 1), None)
@@ -203,11 +251,17 @@ def build_race(inputs: RaceInputs) -> RaceDoc:
     sc, vsc, red = metrics.track_status_laps(list(laps_by_code.values()))
     total_laps = (laps.total_laps if laps else None) or (winner.laps_completed if winner else None)
     derived = Derived(
-        winning_recipe=recipe, style_profile=tags, total_laps=total_laps,
-        safety_car_laps=sc, vsc_laps=vsc, red_flag=red,
+        winning_recipe=recipe,
+        style_profile=tags,
+        total_laps=total_laps,
+        safety_car_laps=sc,
+        vsc_laps=vsc,
+        red_flag=red,
     )
 
     weather = _weather(list(laps_by_code.values()))
+    tyre_model, strategy = _tyres(laps_by_code, drivers, total_laps, red)
+    analysis = _analysis(drivers, list(laps_by_code.values()))
 
     # --- quality --------------------------------------------------------------
     missing: list[str] = []
@@ -262,14 +316,15 @@ def build_race(inputs: RaceInputs) -> RaceDoc:
         country=entry.country,
         date=entry.date,
         winner=(
-            Winner(driver_code=winner.driver_code, driver_name=winner.driver_name, team=winner.team)
-            if winner
-            else None
+            Winner(driver_code=winner.driver_code, driver_name=winner.driver_name, team=winner.team) if winner else None
         ),
         drivers=drivers,
         derived=derived,
         weather=weather,
         quality=quality,
+        analysis=analysis,
+        tyre_model=tyre_model,
+        strategy_lab=strategy,
     )
 
 
@@ -287,3 +342,57 @@ def _weather(all_laps: list[list]) -> Weather | None:
         humidity_pct=round(statistics.fmean(hum), 1) if hum else None,
         rainfall=any(rain) if rain else None,
     )
+
+
+def _analysis(drivers: list[DriverRace], all_laps: list[list]) -> Analysis | None:
+    """Race-level highlights. Each part is None / empty when its inputs are missing."""
+    fastest = min(
+        (d for d in drivers if d.fastest_lap and d.fastest_lap.rank == 1 and d.fastest_lap.time_s is not None),
+        key=lambda d: d.fastest_lap.time_s,  # type: ignore[union-attr]
+        default=None,
+    )
+    pits = [(d, p) for d in drivers for p in (d.pit_stops or []) if p.duration_s is not None]
+    quickest_pit = min(pits, key=lambda dp: dp[1].duration_s, default=None)  # type: ignore[arg-type,return-value]
+    positions = [d.lap_positions for d in drivers if d.lap_positions]
+    wear = [TyreWear(compound=c, seconds_per_lap=v, stints=n) for c, v, n in metrics.tyre_wear(all_laps)]
+    result = Analysis(
+        fastest_lap=(
+            LapRef(driver_code=fastest.driver_code, lap=fastest.fastest_lap.lap, value_s=fastest.fastest_lap.time_s)  # type: ignore[union-attr,arg-type]
+            if fastest
+            else None
+        ),
+        fastest_pit=(
+            LapRef(driver_code=quickest_pit[0].driver_code, lap=quickest_pit[1].lap, value_s=quickest_pit[1].duration_s)  # type: ignore[arg-type]
+            if quickest_pit
+            else None
+        ),
+        lead_changes=metrics.lead_changes(positions),
+        tyre_wear=wear,
+    )
+    empty = result.fastest_lap is None and result.fastest_pit is None and result.lead_changes is None and not wear
+    return None if empty else result
+
+
+def _drop_out_of_order_gaps(drivers: list[DriverRace]) -> None:
+    """A gap must grow with finishing position. Where the upstream times disagree with the classification
+    (time penalties, lapped cars timed on their own lap count) the gap is dropped rather than shown wrong."""
+    ceiling = 0.0
+    for i, d in enumerate(drivers):
+        if d.gap_to_winner_s is None:
+            continue
+        if d.gap_to_winner_s < ceiling:
+            drivers[i] = d.model_copy(update={"gap_to_winner_s": None, "race_time_s": None})
+        else:
+            ceiling = d.gap_to_winner_s
+
+
+def _tyres(laps_by_code: dict[str, list], drivers: list[DriverRace], total_laps: int | None, red_flag: bool | None):
+    """Fit the race's tyre model and price alternative strategies; (None, None) when the data cannot support it."""
+    if not laps_by_code or not total_laps or red_flag:
+        return None, None  # a red flag lets everyone change tyres for free, which breaks the cost model
+    fitted = tyres.fit(laps_by_code)
+    if fitted is None:
+        return None, None
+    model, max_age = fitted
+    lab = tyres.strategy_lab(model, max_age, [(d.driver_code, d.stints or []) for d in drivers], total_laps)
+    return model, lab or None

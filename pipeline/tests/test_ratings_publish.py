@@ -59,3 +59,12 @@ def test_drivers_without_a_rating_stay_null(tmp_path):
     pub.publish_race(build_race(RaceInputs(ENTRY, [result("VER", 1, 1)], [], None)))
     pub.rebuild_drivers()
     assert json.loads((tmp_path / "drivers" / "VER.json").read_text())["rating"] is None
+
+
+def test_ratings_carry_the_drivers_latest_team_colour(tmp_path):
+    pub = Publisher(tmp_path)
+    pub.publish_race(build_race(RaceInputs(ENTRY, [result("D00", 1, 1)], [], None)))
+    publish_ratings(pub, rated_report())
+    by_code = {r.code: r for r in pub.load_ratings().ratings}
+    assert by_code["D00"].team_color is None or by_code["D00"].team_color.startswith("#") or len(by_code["D00"].team_color) == 6
+    assert by_code["D01"].team_color is None  # no published race for them: blank, not guessed

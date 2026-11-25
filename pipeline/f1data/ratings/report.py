@@ -40,6 +40,7 @@ LIMITATIONS = [
 def _winner_pick(snapshots: list[Snapshot], weights: list[float], transform: str) -> dict[str, dict[str, float]]:
     """How often each rule names the actual winner BEFORE the race, over the TEST races."""
     races = [s for s in snapshots if s.season in TEST_SEASONS and s.winner]
+
     def front(s: Snapshot, c: str) -> float:
         """Higher = better grid slot, on the same scale the model was fitted with."""
         return -math.log(s.grid[c]) if transform == "log" else -float(s.grid[c])
@@ -151,3 +152,11 @@ def build_report(races: list[RaceRecord]) -> dict:
         "limitations": LIMITATIONS,
     }
     return {"current": current, "history": run.history, "card": card}
+
+
+def params_from_card_or_default(card: dict | None):
+    """The tuned rating parameters from a published model card, or the search's starting point."""
+    from .evaluate import START
+    from .model import Params
+
+    return Params(**card["params"]) if card and "params" in card else START
