@@ -60,7 +60,7 @@ export default function StrategySim() {
 
   if (modelApi.loading || !model || !circuit || !setup) {
     return (
-      <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+      <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
         <div className="page space-y-10">
           <Head />
           {modelApi.error ? <ErrorState error={modelApi.error} onRetry={modelApi.reload} subject="simulator model" /> : <Skeleton className="h-96" />}
@@ -156,8 +156,8 @@ export default function StrategySim() {
   };
 
   return (
-    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
-      <div className="page space-y-14">
+    <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
+      <div className="page space-y-10">
         <Head />
 
         <Swap id={live ? "live" : "setup"}>

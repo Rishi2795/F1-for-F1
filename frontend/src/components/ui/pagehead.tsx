@@ -13,10 +13,10 @@ export function PageHead({ kicker, title, accent, intro, align = "left", aside, 
         REGISTRY // {kicker}
         {align === "center" && <span aria-hidden="true" className="h-2 w-2 bg-red-600" />}
       </p>
-      <h1 className="mt-4 text-5xl font-black uppercase italic leading-[0.95] tracking-tighter text-white md:text-7xl">
+      <h1 className="mt-3 text-4xl font-black uppercase italic leading-[0.95] tracking-tighter text-white md:text-5xl lg:text-6xl">
         {title} <span className="text-red-500">{accent}</span>
       </h1>
-      {intro && <p className="mt-4 text-lg text-zinc-300">{intro}</p>}
+      {intro && <p className="mt-3 text-base text-zinc-300 md:text-lg">{intro}</p>}
       {children}
     </div>
   );

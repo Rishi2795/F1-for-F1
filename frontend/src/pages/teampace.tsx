@@ -29,7 +29,7 @@ export default function TeamPace() {
   const y = (g: number) => M.t + (Math.min(g, cap) / cap) * (H - M.t - M.b);
 
   return (
-    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+    <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
       <div className="page space-y-10">
         <PageHead align="right" kicker="TEAM_PACE" title="Who has the" accent="quickest car?" intro="Race pace for every team, round by round: how far each car was from the quickest car that weekend, on clean laps. It shows who is improving, who is fading, and who only looked quick at one track." />
         {seasons.length > 0 && season && <SeasonChips seasons={seasons} value={season} onChange={(s) => { setPicked(s); setFocus(null); }} />}

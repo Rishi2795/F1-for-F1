@@ -8,7 +8,7 @@ import { readableOnDark } from "../../lib/color";
 export function DataTable({ caption, children }: { caption: string; children: ReactNode }) {
   return (
     // relative: keeps the screen-reader caption inside the scroll box; tabIndex: keyboard users can scroll it.
-    <div tabIndex={0} role="region" aria-label={caption} className="relative overflow-x-auto rounded-sm glass">
+    <div tabIndex={0} role="region" aria-label={caption} className="table-fit relative overflow-x-auto rounded-sm glass">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         {children}

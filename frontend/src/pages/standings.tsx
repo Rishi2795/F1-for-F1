@@ -127,9 +127,9 @@ export default function Standings() {
   const second = view.rows[1];
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-32 pt-16 text-zinc-200">
+    <div className="relative min-h-screen overflow-hidden pb-32 pt-10 md:pt-12 text-zinc-200">
 
-      <div className="page relative space-y-12">
+      <div className="page relative space-y-8 md:space-y-10">
         <header className="relative min-h-[12rem]">
           {/* The car: the site's own artwork. */}
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-6 hidden w-[36rem] md:block">
@@ -276,7 +276,7 @@ export default function Standings() {
           <h2 id="table-h" className="mb-4 text-2xl font-black uppercase italic tracking-tighter text-white md:text-3xl">
             {tab === "drivers" ? "Drivers' championship" : "Constructors' championship"}
           </h2>
-          <div className="overflow-hidden rounded-sm glass">
+          <div tabIndex={0} role="region" aria-label={`${tab === "drivers" ? "Drivers" : "Constructors"} standings table`} className="table-fit overflow-hidden rounded-sm glass">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">
                 {tab} standings after round {view.last.round} of {data.season}

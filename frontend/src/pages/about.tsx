@@ -115,7 +115,7 @@ export default function About() {
         initial={{ opacity: 0, x: -30 }}
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
-        className="lg:col-span-7 z-20 space-y-8 md:space-y-12"
+        className="lg:col-span-7 z-20 space-y-8 md:space-y-8 md:space-y-10"
       >
         <div className="space-y-6">
           <div className="flex items-center gap-4">
@@ -160,7 +160,7 @@ export default function About() {
         {/* Adjusted padding for mobile (p-6) vs desktop (p-14) */}
         <div className="relative bg-[#070707] border border-white/5 p-6 md:p-14 shadow-2xl">
           
-          <div className="space-y-10 md:space-y-14">
+          <div className="space-y-10 md:space-y-10">
             {[
               { label: "Minimum Weight", val: "798", unit: "kg" },
               { label: "Turbo RPM Limit", val: "125", unit: "k" },
@@ -425,7 +425,7 @@ export default function About() {
     {/* VERTICAL SPINE (Desktop Only for clean look) */}
     <div className="absolute left-[140px] top-0 bottom-0 w-px bg-white/10 hidden md:block" />
 
-    <div className="space-y-12 md:space-y-20">
+    <div className="space-y-12 md:space-y-8 md:space-y-10">
       {timelineData.map((item, idx) => (
         <div key={idx} className="relative group grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4 md:gap-16 items-start">
           

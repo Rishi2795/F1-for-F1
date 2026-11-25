@@ -23,8 +23,8 @@ export default function Forecast() {
   const favourite = upcoming?.drivers[0];
 
   return (
-    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
-      <div className="page space-y-14">
+    <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
+      <div className="page space-y-10">
         <PageHead
           align="split"
           kicker="FORECAST"

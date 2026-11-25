@@ -261,3 +261,33 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .sim-rain, .sim-pulse, .sim-checker { animation: none; }
 }
+
+/* Long tables fit one screen on a laptop: the table scrolls inside its frame and keeps its header in view. */
+@media (min-width: 1024px) {
+  .table-fit {
+    max-height: calc(100dvh - 9rem);
+    overflow-y: auto;
+  }
+  .table-fit thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #0a0a0a;
+  }
+}
+
+/* Fluid scale: everything sized in rem follows the screen. A little smaller than the browser default on laptops (where the
+   old sizes were large), larger again on big displays, and comfortably readable on phones. */
+html {
+  font-size: 15px;
+}
+@media (min-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+@media (min-width: 1024px) {
+  html {
+    font-size: clamp(13.5px, 0.2vw + 11.3px, 15.5px);
+  }
+}

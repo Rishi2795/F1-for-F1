@@ -30,8 +30,8 @@ export default function Schedule() {
   const shown = list.filter((r) => filter === "all" || (filter === "upcoming" ? r.data_status === "scheduled" : r.data_status !== "scheduled"));
 
   return (
-    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
-      <div className="page space-y-12">
+    <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
+      <div className="page space-y-8 md:space-y-10">
         <PageHead kicker="CALENDAR" title="The season" accent="schedule" intro="Every round, the weekend timetable in your own time zone, and a forecast for what is still to come." />
 
         {seasons.data && season && <SeasonChips seasons={seasons.data.seasons} value={season} onChange={(s) => { setPicked(s); setFilter("all"); }} />}
@@ -50,6 +50,7 @@ export default function Schedule() {
                 ))}
               </div>
             </div>
+            <div className="grid gap-x-10 gap-y-6 xl:grid-cols-2">
             {groupByMonth(shown).map((m) => (
               <div key={m.key}>
                 <h3 className="mb-2 font-mono text-[10px] uppercase tracking-[0.35em] text-zinc-400">{m.label}</h3>
@@ -58,7 +59,7 @@ export default function Schedule() {
                     const upcoming = r.data_status === "scheduled";
                     const fav = forecasts.data?.races.find((f) => f.round === r.round && f.season === r.season)?.drivers[0];
                     return (
-                      <li key={r.round} className={`grid grid-cols-[2.5rem_1fr_auto] items-center gap-x-4 gap-y-1 py-4 sm:grid-cols-[3rem_9rem_1fr_auto] ${r.round === next?.round ? "bg-white/[0.04]" : ""}`}>
+                      <li key={r.round} className={`grid grid-cols-[2.5rem_1fr_auto] items-center gap-x-4 gap-y-1 py-3 sm:grid-cols-[2.5rem_8rem_1fr_auto] ${r.round === next?.round ? "bg-white/[0.04]" : ""}`}>
                         <span className="font-serif text-2xl text-zinc-400 sm:text-3xl">{String(r.round).padStart(2, "0")}</span>
                         <span className="col-start-2 font-mono text-xs uppercase tracking-widest text-zinc-300 sm:col-start-auto">{weekendRange(r)}</span>
                         <span className="col-span-1 col-start-2 sm:col-start-auto">
@@ -83,6 +84,7 @@ export default function Schedule() {
                 </ol>
               </div>
             ))}
+            </div>
             <p className="text-xs text-zinc-500">{zone ? `Times are shown in your time zone (${zone}). ` : ""}Dates and times come from the official schedule and can change.</p>
           </section>
         )}

@@ -48,7 +48,7 @@ export default function Duels() {
   const duels = useApi<DuelsDoc>(season ? `/seasons/${season}/duels` : null);
 
   return (
-    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+    <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
       <div className="page space-y-10">
         <PageHead
           kicker="DUELS"
@@ -59,7 +59,7 @@ export default function Duels() {
         {seasons.length > 0 && season && <SeasonChips seasons={seasons} value={season} onChange={setPicked} />}
         {duels.loading && <Skeleton className="h-[480px]" />}
         {duels.error && <ErrorState error={duels.error} onRetry={duels.reload} subject="duels" />}
-        <div className="grid gap-px border border-white/10 bg-white/10 lg:grid-cols-2">
+        <div className="grid gap-px border border-white/10 bg-white/10 lg:grid-cols-2 xl:grid-cols-3">
           {duels.data?.duels.map((d, i) => {
             const color = readableOnDark(`#${(d.team_color ?? "888888").replace("#", "")}`);
             const aName = d.a.code, bName = d.b.code;

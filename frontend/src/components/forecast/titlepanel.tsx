@@ -26,18 +26,19 @@ export function TitlePanel({ data }: { data: TitleForecast }) {
   const left = data.races_left;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div role="group" aria-label="Which championship" className="flex flex-wrap gap-2">
         {(["drivers", "constructors"] as const).map((t) => (
           <button key={t} type="button" aria-pressed={tab === t} onClick={() => { setTab(t); setAll(false); }} className={chip(tab === t)}>{t}</button>
         ))}
       </div>
 
-      <div className="glass p-6 md:p-8">
+      <div className="grid gap-4 xl:grid-cols-[22rem_1fr] xl:items-start">
+      <div className="glass p-5 md:p-6 xl:sticky xl:top-6">
         {decided ? (
           <>
             <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-red-500">TITLE_DECIDED</p>
-            <p className="mt-4 font-serif text-3xl italic leading-snug text-white md:text-4xl">“{leaderName} {tab === "drivers" ? "is" : "are"} the {data.season} {tab === "drivers" ? "champion" : "constructors' champions"}.”</p>
+            <p className="mt-3 font-serif text-2xl italic leading-snug text-white md:text-3xl">“{leaderName} {tab === "drivers" ? "is" : "are"} the {data.season} {tab === "drivers" ? "champion" : "constructors' champions"}.”</p>
             <p className="mt-3 max-w-2xl text-zinc-300">
               They lead by {lead} points with {left} {left === 1 ? "race" : "races"} left. Even if a rival won every Grand Prix and every sprint left, they could not catch up.
               Nothing below is in doubt except the places behind them.
@@ -46,7 +47,7 @@ export function TitlePanel({ data }: { data: TitleForecast }) {
         ) : (
           <>
             <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">{left}_{left === 1 ? "RACE" : "RACES"}_LEFT</p>
-            <p className="mt-4 font-serif text-3xl italic leading-snug text-white md:text-4xl">
+            <p className="mt-3 font-serif text-2xl italic leading-snug text-white md:text-3xl">
               “{favourite.name} is the most likely champion at {pct(favourite.champion)}.”
             </p>
             <p className="mt-3 max-w-2xl text-zinc-300">
@@ -59,7 +60,7 @@ export function TitlePanel({ data }: { data: TitleForecast }) {
       <DataTable caption={`${tab} championship odds after round ${data.as_of_round}`}>
         <thead className={HEAD}>
           <tr>
-            <th scope="col" className="px-4 py-4">RANK</th>
+            <th scope="col" className="px-4 py-3">RANK</th>
             <th scope="col" className={TH}>{tab === "drivers" ? "DRIVER" : "TEAM"}</th>
             <th scope="col" className={`${TH} text-right`}>POINTS</th>
             <th scope="col" className={`${TH} w-[30%]`}>TITLE_CHANCE</th>
@@ -69,7 +70,7 @@ export function TitlePanel({ data }: { data: TitleForecast }) {
         <tbody>
           {shown.map((r, i) => (
             <tr key={r.id} className={ROW}>
-              <td className="px-4 py-3"><Pos n={i + 1} /></td>
+              <td className="px-4 py-2"><Pos n={i + 1} /></td>
               <td className={TD}><DriverCell name={r.name} code={r.code} color={r.color} team={r.team} /></td>
               <td className={`${TD} text-right font-mono text-zinc-300`}>{r.points}</td>
               <td className={TD}><ProbBar value={r.champion} lead={i === 0} delay={i * 40} label={`${r.name} title chance`} /></td>
@@ -78,6 +79,7 @@ export function TitlePanel({ data }: { data: TitleForecast }) {
           ))}
         </tbody>
       </DataTable>
+      </div>
       {rows.length > 6 && (
         <button type="button" aria-pressed={all} onClick={() => setAll((v) => !v)} className={chip(all)}>{all ? "SHOW_TOP_6" : `SHOW_ALL_${rows.length}`}</button>
       )}

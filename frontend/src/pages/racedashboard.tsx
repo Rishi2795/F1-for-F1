@@ -37,7 +37,7 @@ export default function RaceDashboard() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#050505] pb-32 text-zinc-300 antialiased selection:bg-red-600 selection:text-white">
 
-      <div className="page relative space-y-12 pt-24 md:space-y-16">
+      <div className="page relative space-y-8 md:space-y-10 pt-24 md:space-y-10">
         <RaceHero race={race} accent={accent} />
 
         {race.quality.status !== "ok" && (

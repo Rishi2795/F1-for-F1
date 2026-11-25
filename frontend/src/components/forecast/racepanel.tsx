@@ -23,7 +23,7 @@ export function RacePanel({ data }: { data: NextForecasts }) {
   const post = race.mode === "post_qualifying";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {data.races.length > 1 && (
         <div role="group" aria-label="Choose a race" className="flex flex-wrap gap-2">
           {data.races.map((r, i) => (
@@ -34,12 +34,13 @@ export function RacePanel({ data }: { data: NextForecasts }) {
         </div>
       )}
 
-      <div className="glass p-6 md:p-8">
+      <div className="grid gap-4 xl:grid-cols-[22rem_1fr] xl:items-start">
+      <div className="glass p-5 md:p-6 xl:sticky xl:top-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">
           {race.event_name.toUpperCase().replace(/\s+/g, "_")} // {longDate(race.date).toUpperCase().replace(/\s+/g, "_")}
           {post && <span className="ml-3 border border-red-500/60 px-2 py-0.5 text-red-400">GRID_SET</span>}
         </p>
-        <p className="mt-4 font-serif text-3xl italic leading-snug text-white md:text-4xl">
+        <p className="mt-3 font-serif text-2xl italic leading-snug text-white md:text-3xl">
           “{first.name} is the favourite at {pct(first.win)}.”
         </p>
         <p className="mt-3 max-w-2xl text-zinc-300">
@@ -55,7 +56,7 @@ export function RacePanel({ data }: { data: NextForecasts }) {
       <DataTable caption={`Chances for the ${race.event_name}, most likely winner first`}>
         <thead className={HEAD}>
           <tr>
-            <th scope="col" className="px-4 py-4">RANK</th>
+            <th scope="col" className="px-4 py-3">RANK</th>
             <th scope="col" className={TH}>DRIVER</th>
             {post && <th scope="col" className={`${TH} hidden text-right sm:table-cell`}>GRID</th>}
             <th scope="col" className={`${TH} w-[30%]`}>WIN</th>
@@ -68,7 +69,7 @@ export function RacePanel({ data }: { data: NextForecasts }) {
         <tbody>
           {shown.map((d, i) => (
             <tr key={d.code} className={ROW}>
-              <td className="px-4 py-3"><Pos n={i + 1} /></td>
+              <td className="px-4 py-2"><Pos n={i + 1} /></td>
               <td className={TD}><DriverCell name={d.name} code={d.code} color={d.team_color} team={d.team} /></td>
               {post && <td className={`${TD} hidden text-right font-mono text-zinc-300 sm:table-cell`}>P{d.grid}</td>}
               <td className={TD}><ProbBar value={d.win} lead={i === 0} delay={i * 40} label={`${d.name} win chance`} /></td>
@@ -80,6 +81,7 @@ export function RacePanel({ data }: { data: NextForecasts }) {
           ))}
         </tbody>
       </DataTable>
+      </div>
       {race.drivers.length > 10 && (
         <button type="button" aria-pressed={all} onClick={() => setAll((v) => !v)} className={chip(all)}>
           {all ? "SHOW_TOP_10" : `SHOW_ALL_${race.drivers.length}`}

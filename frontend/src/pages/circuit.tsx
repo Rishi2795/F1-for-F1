@@ -52,7 +52,7 @@ export default function Circuit() {
     c.avg_winner_stops !== null ? `Winners typically stop ${c.avg_winner_stops.toFixed(1)} times${c.typical_winning_tyres ? ` (${c.typical_winning_tyres})` : ""}.` : null,
   ].filter(Boolean).join(" ");
   return (
-    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+    <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
       <div className="page space-y-8">
         <Link to="/circuits" className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400 hover:text-white">← ALL_CIRCUITS</Link>
         <header className="f1-rise">

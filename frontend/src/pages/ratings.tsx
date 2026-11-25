@@ -33,7 +33,7 @@ export default function Ratings() {
   }, [model, sort]);
 
   return (
-    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+    <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
       <div className="page space-y-10">
         <header className="f1-rise max-w-3xl">
           <p className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] text-zinc-400">

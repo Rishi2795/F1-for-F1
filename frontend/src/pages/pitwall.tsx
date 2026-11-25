@@ -30,16 +30,16 @@ export default function PitWall() {
     { to: "/simulation", n: "08", title: "Pit-wall game", question: "Can you out-strategise the engineer?" },
   ];
   return (
-    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+    <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
       <div className="page space-y-10">
         <PageHead align="center" kicker="PIT_WALL" title="The" accent="pit wall" intro="Every tool, as the question it answers. Start anywhere: each one explains itself, and each shows its working." />
-        <ul className="grid gap-px border border-white/10 bg-white/10 sm:grid-cols-2">
+        <ul className="grid gap-px border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
           {tools.map((t, i) => (
             <li key={t.to} className="f1-rise glass-cell" style={{ "--d": `${i * 50}ms` } as React.CSSProperties}>
-              <Link to={t.to} className="group flex h-full flex-col justify-between gap-6 p-6 transition-colors hover:bg-white/[0.04]">
+              <Link to={t.to} className="group flex h-full flex-col justify-between gap-5 p-5 transition-colors hover:bg-white/[0.04]">
                 <span>
                   <span className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] text-zinc-400"><span aria-hidden="true" className="h-2 w-2 bg-red-600" />REF_{t.n}</span>
-                  <span className="mt-4 block text-3xl font-black uppercase italic tracking-tighter text-white transition-colors group-hover:text-red-500">{t.title}</span>
+                  <span className="mt-3 block text-2xl font-black uppercase italic tracking-tighter text-white transition-colors group-hover:text-red-500">{t.title}</span>
                   <span className="mt-2 block text-zinc-300">{t.question}</span>
                 </span>
                 <span className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">

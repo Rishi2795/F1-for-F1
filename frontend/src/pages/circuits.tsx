@@ -11,9 +11,10 @@ export default function Circuits() {
   useDocumentTitle("Circuits");
   const { data, error, loading, reload } = useApi<CircuitIndexEntry[]>("/circuits");
   const [q, setQ] = useState("");
-  const shown = useMemo(() => (data ?? []).filter((c) => `${c.name} ${c.location} ${c.country ?? ""}`.toLowerCase().includes(q.trim().toLowerCase())), [data, q]);
+  // A circuit without a drawn layout has nothing to show on its card or page, so it is left out of the list.
+  const shown = useMemo(() => (data ?? []).filter((c) => !!c.preview).filter((c) => `${c.name} ${c.location} ${c.country ?? ""}`.toLowerCase().includes(q.trim().toLowerCase())), [data, q]);
   return (
-    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+    <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
       <div className="page space-y-10">
         <PageHead align="center" kicker="CIRCUITS" title="Know the" accent="track" intro="What usually happens at each circuit: who wins from pole, how much overtaking to expect, how often a safety car comes out. Built from every race since 2020." />
         <label className="block max-w-sm">
@@ -22,10 +23,10 @@ export default function Circuits() {
         </label>
         {loading && <Skeleton className="h-96" />}
         {error && <ErrorState error={error} onRetry={reload} subject="circuits" />}
-        <ul className="grid gap-px border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-px border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {shown.map((c, i) => (
             <li key={c.slug} className="f1-rise glass-cell" style={{ "--d": `${Math.min(i, 10) * 30}ms` } as React.CSSProperties}>
-              <Link to={`/circuit/${c.slug}`} className="group flex items-start justify-between gap-3 p-5 transition-colors hover:bg-white/[0.04]">
+              <Link to={`/circuit/${c.slug}`} className="group flex items-start justify-between gap-3 p-4 transition-colors hover:bg-white/[0.04]">
                <span className="min-w-0 flex-1">
                 <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">{(c.country ?? "").toUpperCase().replace(/\s+/g, "_")}</p>
                 <p className="mt-2 text-xl font-black uppercase italic tracking-tighter text-white transition-colors group-hover:text-red-500">{c.location}</p>

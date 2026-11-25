@@ -26,7 +26,7 @@ export default function Watch() {
   }, [races.data, order]);
 
   return (
-    <div className="min-h-screen pb-32 pt-16 text-zinc-300">
+    <div className="min-h-screen pb-32 pt-10 md:pt-12 text-zinc-300">
       <div className="page space-y-10">
         <PageHead
           align="right"
@@ -48,7 +48,7 @@ export default function Watch() {
         {races.loading && <Skeleton className="h-[480px]" />}
         {races.error && <ErrorState error={races.error} onRetry={races.reload} subject="races" />}
         {races.data && rows.length === 0 && <p className="text-zinc-400">No scored races in {season} yet.</p>}
-        <ol className="space-y-px border border-white/10 bg-white/10" aria-label={`Races of ${season}, ${order === "excitement" ? "most exciting first" : "in calendar order"}`}>
+        <ol className="grid gap-px border border-white/10 bg-white/10 xl:grid-cols-2" aria-label={`Races of ${season}, ${order === "excitement" ? "most exciting first" : "in calendar order"}`}>
           {rows.map((r, i) => (
             <li key={r.round} className="f1-rise glass-cell" style={{ "--d": `${Math.min(i, 12) * 40}ms` } as React.CSSProperties}>
               <Link to={`/race/${r.season}/${r.round}`} className="group grid items-center gap-x-6 gap-y-3 px-5 py-4 transition-colors hover:bg-white/[0.04] md:grid-cols-[2rem_1fr_16rem]">
