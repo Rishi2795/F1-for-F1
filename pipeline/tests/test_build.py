@@ -85,3 +85,15 @@ def test_driver_without_lap_data_borrows_team_name_and_colour_from_teammate():
 def test_without_any_lap_archive_the_jolpica_constructor_name_is_used():
     doc = build_race(RaceInputs(ENTRY, [result("VER")], [], None))
     assert doc.drivers[0].team == "Team" and doc.drivers[0].team_color is None
+
+
+def test_a_car_that_retires_in_the_pits_is_a_note_not_a_stop_mismatch():
+    # one tyre stint (it never went back out) but the pit log has a stop on its last lap
+    one_stint = DriverLaps(code="HAM", number=44, laps=[lap(i, 90.0, "SOFT", 1) for i in range(1, 11)])
+    rows = [result("VER", 1, laps=40), result("HAM", 20, classified=False, status="Retired", laps=10, number=44)]
+    stop = type(STOP)(**{**STOP.__dict__, "driver_id": rows[1].driver_id, "lap": 10}) if hasattr(STOP, "__dict__") else STOP
+    laps = _race_laps("VER")
+    laps.drivers["HAM"] = one_stint
+    doc = build_race(RaceInputs(ENTRY, rows, [stop], laps))
+    assert not any("stops_mismatch:HAM" in w for w in doc.quality.warnings)
+    assert any("retired in the pits" in n and "HAM" in n for n in doc.quality.notes)

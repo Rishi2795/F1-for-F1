@@ -21,9 +21,10 @@ def load(*parts: str):
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
-def check_race(season: int, rnd: int) -> tuple[list[str], dict[str, int]]:
+def check_race(season: int, rnd: int, notes: list[str] | None = None) -> tuple[list[str], dict[str, int]]:
     race = load("seasons", str(season), f"race_{rnd}.json")
     laps = load("laps", str(season), f"{rnd}.json")
+    notes = notes if notes is not None else []
     problems: list[str] = []
     stats = {"drivers": 0, "pits": 0, "retired": 0, "classified": 0, "pit_mismatch": 0}
     if race is None:
@@ -36,8 +37,10 @@ def check_race(season: int, rnd: int) -> tuple[list[str], dict[str, int]]:
         # Results: classification order, retirements and lap counts must tell one story.
         if d["status"] == "Retired" and (d["laps_completed"] or 0) >= total:
             problems.append(f"R{rnd} {code}: retired but completed all {total} laps")
-        if d["status"] in ("Finished", "Lapped") and d["classified"] is False:
-            problems.append(f"R{rnd} {code}: {d['status']} but not classified")
+        # The FIA classifies a driver who completed at least 90% of the winner's race distance.
+        enough = (d["laps_completed"] or 0) >= 0.9 * total
+        if d["status"] in ("Finished", "Lapped") and d["classified"] is False and enough:
+            problems.append(f"R{rnd} {code}: completed {d['laps_completed']} of {total} laps but is not classified")
         if d["status"] == "Retired":
             stats["retired"] += 1
             timing = by_code.get(code)
@@ -51,11 +54,15 @@ def check_race(season: int, rnd: int) -> tuple[list[str], dict[str, int]]:
         stops = d.get("pit_stops") or []
         stints = d.get("stints") or []
         stats["pits"] += len(stops)
-        if stints and len(stops) != len(stints) - 1:
+        in_the_pits = (
+            d["status"] == "Retired" and stops and len(stops) == len(stints)
+            and (stops[-1]["lap"] or 0) >= (d["laps_completed"] or 0)
+        )  # came in and did not go out again: a stop with no tyre change after it
+        if stints and len(stops) != len(stints) - 1 and not in_the_pits:
             stats["pit_mismatch"] += 1
             problems.append(f"R{rnd} {code}: {len(stops)} pit stops logged, {len(stints) - 1} from tyre stints")
         ends = {s["lap_end"] for s in stints[:-1]}
-        for stop in stops:
+        for stop in [] if in_the_pits else stops:
             if stints and stop["lap"] is not None and not ({stop["lap"], stop["lap"] - 1, stop["lap"] + 1} & ends):
                 problems.append(f"R{rnd} {code}: stop {stop['stop']} on lap {stop['lap']} matches no stint change")
             if stop["duration_s"] is not None and not 1.5 < stop["duration_s"] < 120:
@@ -66,7 +73,7 @@ def check_race(season: int, rnd: int) -> tuple[list[str], dict[str, int]]:
     official = sorted(lead_lap, key=lambda d: d["finish"])
     if [d["driver_code"] for d in final] != [d["driver_code"] for d in official]:
         swapped = [a["driver_code"] for a, b in zip(final, official, strict=False) if a is not b]
-        problems.append(f"R{rnd}: last-lap order differs from the classification for {swapped} (penalty or time-adjusted?)")
+        notes.append(f"R{rnd}: crossed the line in a different order from the classification for {swapped} (time penalties, or a restart reshuffling lap positions)")
     return problems, stats
 
 
@@ -74,14 +81,19 @@ def main() -> int:
     season = int(sys.argv[1]) if len(sys.argv) > 1 else 2026
     rounds = sorted(int(p.stem.split("_")[1]) for p in (ROOT / "seasons" / str(season)).glob("race_*.json"))
     all_problems: list[str] = []
+    all_notes: list[str] = []
     print(f"{'round':>5} {'drivers':>7} {'classified':>10} {'retired':>7} {'pit stops':>9} {'pit mismatches':>14}")
     for rnd in rounds:
-        problems, s = check_race(season, rnd)
+        problems, s = check_race(season, rnd, all_notes)
         all_problems += problems
         print(f"{rnd:>5} {s['drivers']:>7} {s['classified']:>10} {s['retired']:>7} {s['pits']:>9} {s['pit_mismatch']:>14}")
     print()
     for line in all_problems:
         print(" -", line)
+    if all_notes:
+        print("\nOrder at the flag differs from the classification (usually post-race penalties; not counted as problems):")
+        for line in all_notes:
+            print(" ·", line)
     print(f"\n{len(all_problems)} problem(s) across {len(rounds)} races")
     return 1 if all_problems else 0
 

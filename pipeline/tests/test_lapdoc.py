@@ -70,3 +70,16 @@ def test_a_retired_cars_untimed_laps_are_not_driven_laps():
     # a car that crossed the line on the last lap is untouched, even if one lap time is missing
     assert trim_untimed_tail([90.0, None, 90.0], [90.0, 180.0, 270.0]) == [90.0, 180.0, 270.0]
     assert trim_untimed_tail([None, None], [None, None]) == [None, None]
+
+
+def test_a_retired_cars_laps_are_cut_back_to_the_official_count():
+    from f1data.lapdoc import trim_to_official
+    from f1data.models import LapDoc, LapDriver
+
+    def driver(code):
+        return LapDriver(code=code, lap_times=[90.0] * 5, gap=[0.0] * 5, best_sectors=[], top_speed_kph=None, end=[90.0, 180.0, 270.0, 360.0, 450.0])
+
+    doc = LapDoc(season=2026, round=1, laps=5, status=["G"] * 5, incidents=[], undercuts=[], drivers=[driver("AAA"), driver("BBB")])
+    trim_to_official(doc, {"AAA": 3})
+    assert doc.drivers[0].end == [90.0, 180.0, 270.0, None, None]
+    assert doc.drivers[1].end == [90.0, 180.0, 270.0, 360.0, 450.0]  # a car that is not retired is untouched

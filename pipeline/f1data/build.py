@@ -120,6 +120,7 @@ def build_race(inputs: RaceInputs) -> RaceDoc:
     laps_by_code: dict[str, list] = {}
     stints_source = "none"
 
+    retired_in_pits: list[str] = []
     for row in inputs.results:
         dl = _find_laps(row, laps)
         stints: list[Stint] | None = None
@@ -175,7 +176,11 @@ def build_race(inputs: RaceInputs) -> RaceDoc:
         stops = len(stints) - 1 if stints else None
         official = pit_counts.get(row.driver_id, 0) if have_pit_data else None
         if stops is not None and official is not None and stops != official:
-            warnings.append(f"stops_mismatch:{row.driver_code}(stints={stops},official={official})")
+            last_stop = max((e.lap for e in stops_by_driver.get(row.driver_id, []) if e.lap is not None), default=None)
+            if official == stops + 1 and row.status == "Retired" and last_stop is not None and last_stop >= row.laps:
+                retired_in_pits.append(row.driver_code)  # came in and did not go out again: not a missing stint
+            else:
+                warnings.append(f"stops_mismatch:{row.driver_code}(stints={stops},official={official})")
         gained = row.grid - row.finish if row.grid is not None and row.finish is not None and row.classified else None
         sequence = [s.compound or "UNKNOWN" for s in stints] if stints else None
         longest = max((s.laps for s in stints), default=None) if stints else None
@@ -286,6 +291,9 @@ def build_race(inputs: RaceInputs) -> RaceDoc:
     if len(warnings) > 10:
         warnings = [*warnings[:10], f"...and {len(warnings) - 10} more stops_mismatch"]
     notes: list[str] = []
+    if retired_in_pits:
+        names = ", ".join(retired_in_pits)
+        notes.append(f"retired in the pits after a logged stop (no tyre change to follow): {names}")
     if filled_continuity:
         notes.append(f"{filled_continuity} stint(s) joined to a neighbour: no pit stop between them (tyre continuity)")
     if filled_openf1:

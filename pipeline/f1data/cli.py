@@ -160,7 +160,7 @@ def run_ingest(
 
 def _publish_laps(publisher, tracing, events, entry, season, doc) -> None:
     """The per-lap file for a race, if lap data exists (a separate, lazily fetched file)."""
-    from .lapdoc import build_lap_doc
+    from .lapdoc import build_lap_doc, trim_to_official
 
     folder = _match_event(entry, events)
     if not folder or not doc.drivers:
@@ -171,7 +171,12 @@ def _publish_laps(publisher, tracing, events, entry, season, doc) -> None:
         return
     lap_doc = build_lap_doc(season, entry.round, laps.drivers, laps.total_laps)
     if lap_doc is not None:
-        publisher.write_laps(lap_doc)
+        retired = {
+            d.driver_code: d.laps_completed
+            for d in doc.drivers
+            if d.status == "Retired" and d.laps_completed is not None
+        }
+        publisher.write_laps(trim_to_official(lap_doc, retired))
 
 
 def run_ratings(publisher: Publisher, audit: AuditLog) -> None:

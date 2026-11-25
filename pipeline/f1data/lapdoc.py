@@ -168,6 +168,18 @@ def trim_untimed_tail(times: list[float | None], ends: list[float | None]) -> li
     return [e if i <= timed[-1] else None for i, e in enumerate(ends)]
 
 
+def trim_to_official(doc: LapDoc, laps_completed: dict[str, int]) -> LapDoc:
+    """Cut a retired car's end-of-lap times back to the laps the official result says it completed.
+
+    ``laps_completed`` maps a driver code to that number, for retired cars only. The timing feed sometimes keeps
+    stamping the line after a car has stopped, with or without a lap time."""
+    for d in doc.drivers:
+        done = laps_completed.get(d.code)
+        if done is not None and any(e is not None for e in d.end[done:]):
+            d.end = [e if i < done else None for i, e in enumerate(d.end)]
+    return doc
+
+
 def _best(values: list[float | None]) -> float | None:
     known = [v for v in values if v is not None and v > 0]
     return round(min(known), 3) if known else None
