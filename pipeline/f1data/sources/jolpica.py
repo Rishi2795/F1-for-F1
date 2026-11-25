@@ -151,6 +151,31 @@ class JolpicaSource:
             )
         return sorted(out, key=lambda e: e.round)
 
+    SESSION_KEYS = (
+        ("FirstPractice", "Practice 1"), ("SecondPractice", "Practice 2"), ("ThirdPractice", "Practice 3"),
+        ("SprintQualifying", "Sprint qualifying"), ("SprintShootout", "Sprint qualifying"), ("Sprint", "Sprint"),
+        ("Qualifying", "Qualifying"),
+    )
+
+    def weekend_sessions(
+        self, season: int, *, ttl: float | None = None, refresh: bool = False
+    ) -> dict[int, list[tuple[str, str]]]:
+        """round -> [(session name, UTC start)] in time order, from the official schedule, race included."""
+        out: dict[int, list[tuple[str, str]]] = {}
+        for race in self._paged(f"{season}.json", "RaceTable", ttl, refresh):
+            rnd = to_int(race.get("round"))
+            if rnd is None:
+                continue
+            rows: list[tuple[str, str]] = []
+            for key, label in self.SESSION_KEYS:
+                item = race.get(key)
+                if isinstance(item, dict) and item.get("date") and item.get("time"):
+                    rows.append((label, f"{item['date']}T{item['time']}".replace("+00:00", "Z")))
+            if race.get("date") and race.get("time"):
+                rows.append(("Race", f"{race['date']}T{race['time']}"))
+            out[rnd] = sorted(rows, key=lambda r: r[1])
+        return out
+
     def results(self, season: int, *, ttl: float | None = None, refresh: bool = False) -> dict[int, list[ResultRow]]:
         races = self._paged(f"{season}/results.json", "RaceTable", ttl, refresh)
         out: dict[int, list[ResultRow]] = {}

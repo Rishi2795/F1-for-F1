@@ -122,3 +122,16 @@ def test_summarise_scores_a_title_forecast_against_a_simple_baseline():
     s = ch.summarise(rows, 0.8)
     assert s["forecasts"] == 3 and s["pick_correct"] == 1.0 and s["log_loss"] < -math.log(0.8)
     assert ch.summarise([])["forecasts"] == 0
+
+
+def test_the_title_simulation_also_gives_the_whole_final_order_and_a_points_range():
+    points = {"D0": 100.0, "D1": 95.0, "D2": 60.0, "D3": 10.0}
+    odds = ch.simulate_title(points, {}, lineup([0.5, 0.2, 0.0, -0.2]), 3, trials=500, seed=7, team_sigma=0.3, driver_sigma=0.1)
+    for code, d in odds["drivers"].items():
+        assert len(d["positions"]) == 4
+        assert abs(sum(d["positions"]) - 1.0) < 1e-9  # each simulated season puts a driver in exactly one place
+        assert abs(d["positions"][0] - d["champion"]) < 1e-9
+        assert d["points_lo"] <= d["exp_points"] <= d["points_hi"] or abs(d["exp_points"] - d["points_lo"]) < 20
+        assert d["points_lo"] >= points[code]  # points never go down
+    firsts = sum(d["positions"][0] for d in odds["drivers"].values())
+    assert abs(firsts - 1.0) < 1e-9  # somebody is champion in every season

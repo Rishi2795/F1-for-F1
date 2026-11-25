@@ -23,3 +23,12 @@ def meta(request: Request, store: PublishedStore = Depends(get_store)):
     if blob is None:
         raise not_available("Bundle manifest")
     return json_response(request, blob)
+
+
+@router.api_route("/news", methods=["GET", "HEAD"])
+def news(request: Request, store: PublishedStore = Depends(get_store)):
+    """Motorsport headlines that link back to the publishers: teasers only, never article text or pictures."""
+    blob = store.get("news.json")
+    if blob is None:
+        raise not_available("News")
+    return json_response(request, blob)

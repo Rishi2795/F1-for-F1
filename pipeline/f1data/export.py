@@ -101,6 +101,13 @@ class Publisher:
         return write_if_changed(self.race_path(doc.season, doc.round), dumps(doc))
 
     def publish_index(self, index: RaceIndex) -> None:
+        # A rebuild of the index must not lose the weekend timetables, which come from a different step.
+        previous = self.load_index(index.season)
+        if previous is not None:
+            kept = {e.round: e.sessions for e in previous.races}
+            for entry in index.races:
+                if not entry.sessions and kept.get(entry.round):
+                    entry.sessions = kept[entry.round]
         write_if_changed(self.root / "seasons" / str(index.season) / "races.json", dumps(index))
 
     # -- ratings ---------------------------------------------------------------
@@ -156,7 +163,14 @@ class Publisher:
         return RaceIndex.model_validate_json(path.read_text(encoding="utf-8")) if path.exists() else None
 
     # -- drivers ---------------------------------------------------------------
+    def load_headshots(self) -> dict[str, str]:
+        path = self.root / "drivers" / "headshots.json"
+        if not path.exists():
+            return {}
+        return json.loads(path.read_text(encoding="utf-8")).get("headshots", {})
+
     def rebuild_drivers(self) -> int:
+        headshots = self.load_headshots()
         rows: dict[str, dict[int, list[tuple[RaceDoc, Any]]]] = {}
         for season in self.published_seasons():
             for path in sorted((self.root / "seasons" / str(season)).glob("race_*.json")):
@@ -183,6 +197,7 @@ class Publisher:
                 team=last_drv.team,
                 team_color=last_drv.team_color,
                 number=last_drv.driver_number,
+                image=headshots.get(code),
                 latest_season=latest.season,
                 titles=len(title_years),
                 title_years=title_years,
@@ -197,6 +212,7 @@ class Publisher:
                     name=last_drv.driver_name,
                     team=last_drv.team,
                     country=None,
+                    image=headshots.get(code),
                     number=last_drv.driver_number,
                     team_color=last_drv.team_color,
                     titles=len(title_years),
@@ -249,6 +265,8 @@ class Publisher:
         problems.extend(self._telemetry_problems())
         problems.extend(self._replay_problems())
         problems.extend(self._incident_problems())
+        problems.extend(self._headshot_problems())
+        problems.extend(self._news_problems())
         manifest = self.root / "manifest.json"
         if not manifest.exists():
             problems.append("manifest.json missing")
@@ -286,6 +304,35 @@ class Publisher:
         for d in final.drivers:
             if d.points + 1e-6 < race_points.get(d.code, 0.0):
                 found.append(f"{where} {d.code}: standings points {d.points} < race points {race_points[d.code]}")
+        return found
+
+    def _headshot_problems(self) -> list[str]:
+        """Portrait links must be https links to F1's media host: nothing else may be loaded as a driver picture."""
+        from .headshots import acceptable
+
+        return [f"headshots: {code} has a link that is not an https png on media.formula1.com"
+                for code, url in self.load_headshots().items() if not acceptable(url)]
+
+    def _news_problems(self) -> list[str]:
+        """Every headline must link to an https page on its own publisher's domain, with a title and a real date."""
+        path = self.root / "news.json"
+        if not path.exists():
+            return []
+        from .news import FEEDS, on_domain
+
+        try:
+            items = json.loads(path.read_text(encoding="utf-8")).get("items", [])
+        except ValueError:
+            return ["news.json: not valid JSON"]
+        found: list[str] = []
+        for i, it in enumerate(items):
+            domains = FEEDS.get(it.get("source", ""), (None, ()))[1]
+            if not it.get("title") or not on_domain(str(it.get("link", "")), domains):
+                found.append(f"news item {i}: no title, or a link that is not an https page on its publisher's site")
+            try:
+                datetime.fromisoformat(str(it.get("published")))
+            except ValueError:
+                found.append(f"news item {i}: no valid date")
         return found
 
     def _incident_problems(self) -> list[str]:

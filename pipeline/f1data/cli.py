@@ -229,6 +229,7 @@ def run_refresh(seasons: list[int], skip_sync: bool, refresh: bool) -> int:
     audit = AuditLog()
     code = run_ingest(seasons, None, refresh, skip_sync, models=False)
     run_enrich(seasons, refresh)
+    run_news_step()
     run_telemetry_step(seasons, limit=REFRESH_TELEMETRY_LIMIT)
     run_replay_step(seasons, limit=REFRESH_REPLAY_LIMIT)
     run_derive(audit)
@@ -250,6 +251,17 @@ REFRESH_TELEMETRY_LIMIT = 3  # newest races only, so a scheduled refresh stays q
 
 
 REFRESH_REPLAY_LIMIT = 2  # the newest races only
+
+
+def run_news_step() -> int:
+    """Headlines from the publishers' own RSS feeds. A feed outage never fails the refresh."""
+    from .news import refresh_news
+
+    publisher = Publisher()
+    count = refresh_news(publisher)
+    publisher.publish_manifest({})
+    AuditLog().record("news.bundle", "published", "success", details={"headlines": count})
+    return count
 
 
 def run_replay_step(seasons: list[int], limit: int = REFRESH_REPLAY_LIMIT) -> int:
@@ -303,9 +315,15 @@ def run_enrich(seasons: list[int], refresh: bool, today: date | None = None) -> 
             audit.record("enrich.season", f"season/{season}", "failure", reason=str(exc))
             continue
         total += enrich_season(publisher, season, quali, sprint)
+        from .schedule import refresh_sessions
+
+        refresh_sessions(publisher, jolpica, season, ttl=ttl)
     from .maps import build_outlines
 
     outlines = build_outlines(publisher)
+    from .headshots import refresh_headshots
+
+    refresh_headshots(publisher)  # links to the official portraits; a source outage keeps the last list
     publisher.rebuild_drivers()
     publisher.publish_manifest({})
     audit.record(
@@ -441,6 +459,7 @@ def main(argv: list[str] | None = None) -> int:
     rep = sub.add_parser("replay", help="real-position replay data for the newest races (needs network)")
     rep.add_argument("--seasons", default=None, help="default: 2023 to the current season")
     rep.add_argument("--limit", type=int, default=REFRESH_REPLAY_LIMIT, help="how many of the newest races (default 2)")
+    sub.add_parser("news", help="collect motorsport headlines from the publishers' RSS feeds (needs network)")
     sub.add_parser("derive", help="excitement, teammate duels and circuit profiles from the published races")
     sub.add_parser("predict", help="rebuild race and championship forecasts from the published races")
     parser.add_argument("--log-level", default=None)
@@ -468,6 +487,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "replay":
         seasons = _parse_seasons(args.seasons) if args.seasons else list(range(2023, config.DEFAULT_LAST_SEASON + 1))
         run_replay_step(seasons, limit=args.limit)
+        return 0
+    if args.command == "news":
+        run_news_step()
         return 0
     if args.command == "derive":
         run_derive(AuditLog())

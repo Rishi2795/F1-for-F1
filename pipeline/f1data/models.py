@@ -217,6 +217,11 @@ class RaceDoc(_Model):
     strategy_lab: list[DriverStrategy] | None = None
 
 
+class WeekendSession(_Model):
+    name: str  # Practice 1, Qualifying, Sprint, Race ...
+    starts: str  # UTC, e.g. 2026-11-28T18:00:00Z: the browser shows it in the viewer's own time zone
+
+
 class RaceIndexEntry(_Model):
     season: int
     round: int
@@ -229,6 +234,7 @@ class RaceIndexEntry(_Model):
     watch_tags: list[str] = Field(default_factory=list)
     overtakes: int | None = None
     winner: str | None = None  # driver name; the Watch page hides it until the viewer asks
+    sessions: list[WeekendSession] = Field(default_factory=list)  # the weekend's timetable, from the official schedule
 
 
 class RaceIndex(_Model):
@@ -354,6 +360,9 @@ class TitleDriver(_Model):
     champion: float
     top3: float
     exp_points: float
+    positions: list[float] = Field(default_factory=list)  # chance of finishing 1st, 2nd, 3rd ... in the final standings
+    points_lo: float | None = None  # a likely range for the final points: 10th and 90th percentile of the simulations
+    points_hi: float | None = None
 
 
 class TitleConstructor(_Model):

@@ -41,6 +41,8 @@ def simulate_title(
     champion = {c: 0 for c in points}
     top3 = {c: 0 for c in points}
     total = {c: 0.0 for c in points}
+    positions = {c: [0] * len(points) for c in points}  # how often each driver finished in each final place
+    samples: dict[str, list[float]] = {c: [] for c in points}
     t_champion = {t: 0 for t in team_points}
     t_total = {t: 0.0 for t in team_points}
     for _ in range(trials):
@@ -59,10 +61,13 @@ def simulate_title(
                     tpts[e.team] += gain
         ranked = sorted(pts, key=lambda c: (pts[c], rng.random()), reverse=True)
         champion[ranked[0]] += 1
+        for place, c in enumerate(ranked):
+            positions[c][place] += 1
         for c in ranked[:3]:
             top3[c] += 1
         for c in pts:
             total[c] += pts[c]
+            samples[c].append(pts[c])
         if tpts:
             t_ranked = sorted(tpts, key=lambda t: (tpts[t], rng.random()), reverse=True)
             t_champion[t_ranked[0]] += 1
@@ -70,13 +75,25 @@ def simulate_title(
                 t_total[t] += tpts[t]
     return {
         "drivers": {
-            c: {"champion": champion[c] / trials, "top3": top3[c] / trials, "exp_points": total[c] / trials}
+            c: {
+                "champion": champion[c] / trials,
+                "top3": top3[c] / trials,
+                "exp_points": total[c] / trials,
+                "positions": [n / trials for n in positions[c]],
+                "points_lo": _percentile(samples[c], 0.1),
+                "points_hi": _percentile(samples[c], 0.9),
+            }
             for c in points
         },
         "constructors": {
             t: {"champion": t_champion[t] / trials, "exp_points": t_total[t] / trials} for t in team_points
         },
     }
+
+
+def _percentile(values: list[float], q: float) -> float:
+    ordered = sorted(values)
+    return ordered[int(q * (len(ordered) - 1))] if ordered else 0.0
 
 
 def lineup_from(starters: tuple[PStarter, ...], sample_strength: list[float], p_dnf: list[float]) -> list[Entry]:

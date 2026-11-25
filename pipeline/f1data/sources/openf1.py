@@ -101,6 +101,20 @@ class OpenF1Source:
             out.append(rows if isinstance(rows, list) else [])
         return out[0], out[1]
 
+    def race_sessions(self, season: int) -> list[dict]:
+        """Every Race session of a season, as OpenF1 lists them (oldest first)."""
+        data = self.http.get_json("sessions", {"year": season, "session_name": "Race"})
+        rows = data if isinstance(data, list) else []
+        return sorted(rows, key=lambda r: str(r.get("date_start", "")))
+
+    def session_drivers(self, session_key: int) -> list[dict]:
+        """The drivers of a session: three-letter code, name, team and the link to F1's official portrait."""
+        try:
+            data = self.http.get_json("drivers", {"session_key": session_key})
+        except SourceUnavailable:
+            return []
+        return data if isinstance(data, list) else []
+
     def race_control(self, session_key: int) -> list[dict]:
         """Race-control messages (flags, incidents, penalties, safety cars), each with its time and often the car."""
         try:

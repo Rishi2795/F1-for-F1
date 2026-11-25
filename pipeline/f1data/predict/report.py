@@ -143,6 +143,9 @@ def title(
             champion=round(sim["drivers"][c]["champion"], 4),
             top3=round(sim["drivers"][c]["top3"], 4),
             exp_points=round(sim["drivers"][c]["exp_points"], 1),
+            positions=[round(v, 4) for v in sim["drivers"][c]["positions"]],
+            points_lo=round(sim["drivers"][c]["points_lo"], 1),
+            points_hi=round(sim["drivers"][c]["points_hi"], 1),
         )
         for c in ranked
         if sim["drivers"][c]["top3"] > 0.0005 or points[c] > 0
