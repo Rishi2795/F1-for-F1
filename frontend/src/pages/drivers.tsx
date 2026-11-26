@@ -34,9 +34,9 @@ export default function Drivers() {
   }, [data, search, show]);
 
   return (
-    <div className="min-h-screen py-14 text-zinc-200">
-      <div className="page mb-10 space-y-4 text-center">
-        <h1 className="text-5xl font-black uppercase italic tracking-tighter text-white md:text-7xl">The <span className="text-red-500">drivers</span></h1>
+    <div className="min-h-screen py-8 text-zinc-200 md:py-14">
+      <div className="page mb-5 space-y-3 text-center md:mb-10 md:space-y-4">
+        <h1 className="text-4xl font-black uppercase italic tracking-tighter text-white md:text-7xl">The <span className="text-red-500">drivers</span></h1>
         <p className="text-sm text-zinc-400">Every driver on the grid since 2020, from official results and timing data.</p>
         <label className="sr-only" htmlFor="driver-search">
           Search drivers
@@ -48,7 +48,7 @@ export default function Drivers() {
           placeholder="Search driver…"
           className="mx-auto w-full max-w-md rounded border border-white/10 bg-black px-4 py-3 text-sm outline-none focus:border-red-600"
         />
-        <div role="group" aria-label="Which drivers" className="flex flex-wrap justify-center gap-2 pt-2">
+        <div role="group" aria-label="Which drivers" className="-mx-5 flex gap-2 overflow-x-auto px-5 pt-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
           {SHOW.map((s) => (
             <button key={s.key} type="button" aria-pressed={show === s.key} onClick={() => setShow(s.key)} className={chip(show === s.key)}>{s.label}</button>
           ))}
@@ -57,7 +57,7 @@ export default function Drivers() {
 
       {error && <ErrorState error={error} onRetry={reload} />}
 
-      <div className="page grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      <div className="page grid grid-cols-3 gap-2 sm:gap-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {loading && Array.from({ length: 10 }, (_, i) => <Skeleton key={i} className="aspect-[3/4] rounded-sm" />)}
         {filtered.map((d) => (
           <DriverCard key={d.code} d={d} photo={photos[d.code]} />
@@ -92,14 +92,14 @@ function DriverCard({ d, photo }: { d: DriverListEntry; photo?: Photo }) {
     <Link
       to={`/driver/${d.code}`}
       onMouseEnter={() => prefetch(`/drivers/${d.code}`)}
-      className="group relative block aspect-[3/4] overflow-hidden rounded-sm border border-white/10 bg-[#080808] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--team)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+      className="group relative block aspect-[3/4.3] overflow-hidden rounded-sm sm:aspect-[3/4] border border-white/10 bg-[#080808] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--team)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
       style={{ "--team": colour, backgroundImage: `linear-gradient(165deg, ${colour}55 0%, ${colour}18 38%, #050505 78%)` } as CSSProperties}
     >
       {/* the number, huge and outlined: top-right behind a photo, or centred when there is no photo */}
       {d.number !== null && d.number !== undefined && (
         <span
           aria-hidden="true"
-          className={`f1-outline absolute font-black italic leading-none ${photo || (official && !failed) ? "-right-2 top-1 text-[7.5rem] sm:text-[9rem]" : "inset-x-0 top-[8%] text-center text-[8.5rem] sm:text-[10.5rem]"}`}
+          className={`f1-outline absolute font-black italic leading-none ${photo || (official && !failed) ? "-right-1 top-0 text-[4.6rem] sm:-right-2 sm:top-1 sm:text-[9rem]" : "inset-x-0 top-[8%] text-center text-[5.5rem] sm:text-[10.5rem]"}`}
           style={{ "--stroke": `${colour}${photo || (official && !failed) ? "66" : "88"}` } as CSSProperties}
         >
           {d.number}
@@ -109,15 +109,15 @@ function DriverCard({ d, photo }: { d: DriverListEntry; photo?: Photo }) {
         <img src={official} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="absolute bottom-0 left-1/2 h-[90%] w-auto max-w-none -translate-x-1/2 object-contain object-bottom" />
       )}
       {photo && <img src={`/drivers/${photo.file}`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: framing(photo, 0.75, 0.36) }} />}
-      <span className="absolute left-3 top-3 z-10 rounded-sm border border-white/20 bg-black/40 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-widest text-zinc-200">{d.code}</span>
+      <span className="absolute left-1.5 top-1.5 z-10 rounded-sm border border-white/20 bg-black/40 px-1 py-0.5 font-mono text-[9px] sm:left-3 sm:top-3 sm:px-1.5 sm:text-[10px] font-bold tracking-widest text-zinc-200">{d.code}</span>
       <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black via-black/70 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 z-10 space-y-1.5 p-3 sm:p-4">
-        <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider sm:text-xs" style={{ color: text }}>
+      <div className="absolute inset-x-0 bottom-0 z-10 space-y-1 p-2 sm:space-y-1.5 sm:p-4">
+        <p className="flex items-center gap-1.5 sm:gap-2 text-[10px] font-semibold uppercase tracking-wider sm:text-xs" style={{ color: text }}>
           <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: colour }} />
-          <span className="truncate">{d.team ?? "—"}</span>
+          <span className="truncate max-sm:text-[8px] max-sm:tracking-normal">{d.team ?? "—"}</span>
         </p>
-        <h2 className="text-lg font-black leading-tight text-white sm:text-xl">{d.name}</h2>
-        <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-400">
+        <h2 className="line-clamp-2 text-[12px] font-black leading-tight text-white sm:text-xl">{d.name}</h2>
+        <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-400 max-sm:hidden">
           <span>{d.latest_season === new Date().getFullYear() || d.latest_season >= 2026 ? `Raced ${d.latest_season}` : `Last raced ${d.latest_season}`}</span>
           {d.titles !== null && d.titles > 0 && <ChampionBadge titles={d.titles} compact />}
         </div>

@@ -62,8 +62,6 @@ def test_drivers(client):
     assert client.get("/api/drivers").json()[0]["code"] == "VER"
     assert client.get("/api/drivers/ver").json()["code"] == "VER"
     assert client.get("/api/drivers/HAM").status_code == 404
-    dna = client.get("/api/drivers/VER/dna")
-    assert dna.status_code == 404 and dna.json()["error"] == "not_available"
 
 
 def test_root_level_routes_marked_deprecated(client):

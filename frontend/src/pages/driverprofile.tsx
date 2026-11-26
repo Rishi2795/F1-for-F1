@@ -12,34 +12,10 @@ import { WeekendPanel } from "../components/driver/weekendpanel";
 import { RatingPanel } from "../components/ratings/ratingpanel";
 import type { DriverProfile } from "../types/api";
 
-/* DNA and AI insight arrive with the ratings model (see plan.md). The API answers 404
-   "not_available" for them today, so the panels are only drawn when data exists. */
-type DriverDNA = {
-  pace: number;
-  racecraft: number;
-  tyres: number;
-  consistency: number;
-  wet: number;
-  risk_management: number;
-};
-
-type AIInsight = {
-  rating: number;
-  tier: string;
-  strength: string;
-  weakness: string;
-  trend: string;
-  risk: string;
-  summary: string;
-};
-
+/** `/driver/:code`: one driver's career, seasons, ratings and (for the current grid) this weekend's chances. */
 export default function DriverPage() {
   const { code = "" } = useParams();
   const stats = useApi<DriverProfile>(code ? `/drivers/${code}` : null);
-  // Not built yet: only request them once the ratings model ships (VITE_FEATURE_DRIVER_AI=true).
-  const withAi = import.meta.env.VITE_FEATURE_DRIVER_AI === "true" && code !== "";
-  const dna = useApi<DriverDNA>(withAi ? `/drivers/${code}/dna` : null).data;
-  const ai = useApi<AIInsight>(withAi ? `/ai/driver/${code}` : null).data;
 
   useDocumentTitle(stats.data?.name ?? "Driver");
   const photos = useDriverPhotos();
@@ -124,19 +100,6 @@ export default function DriverPage() {
                 ))}
               </dl>
               <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500">{driver.latest_season} season</p>
-              {ai && (
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl font-black text-red-500">{ai.rating}</span>
-                  <span className="text-xs font-mono uppercase text-zinc-500">{ai.tier}</span>
-                </div>
-              )}
-              {ai && (
-                <div className="flex flex-wrap gap-2 text-[10px]">
-                  <Tag text={ai.strength} />
-                  <Tag text={ai.trend} />
-                  <Tag text={`${ai.risk} Risk`} />
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -196,28 +159,6 @@ export default function DriverPage() {
           </Panel>
           </CuboidFace>
 
-          {dna && (
-            <CuboidFace>
-            <Panel title="PERFORMANCE_DNA">
-              <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
-                <Bar label="Pace" value={dna.pace} />
-                <Bar label="Racecraft" value={dna.racecraft} />
-                <Bar label="Tyres" value={dna.tyres} />
-                <Bar label="Consistency" value={dna.consistency} />
-                <Bar label="Wet" value={dna.wet} />
-                <Bar label="Risk Ctrl" value={dna.risk_management} />
-              </div>
-            </Panel>
-            </CuboidFace>
-          )}
-
-          {ai && (
-            <CuboidFace>
-            <Panel title="INSIGHT">
-              <p className="text-lg italic leading-relaxed text-zinc-300">"{ai.summary}"</p>
-            </Panel>
-            </CuboidFace>
-          )}
         </CuboidStack>
       </div>
     </div>
@@ -289,63 +230,5 @@ function Mini({ label, value, signed }: { label: string; value: string | number;
       </p>
 
     </div>
-  );
-}
-
-
-function Bar({ label, value }: { label: string; value: number }) {
-
-  const v = Math.max(0, Math.min(100, value));
-
-  const color =
-    v > 80
-      ? "bg-white"
-      : v > 65
-      ? "bg-zinc-400"
-      : "bg-red-500";
-
-  return (
-    <div className="space-y-1">
-
-      <div className="
-        flex justify-between
-        text-[10px]
-        font-mono
-        text-zinc-400
-      ">
-
-        <span>{label}</span>
-
-        <span>{v}</span>
-
-      </div>
-
-      <div className="h-2 bg-white/10 rounded">
-
-        <div
-          className={`${color} h-full rounded transition-all`}
-          style={{ width: `${v}%` }}
-        />
-
-      </div>
-
-    </div>
-  );
-}
-
-
-function Tag({ text }: { text: string }) {
-  return (
-    <span className="
-      px-2 py-1
-      bg-red-600/10
-      border border-red-600/30
-      rounded
-      text-red-500
-      uppercase
-      font-mono
-    ">
-      {text}
-    </span>
   );
 }

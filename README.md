@@ -1,162 +1,76 @@
-# F1^4
-🏎️ F1 for F1
+# F1 for F1
 
-Intelligent race strategy & performance analysis for Formula 1 (2020–2025)
+Formula 1 race strategy and performance analytics for the 2019 to 2026 seasons, built from free public data and explainable models. It is made for fans, analysts and engineers who want to understand what decided a race, not only who won it.
 
-F1 for F1 is a full-stack analytics platform built for Formula 1 — to help fans, analysts, and engineers understand what truly decides race outcomes in the modern era.
+> An unofficial fan project. Not affiliated with, or endorsed by, Formula 1, the FIA or any team.
 
-Instead of focusing only on results, F1 for F1 decodes race strategy, driver behaviour, tyre usage, track characteristics, and team execution using real historical data and explainable logic.
+## What it does
 
-The mission is simple:
+| Area | What you get |
+|---|---|
+| **Follow the season** | Schedule with a countdown and the weekend timetable in your own time zone, news headlines, a race archive with a "worth watching" score, standings (with a points progression chart), drivers and circuits |
+| **Race analysis** | One page per race (results, qualifying ladder, lap chart, tyre strategy, pace) and a race lab: map replay, fastest-lap telemetry, gap and pace charts, incidents, "where it went wrong" |
+| **Predict and analyse** | Race and championship forecasts with a public scorecard, driver-or-car ratings, teammate duels, team pace |
+| **Play** | A strategy simulator (plan stops, add rain and safety cars, test across hundreds of simulated races or race it live), "Beat the model" podium picks, and "My driver" (kept on your device only) |
 
-Make Formula 1 easier to understand, analyze, and compare — through data.
+Everything is free, needs no login, and tracks nothing. Where data is missing it is shown as missing, never filled with a plausible number.
 
-⚠️ This project is not affiliated with Formula 1, the FIA, or any official teams.
+## How it fits together
 
-⸻
+```
+free public sources ──▶ pipeline (validate, derive, model) ──▶ static JSON ──▶ read-only API ──▶ React site
+```
 
-✨ Core Capabilities
+* **Sources** (no account or key needed): Jolpica-F1 (results, standings, pit stops), TracingInsights (laps, tyres, weather), OpenF1 (tyre cross-check, telemetry, replay) and the public RSS feeds of five motorsport publishers (headlines only).
+* **`pipeline/`** is the only part that talks to the outside world. It runs offline, validates everything against typed models, and publishes JSON. Every publish is recorded in a hash-chained audit log (`audit/`).
+* **`backend/`** is a small read-only FastAPI service over those files. It never calls an upstream source while a visitor waits.
+* **`frontend/`** is a React + TypeScript + Vite site with route-level code splitting, a cached API client and hand-drawn SVG charts.
 
-🧠 Strategy Intelligence
-	•	Winning strategy patterns per circuit
-	•	Typical pit stop counts & tyre sequences
-	•	Average longest stints
-	•	Strategy diversity & pit payoff analysis
+The full architecture, every model and endpoint, and a file-by-file map are in [docs/changes.md](docs/changes.md).
 
-🏁 Driver Performance Analysis
-	•	Grid → finish position delta
-	•	Tyre degradation index
-	•	Pit efficiency classification
-	•	Consistency index
-	•	Strategy risk scoring
-	•	Strategy outcome simulation (rule-based)
+## Repository layout
 
-🏎️ Driver Attributes (Explainable)
+```
+backend/    API (app/), its tests, and the published data it serves (data/published/)
+pipeline/   Data pipeline (f1data/) and its tests
+frontend/   The website (src/), browser tests (e2e/), static files (public/)
+scripts/    Operator tools (deploy smoke test, photo review, data cross-checks)
+audit/      Append-only, hash-chained log of every data publish
+docs/       Deploy guide, forecasting notes, performance baseline, plan, change log
+```
 
-Each driver is tagged using derived metrics:
-	•	Aggressive
-	•	Defensive
-	•	Tyre Saver
-	•	Consistent
-	•	High-Risk Strategist
+## Run it
 
-All attributes are explainable and traceable — no black-box logic.
+```bash
+# 1. data (optional: a published bundle is already committed)
+cd pipeline && pip install -r requirements-dev.txt
+python -m f1data refresh && python -m f1data validate
 
-🗺️ Track Intelligence & History
-	•	Overtaking difficulty
-	•	Strategy sensitivity
-	•	Pit stop payoff
-	•	Track personality tags
-	•	Contextual track history notes
+# 2. API
+cd backend && pip install -r requirements-dev.txt
+uvicorn app.main:app --reload            # http://localhost:8000/docs
 
-👥 Team-Level Insights
-	•	Average team finishing positions
-	•	Net positions gained
-	•	Strategy effectiveness across teams
-	•	Visual team-color encoding for fast reading
+# 3. site
+cd frontend && npm ci
+npm run dev                              # VITE_API_URL=http://localhost:8000/api (see .env.example)
+```
 
-🔎 Driver Comparison
-	•	User-selected driver vs driver analysis
-	•	Side-by-side metrics
-	•	Strategy verdict comparison
-	•	Clear visual hierarchy (desktop & mobile)
+Checks: `ruff check backend pipeline`, `pytest` in `backend/` and `pipeline/`, and in `frontend/`: `npm run typecheck`, `npm test`, `npm run lint`, `npm run build`, `npm run e2e`.
 
-⸻
+Deployment (Vercel for the site, Render for the API, no database) is in [docs/deploy.md](docs/deploy.md).
 
-🧱 Architecture Overview
+## Documentation
 
-Data Flow
+* [docs/changes.md](docs/changes.md): architecture, flows, models, APIs, data layout, every file and why it exists, what was removed
+* [docs/deploy.md](docs/deploy.md): deploying the API and the site
+* [docs/forecasting.md](docs/forecasting.md): how the forecasts are trained, tested and deployed
+* [docs/perf-baseline.md](docs/perf-baseline.md): measured performance before and after the rebuild
+* [docs/plan.md](docs/plan.md): the engineering plan and status log
 
-Free public sources → pipeline (validate, derive metrics) → static JSON → read-only FastAPI → React UI
+## Disclaimer
 
-	•	Sources: Jolpica-F1 (results, pit stops), TracingInsights (per-lap tyres, stints, weather), OpenF1 (fallback). No account, API key or subscription is needed anywhere.
-	•	The pipeline (pipeline/) runs offline: python -m f1data ingest. It never invents data: a missing value is null and the race is flagged partial.
-	•	The API (backend/) only serves precomputed files. It never calls an upstream service while a user waits.
-	•	Every pipeline run is recorded in a tamper-evident audit log (audit/). Application logs are structured JSON; nothing prints.
+This project uses publicly available race data for educational and analytical purposes. It is not endorsed by Formula 1, the FIA, or any team. Driver portraits are the property of Formula 1 and are shown from formula1.com with a credit; headlines and links belong to their publishers.
 
-Key Design Decisions
-	•	Precompute everything; the API is read-only and stateless
-	•	Honest data: gaps are shown as gaps, with a public coverage report (/api/coverage)
-	•	Explainable metrics only (rule-based ones are labelled rule_based_v1)
-	•	Credential-free by design: no F1TV/F1 account dependency
+## Author
 
-Run locally: see docs/deploy.md. Performance measurements: docs/perf-baseline.md. Roadmap and ML plan: plan.md.
-
-⸻
-
-🛠️ Tech Stack
-
-Frontend
-	•	React + TypeScript, Vite, Tailwind CSS
-	•	Route-level code splitting, cached API client, skeleton and error states
-
-Backend
-	•	Python 3.11, FastAPI (read-only), structured logging, rate limiting, strict CORS
-
-Pipeline
-	•	Python, pydantic-validated published schema, hash-chained audit log
-
-Deployment
-	•	Frontend: Vercel · API: Render · No database
-
-⸻
-
-📊 Data Coverage
-	•	Seasons: 2020 → 2026
-	•	Race sessions only (by design)
-	•	All data precomputed & cached
-	•	Safe for deployment & sharing
-
-
-🧭 Phase-Wise Roadmap
-
-✅ Phase 1 — Foundation (Completed)
-	•	Multi-season race ingestion
-	•	Strategy intelligence
-	•	Driver & team analysis
-	•	Track intelligence
-	•	Cloud database
-	•	Full UI + comparison tools
-	•	Deployed architecture
-
-🔄 Phase 2 — Depth & Usability (In Progress)
-	•	Richer driver attribute tagging
-	•	Improved track history context
-	•	Better metric explanations
-	•	UI polish & accessibility
-	•	Shareable race views
-
-🧠 Phase 3 — ML-Assisted Insights (Planned)
-	•	Strategy success probability
-	•	Driver behaviour clustering
-	•	Scenario-based simulations
-	•	Hybrid rule-based + ML logic
-	•	Offline-trained, online-served models
-
-🚀 Phase 4 — Productization (Future)
-	•	User accounts (optional)
-	•	Saved comparisons
-	•	Public API access
-	•	Mobile app wrapper
-	•	Extended historical archive
-
-
-🎯 Why This Project Matters
-	•	Demonstrates full-stack engineering
-	•	Shows data modeling & analytics
-	•	Emphasizes explainability over hype
-	•	Designed like a real production system
-	•	Built with scalability and clarity in mind
-
-This is a product-grade analytics platform.
-
-🚧 Disclaimer
-
-This project uses publicly available race data for educational and analytical purposes.
-It is not endorsed by Formula 1, the FIA, or any teams.
-
-
-👤 Author
-
-Built by Rishi
-Computer Science Engineer | Full-Stack | Data & Systems Enthusiast
+Built by Rishi. Computer Science Engineer, full-stack, data and systems.

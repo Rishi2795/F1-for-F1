@@ -2,7 +2,7 @@ import { CalendarDays, Gamepad2, Gauge, House, Menu, Newspaper, Search, Trophy, 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
-import { MenuSheet } from "./layout/menusheet";
+import { MenuSheet } from "./menusheet";
 
 /** Pages that live under the Pit Wall, so its tab stays lit while you use one of them. */
 const PIT_WALL = ["/pitwall", "/team-pace", "/forecast", "/watch", "/duels", "/ratings"];

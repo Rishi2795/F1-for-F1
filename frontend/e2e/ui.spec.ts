@@ -278,7 +278,7 @@ test.describe("standings", () => {
   test("/standings goes to the latest season; the dock highlights Standings", async ({ page }) => {
     await page.goto("/standings");
     await expect(page).toHaveURL(/\/season\/2026$/);
-    await expect(page.getByRole("link", { name: "Standings", exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Standings", exact: true })).toHaveAttribute("aria-current", "page");
   });
 
   test("bad seasons explain themselves", async ({ page }) => {

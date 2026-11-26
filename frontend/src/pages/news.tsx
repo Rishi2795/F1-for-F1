@@ -44,6 +44,7 @@ export default function News() {
   const sources = Array.from(new Set(items.map((i) => i.source)));
   const shown = items.filter((i) => source === "all" || i.source === source);
   const page = shown.slice(0, shownCount);
+  const hero = shown[0]; // phones open on the latest story; it is left out of the rails below so it is not shown twice
   const last24 = items.filter((i) => now.getTime() - new Date(i.published).getTime() < 24 * HOUR).length;
 
   // group what is on screen by day, newest first
@@ -56,14 +57,19 @@ export default function News() {
   }
 
   return (
-    <div className="min-h-screen pb-32 pt-10 text-zinc-300 md:pt-12">
-      <div className="page space-y-8">
-        <PageHead kicker="HEADLINES" title="Paddock" accent="news" intro="The latest from the sport's own publishers. Each item opens the original article on the publisher's site." />
+    <div className="min-h-screen pb-32 pt-8 text-zinc-300 md:pt-12">
+      <div className="page space-y-5 lg:space-y-8">
+        <PageHead kicker="HEADLINES" title="Paddock" accent="news" intro={<span className="max-lg:hidden">The latest from the sport's own publishers. Each item opens the original article on the publisher's site.</span>} />
         {loading && <Skeleton className="h-96" />}
         {error && <ErrorState error={error} onRetry={reload} subject="news" />}
         {data && items.length === 0 && <p className="text-zinc-400">No headlines right now. Check back soon.</p>}
         {items.length > 0 && (
           <>
+            <p className="-mt-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-400 lg:hidden">
+              <span aria-hidden="true" className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+              {last24} new in 24h · {sources.length} publishers{data?.fetched_at ? ` · ${timeAgo(data.fetched_at)}` : ""}
+            </p>
+            <div className="max-lg:hidden">
             <StatBoard
               label="News summary"
               items={[
@@ -73,14 +79,15 @@ export default function News() {
                 { label: "Latest", value: timeAgo(items[0].published), sub: items[0].source },
               ]}
             />
+            </div>
 
-            <div role="group" aria-label="Filter by publisher" className="flex flex-wrap gap-2">
-              <button type="button" aria-pressed={source === "all"} onClick={() => { setSource("all"); setShownCount(PAGE); }} className={`rounded-sm border px-3.5 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.3em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${source === "all" ? "border-white bg-white text-black" : "border-white/15 bg-white/[0.04] text-zinc-300 hover:border-white/60 hover:text-white"}`}>ALL · {items.length}</button>
+            <div role="group" aria-label="Filter by publisher" className="-mx-5 flex snap-x gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-8 sm:px-8 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden">
+              <button type="button" aria-pressed={source === "all"} onClick={() => { setSource("all"); setShownCount(PAGE); }} className={`shrink-0 rounded-sm border px-3.5 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.3em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${source === "all" ? "border-white bg-white text-black" : "border-white/15 bg-white/[0.04] text-zinc-300 hover:border-white/60 hover:text-white"}`}>ALL · {items.length}</button>
               {sources.map((s) => {
                 const c = look(s);
                 const on = source === s;
                 return (
-                  <button key={s} type="button" aria-pressed={on} onClick={() => { setSource(s); setShownCount(PAGE); }} className={`inline-flex items-center gap-2 rounded-sm border px-3.5 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.3em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${on ? c.fill : `${c.ring} bg-white/[0.04] ${c.text} hover:bg-white/[0.09]`}`}>
+                  <button key={s} type="button" aria-pressed={on} onClick={() => { setSource(s); setShownCount(PAGE); }} className={`inline-flex shrink-0 items-center gap-2 rounded-sm border px-3.5 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.3em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${on ? c.fill : `${c.ring} bg-white/[0.04] ${c.text} hover:bg-white/[0.09]`}`}>
                     {!on && <span aria-hidden="true" className={`h-2 w-2 rounded-full ${c.fill.split(" ")[0]}`} />}
                     {s.toUpperCase()}
                   </button>
@@ -88,30 +95,34 @@ export default function News() {
               })}
             </div>
 
-            <div className="space-y-8">
+            {hero && <TopStory n={hero} now={now} />}
+
+            <div className="space-y-6 lg:space-y-8">
               {groups.map((g) => (
-                <section key={g.key} aria-label={g.label}>
+                <section key={g.key} aria-label={g.label} className={g.items.length === 1 && g.items[0].link === hero?.link ? "max-lg:hidden" : ""}>
                   <h2 className="mb-3 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.35em] text-white">
                     <span aria-hidden="true" className="h-2 w-2 bg-red-600" />
                     {g.label}
                     <span className="text-zinc-500">{g.items.length}</span>
+                    <span aria-hidden="true" className="font-mono text-[9px] tracking-widest text-zinc-600 lg:hidden">SWIPE →</span>
                     <span aria-hidden="true" className="h-px flex-1 bg-white/10" />
                   </h2>
-                  <ul className="grid gap-3 lg:grid-cols-2">
-                    {g.items.map((n) => {
+                  <ul className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] sm:-mx-8 sm:px-8 lg:mx-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
+                    {g.items.map((n, idx) => {
                       const c = look(n.source);
                       const fresh = now.getTime() - new Date(n.published).getTime() < 3 * HOUR;
                       return (
-                        <li key={n.link}>
-                          <a href={n.link} target="_blank" rel="noopener noreferrer" className={`group block h-full rounded-sm border border-white/10 border-l-[3px] ${c.rule} bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600`}>
-                            <p className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.3em]">
+                        <li key={n.link} className={`relative w-[82%] shrink-0 snap-center sm:w-[60%] lg:w-auto ${n.link === hero?.link ? "max-lg:hidden" : ""}`}>
+                          <a href={n.link} target="_blank" rel="noopener noreferrer" className={`group flex h-full flex-col rounded-sm border border-white/10 border-l-[3px] ${c.rule} bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600`}>
+                            <p className="flex items-center gap-2.5 whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.18em] lg:gap-3 lg:tracking-[0.3em]">
                               <span className={c.text}>{n.source}</span>
                               <span className="text-zinc-500">{timeAgo(n.published)}</span>
                               {fresh && <span className="rounded-sm bg-red-500 px-1.5 py-0.5 font-bold tracking-widest text-black">NEW</span>}
+                              <span aria-hidden="true" className="ml-auto text-[9px] tracking-widest text-zinc-600 lg:hidden">{String(idx + 1).padStart(2, "0")}/{String(g.items.length).padStart(2, "0")}</span>
                             </p>
-                            <h3 className="mt-2 text-lg font-bold leading-snug text-white group-hover:underline group-hover:underline-offset-4">{n.title}<span className="sr-only"> (opens the publisher's site in a new tab)</span></h3>
-                            {n.summary && <p className="mt-2 line-clamp-2 text-sm text-zinc-300">{n.summary}</p>}
-                            <span aria-hidden="true" className={`mt-3 inline-block font-mono text-[11px] uppercase tracking-widest ${c.text} opacity-80 group-hover:opacity-100`}>Read at {n.source} ↗</span>
+                            <h3 className="mt-3 text-[17px] font-bold leading-snug text-white max-lg:line-clamp-4 group-hover:underline group-hover:underline-offset-4 lg:text-lg">{n.title}<span className="sr-only"> (opens the publisher's site in a new tab)</span></h3>
+                            {n.summary && <p className="mt-2 text-sm leading-relaxed text-zinc-300 line-clamp-3 lg:line-clamp-2">{n.summary}</p>}
+                            <span aria-hidden="true" className={`mt-auto inline-block pt-4 font-mono text-[11px] uppercase tracking-widest ${c.text} opacity-80 group-hover:opacity-100`}>Read at {n.source} ↗</span>
                           </a>
                         </li>
                       );
@@ -133,3 +144,24 @@ export default function News() {
     </div>
   );
 }
+
+
+/** Phones only: the latest story as one big card that fills the first screen. */
+function TopStory({ n, now }: { n: NewsItem; now: Date }) {
+  const c = look(n.source);
+  const fresh = now.getTime() - new Date(n.published).getTime() < 3 * HOUR;
+  return (
+    <a href={n.link} target="_blank" rel="noopener noreferrer" className={`group relative flex min-h-[14rem] flex-col justify-end gap-3 overflow-hidden rounded-sm border border-white/10 border-l-[3px] ${c.rule} bg-gradient-to-b from-white/[0.06] to-white/[0.01] p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600 lg:hidden`}>
+      <span aria-hidden="true" className="pointer-events-none absolute -right-2 top-1 select-none text-[5.5rem] font-black italic leading-none text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.12)]">{n.source.split(" ")[0].toUpperCase()}</span>
+      <p className="relative flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.3em]">
+        <span className="rounded-sm bg-red-500 px-1.5 py-0.5 font-bold tracking-widest text-black">{fresh ? "NEW" : "TOP"}</span>
+        <span className={c.text}>{n.source}</span>
+        <span className="text-zinc-500">{timeAgo(n.published)}</span>
+      </p>
+      <h2 className="relative text-[1.7rem] font-black leading-[1.08] tracking-tight text-white">{n.title}<span className="sr-only"> (opens the publisher's site in a new tab)</span></h2>
+      {n.summary && <p className="relative line-clamp-4 text-[15px] leading-relaxed text-zinc-300">{n.summary}</p>}
+      <span aria-hidden="true" className={`relative mt-1 font-mono text-[11px] uppercase tracking-widest ${c.text}`}>Read at {n.source} ↗</span>
+    </a>
+  );
+}
+

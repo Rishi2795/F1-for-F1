@@ -291,3 +291,101 @@ html {
     font-size: clamp(13.5px, 0.2vw + 11.3px, 15.5px);
   }
 }
+
+/* Home page: every section is a full-screen scene. On a laptop-sized screen it snaps from one to the next and each scene eases in
+   as it arrives. (Phones, short windows and reduced motion keep an ordinary scrolling page.) */
+@media (min-height: 520px) {
+  html.snap-home {
+    scroll-snap-type: y mandatory;
+  }
+  .home-scene {
+    scroll-snap-align: start;
+    min-height: 100svh;
+  }
+  .home-scene-end {
+    scroll-snap-align: end;
+  }
+  /* the site footer is the last stop, so mandatory snapping can no longer pull the page back off it */
+  html.snap-home .site-footer {
+    scroll-snap-align: end;
+  }
+}
+/* The cube turn between scenes (see lib/homescenes.ts). Each scene tips away from its bottom edge as it leaves and swings in from its top
+   edge as it arrives. Where scroll-driven animation is supported the browser does it off the main thread (class cube-css); elsewhere
+   the script sets the same transform on each frame (attribute data-turning). Nothing is applied at rest. */
+@keyframes cube-in {
+  from {
+    transform: perspective(1100px) rotateX(-82deg) translateZ(-60px);
+    transform-origin: 50% 0%;
+    opacity: 0.25;
+  }
+  to {
+    transform: none;
+    transform-origin: 50% 0%;
+    opacity: 1;
+  }
+}
+@keyframes cube-out {
+  from {
+    transform: none;
+    transform-origin: 50% 100%;
+    opacity: 1;
+  }
+  to {
+    transform: perspective(1100px) rotateX(82deg) translateZ(-60px);
+    transform-origin: 50% 100%;
+    opacity: 0.25;
+  }
+}
+@media (min-height: 520px) and (prefers-reduced-motion: no-preference) {
+  html.scenes-on .home-scene {
+    scroll-snap-align: none; /* the invisible .scene-anchor over each scene does the snapping, see lib/homescenes.ts */
+  }
+  .scene-anchor {
+    position: absolute;
+    left: 0;
+    width: 1px;
+    pointer-events: none;
+    visibility: hidden;
+    scroll-snap-align: start;
+  }
+  html.scenes-on.cube-css .home-scene {
+    animation: cube-in cubic-bezier(0.25, 0.1, 0.25, 1), cube-out cubic-bezier(0.55, 0, 0.55, 0.2);
+    animation-fill-mode: backwards, forwards; /* entry only holds before it starts, exit only after it ends: the two never fight over transform */
+    animation-timeline: view(), view();
+    animation-range: entry 0% entry 100%, exit 0% exit 100%;
+  }
+  html.scenes-on:not(.cube-css) .home-scene {
+    backface-visibility: hidden;
+  }
+  html.scenes-on:not(.cube-css) .home-scene[data-turning] {
+    will-change: transform;
+    pointer-events: none;
+  }
+}
+
+/* Pages with a few big scenes (the schedule): scrolling settles on a scene when it is close, but never forces it. */
+@media (min-width: 1024px) and (min-height: 600px) {
+  html.snap-proximity {
+    scroll-snap-type: y proximity;
+  }
+  .snap-target {
+    scroll-snap-align: start;
+  }
+}
+
+/* On phones the dot rail sits along the right edge, so every scene keeps a gutter of its own beside it: nothing is drawn under the dots. */
+@media (max-width: 1023px) {
+  html.snap-home .home-scene:not([data-hero]) {
+    padding-right: 1.9rem;
+  }
+}
+
+/* The home page is navigated with its dots: no browser scrollbar beside them. */
+html.snap-home {
+  scrollbar-width: none;
+  overscroll-behavior-y: none; /* no rubber-band bounce fighting the snap at the first and last scene */
+}
+html.snap-home::-webkit-scrollbar {
+  display: none;
+}

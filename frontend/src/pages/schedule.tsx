@@ -6,6 +6,7 @@ import { SeasonChips } from "../components/ui/seasonchips";
 import { StatBoard } from "../components/ui/statboard";
 import { ErrorState, Skeleton } from "../components/ui/states";
 import { chip } from "../components/ui/chipstyle";
+import { PhoneNext, RoundDeck } from "../components/schedule/phoneschedule";
 import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { pct } from "../lib/forecast";
@@ -29,26 +30,36 @@ export default function Schedule() {
   const races = useApi<{ races: RaceIndexEntry[] }>(season ? `/seasons/${season}/races` : null);
   const forecasts = useApi<NextForecasts>("/predictions/next");
   const circuits = useApi<CircuitIndexEntry[]>("/circuits");
-  const [filter, setFilter] = useState<Filter>("all");
+  // on a phone the calendar opens on what is still to come; the chips bring the rest back
+  const [filter, setFilter] = useState<Filter>(() => (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches ? "upcoming" : "all"));
+  useEffect(() => {
+    document.documentElement.classList.add("snap-proximity");
+    return () => document.documentElement.classList.remove("snap-proximity");
+  }, []);
   const zone = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "";
 
   const list = races.data?.races ?? [];
   const next = nextRound(list);
   const layout = new Map((circuits.data ?? []).filter((c) => c.preview).map((c) => [c.slug, c.preview as number[][]]));
   const done = list.filter((r) => r.data_status !== "scheduled").length;
-  const shown = list.filter((r) => filter === "all" || (filter === "upcoming" ? r.data_status === "scheduled" : r.data_status !== "scheduled"));
+  const hasUpcoming = list.some((r) => r.data_status === "scheduled");
+  const shown = list.filter((r) => filter === "all" || (filter === "upcoming" && !hasUpcoming) || (filter === "upcoming" ? r.data_status === "scheduled" : r.data_status !== "scheduled"));
   const forecastOf = (r: RaceIndexEntry): Forecast | undefined => forecasts.data?.races.find((f) => f.round === r.round && f.season === r.season);
 
   return (
     <div className="min-h-screen pb-32 pt-10 text-zinc-300 md:pt-12">
-      <div className="page space-y-10">
-        <PageHead kicker="CALENDAR" title="The season" accent="schedule" intro="Every round, the weekend timetable in your own time zone, and a forecast for what is still to come." />
+      <div className="page space-y-6 lg:space-y-10">
+        <PageHead kicker="CALENDAR" title="The season" accent="schedule" intro={<span className="max-lg:hidden">Every round, the weekend timetable in your own time zone, and a forecast for what is still to come.</span>} />
 
         {seasons.data && season && <SeasonChips seasons={seasons.data.seasons} value={season} onChange={(s) => { setPicked(s); setFilter("all"); }} />}
         {(seasons.loading || races.loading) && <Skeleton className="h-96" />}
         {races.error && <ErrorState error={races.error} onRetry={races.reload} subject="schedule" />}
 
+        {next && <div className="max-lg:hidden"><NextUp race={next} forecast={forecastOf(next)} zone={zone} /></div>}
+        {next && <PhoneNext race={next} forecast={forecastOf(next)} zone={zone} />}
+
         {list.length > 0 && (
+          <div className="max-lg:hidden">
           <StatBoard
             label="Season at a glance"
             items={[
@@ -58,12 +69,11 @@ export default function Schedule() {
               { label: next ? "Next up" : "Final round", value: next ? next.event_name.replace(" Grand Prix", "") : (list[list.length - 1]?.event_name.replace(" Grand Prix", "") ?? "—"), sub: next ? next.location : "Season complete" },
             ]}
           />
+          </div>
         )}
 
-        {next && <NextUp race={next} forecast={forecastOf(next)} zone={zone} />}
-
         {list.length > 0 && (
-          <section aria-labelledby="cal-h" className="space-y-6">
+          <section aria-labelledby="cal-h" className="snap-target space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 id="cal-h" className="flex items-center gap-3 text-3xl font-black uppercase italic tracking-tighter text-white">
                 <span aria-hidden="true" className="h-3 w-3 bg-red-600" />All rounds
@@ -75,7 +85,9 @@ export default function Schedule() {
               </div>
             </div>
 
-            <div className="grid gap-x-8 gap-y-10 xl:grid-cols-2">
+            <RoundDeck races={shown} next={next} forecastOf={forecastOf} layout={layout} />
+
+            <div className="grid gap-x-8 gap-y-10 max-lg:hidden xl:grid-cols-2">
               {groupByMonth(shown).map((m) => (
                 <div key={m.key}>
                   <h3 className="mb-3 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.35em] text-white">
@@ -143,11 +155,11 @@ function NextUp({ race, forecast, zone }: { race: RaceIndexEntry; forecast?: For
   const left = start ? countdown(start.getTime() - now) : null;
   const top = forecast?.drivers.slice(0, 3) ?? [];
   return (
-    <section aria-labelledby="next-h" className="glass grid gap-8 p-6 md:p-8 lg:grid-cols-[1.1fr_0.9fr]" style={{ boxShadow: "inset 3px 0 0 #dc2626" }}>
+    <section id="next-scene" aria-labelledby="next-h" className="snap-target glass relative grid gap-8 p-6 md:p-8 lg:min-h-[calc(100dvh-2.5rem)] lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:p-12" style={{ boxShadow: "inset 3px 0 0 #dc2626" }}>
       <div className="space-y-6">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-red-500">NEXT_RACE · ROUND {race.round}</p>
-          <h2 id="next-h" className="mt-3 text-3xl font-black uppercase italic leading-[0.95] tracking-tighter text-white md:text-5xl">{race.event_name}</h2>
+          <h2 id="next-h" className="mt-3 text-3xl font-black uppercase italic leading-[0.95] tracking-tighter text-white md:text-5xl lg:text-6xl">{race.event_name}</h2>
           <p className="mt-2 text-zinc-300">{race.location}{race.country ? `, ${race.country}` : ""}</p>
         </div>
         {left && (
@@ -155,10 +167,10 @@ function NextUp({ race, forecast, zone }: { race: RaceIndexEntry; forecast?: For
             {left.over ? (
               <p className="font-serif text-3xl text-white">Lights out</p>
             ) : (
-              <div className="grid max-w-sm grid-cols-3 gap-px overflow-hidden rounded-sm border border-white/10 bg-white/10">
+              <div className="grid max-w-md grid-cols-3 gap-px overflow-hidden rounded-sm border border-white/10 bg-white/10">
                 {([["Days", left.days, true], ["Hours", left.hours, false], ["Min", left.minutes, false]] as const).map(([k, v, head]) => (
-                  <div key={k} className={`px-4 py-3 text-center ${head ? "bg-white text-black" : "glass-cell"}`}>
-                    <div className={`font-serif text-4xl tabular-nums ${head ? "text-black" : "text-white"}`}>{String(v).padStart(2, "0")}</div>
+                  <div key={k} className={`px-4 py-3 text-center lg:py-5 ${head ? "bg-white text-black" : "glass-cell"}`}>
+                    <div className={`font-serif text-4xl tabular-nums lg:text-5xl ${head ? "text-black" : "text-white"}`}>{String(v).padStart(2, "0")}</div>
                     <div className={`font-mono text-[9px] uppercase tracking-[0.25em] ${head ? "text-zinc-600" : "text-zinc-400"}`}>{k}</div>
                   </div>
                 ))}
@@ -202,6 +214,14 @@ function NextUp({ race, forecast, zone }: { race: RaceIndexEntry; forecast?: For
           </div>
         )}
       </div>
+      <button
+        type="button"
+        onClick={() => document.getElementById("cal-h")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" })}
+        className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600 lg:flex"
+      >
+        All rounds
+        <span aria-hidden="true" className="animate-bounce text-base leading-none">↓</span>
+      </button>
     </section>
   );
 }

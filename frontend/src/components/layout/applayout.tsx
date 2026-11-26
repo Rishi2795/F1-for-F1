@@ -20,16 +20,29 @@ export default function AppLayout() {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       return;
     }
-    // a link to a section (/forecast#accuracy): wait for the page's code and data to put it on screen
-    let tries = 0;
+    // a link to a section (/forecast#accuracy): wait for the page's code and data to put it on screen, then keep it lined up while the
+    // content above it finishes loading (it would otherwise be pushed down the page), until it has held still for about two seconds,
+    // or the visitor scrolls for themselves.
+    let ticks = 0;
+    let stable = 0;
+    let lastTop = Number.NaN;
+    const stop = () => {
+      window.clearInterval(id);
+      for (const type of ["wheel", "touchstart", "keydown"]) window.removeEventListener(type, stop);
+    };
+    for (const type of ["wheel", "touchstart", "keydown"]) window.addEventListener(type, stop, { passive: true });
     const id = window.setInterval(() => {
+      if (++ticks > 110) return stop(); // never longer than about nine seconds
       const el = document.getElementById(decodeURIComponent(hash.slice(1)));
-      if (el) {
+      if (!el) return ticks > 25 ? stop() : undefined;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      if (top !== lastTop) {
         el.scrollIntoView();
-        window.clearInterval(id);
-      } else if (++tries > 25) window.clearInterval(id);
+        lastTop = top;
+        stable = 0;
+      } else if (++stable >= 25) stop();
     }, 80);
-    return () => window.clearInterval(id);
+    return stop;
   }, [pathname, hash]);
 
   return (

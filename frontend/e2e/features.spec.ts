@@ -90,14 +90,14 @@ test.describe("keyboard and landmarks", () => {
   test("the bottom dock stays visible while a keyboard user is in it", async ({ page }) => {
     await page.goto("/explore");
     const nav = page.getByRole("navigation", { name: "Main" });
-    await page.getByRole("link", { name: "Standings", exact: true }).focus();
+    await nav.getByRole("link", { name: "Standings", exact: true }).focus(); // the dock, not the footer's site map
     await page.waitForTimeout(4200); // longer than the idle fade-out
     await expect(nav).toHaveCSS("opacity", "1");
   });
 
   test("the dock marks the current page for assistive tech", async ({ page }) => {
     await page.goto("/season/2024");
-    await expect(page.getByRole("link", { name: "Standings", exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Standings", exact: true })).toHaveAttribute("aria-current", "page");
   });
 
   test("first Tab reaches a skip link that jumps to the content; there is exactly one main landmark", async ({ page }) => {
@@ -271,7 +271,7 @@ test.describe("pit wall tools", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText("pit wall");
     await expect(page.getByRole("link", { name: /Forecast/ }).first()).toBeVisible();
     await expect(page.getByText("Was that race worth a replay? Spoiler-free.")).toBeVisible();
-    await page.getByRole("link", { name: /Worth watching/ }).click();
+    await page.getByRole("main").getByRole("link", { name: /Worth watching/ }).click(); // the tool card, not the footer link
     await expect(page).toHaveURL(/\/watch$/);
   });
 

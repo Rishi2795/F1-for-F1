@@ -16,10 +16,6 @@ export function fmtGrid(grid: number | null, pitLane: boolean): string {
   return grid === null ? DASH : `P${grid}`;
 }
 
-export function fmtFinish(finish: number | null): string {
-  return finish === null ? DASH : String(finish).padStart(2, "0");
-}
-
 const MISSING_LABELS: Record<string, string> = {
   laps: "lap timing",
   stints: "tyre stints",

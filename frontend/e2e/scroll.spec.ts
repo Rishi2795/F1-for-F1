@@ -22,9 +22,9 @@ test.describe("scroll position", () => {
   test("a link to a section of a page still scrolls to that section", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto("/forecast#accuracy");
+    // the content above the section loads in stages and pushes it down, so wait for it to settle at the top rather than reading it once
     await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 15_000 }).toBeGreaterThan(300);
-    const top = await page.locator("#accuracy").evaluate((el) => el.getBoundingClientRect().top);
-    expect(top).toBeLessThan(400);
+    await expect.poll(() => page.locator("#accuracy").evaluate((el) => el.getBoundingClientRect().top), { timeout: 10_000 }).toBeLessThan(400);
   });
 
   test("switching tabs or seasons on a page does not throw you back to the top", async ({ page }) => {
@@ -57,4 +57,54 @@ test.describe("scroll position", () => {
       }
     });
   }
+
+  test("home: every section is one screen, the page snaps between them, and the dots jump to a section", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+    await expect(page.locator("[data-scene]").first()).toBeVisible();
+    const scenes = page.locator("[data-scene]");
+    expect(await scenes.count()).toBeGreaterThanOrEqual(7);
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toMatch(/y/);
+
+    for (let i = 0; i < (await scenes.count()); i++) {
+      await scenes.nth(i).evaluate((el) => { let t = 0; for (let e: HTMLElement | null = el as HTMLElement; e; e = e.offsetParent as HTMLElement | null) t += e.offsetTop; window.scrollTo(0, t); });
+      await page.waitForTimeout(1300); // the scene eases in (scale and fade) before it is measured
+      const box = await scenes.nth(i).evaluate((el) => ({ top: el.getBoundingClientRect().top, clipped: el.hasAttribute("data-hero") ? 0 : el.scrollHeight - el.clientHeight }));
+      expect(Math.abs(box.top), `scene ${i} lines up with the top`).toBeLessThan(3);
+      expect(box.clipped, `scene ${i} shows all of its content`).toBeLessThanOrEqual(1);
+    }
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const dots = page.getByRole("navigation", { name: "Sections of the home page" });
+    await expect(dots.getByRole("button")).toHaveCount(await scenes.count());
+    await dots.getByRole("button", { name: "Tech history" }).click();
+    await expect.poll(() => scenes.filter({ hasText: /TECH_/ }).evaluate((el) => Math.abs(el.getBoundingClientRect().top)), { timeout: 8000 }).toBeLessThan(5);
+  });
+
+  test("home on a phone: every scene is exactly one screen, it snaps, and the dots are there", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    const scenes = page.locator("[data-scene]");
+    await expect(scenes.first()).toBeVisible();
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toMatch(/y/);
+    for (let i = 0; i < (await scenes.count()); i++) {
+      await scenes.nth(i).evaluate((el) => { let t = 0; for (let e: HTMLElement | null = el as HTMLElement; e; e = e.offsetParent as HTMLElement | null) t += e.offsetTop; window.scrollTo(0, t); });
+      await page.waitForTimeout(1300);
+      const box = await scenes.nth(i).evaluate((el) => ({ top: el.getBoundingClientRect().top, h: el.getBoundingClientRect().height, clipped: el.scrollHeight - el.clientHeight }));
+      expect(Math.abs(box.top), `scene ${i} lines up with the top`).toBeLessThan(3);
+      expect(box.h, `scene ${i} is one screen`).toBeLessThanOrEqual(845);
+      expect(box.clipped, `scene ${i} shows all of its content`).toBeLessThanOrEqual(1);
+    }
+    await expect(page.getByRole("navigation", { name: "Sections of the home page" })).toBeVisible();
+  });
+
+  test("schedule: the next race is a full-screen scene", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 800 });
+    await page.goto("/schedule");
+    const scene = page.locator("#next-scene");
+    await expect(scene).toBeVisible();
+    const h = await scene.evaluate((el) => el.getBoundingClientRect().height);
+    expect(h).toBeGreaterThan(700);
+    expect(h).toBeLessThanOrEqual(800);
+  });
 });

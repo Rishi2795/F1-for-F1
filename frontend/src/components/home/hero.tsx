@@ -1,7 +1,7 @@
 import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { useRef, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { hideBroken } from "../lib/images";
+import { hideBroken } from "../../lib/images";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -42,7 +42,7 @@ const Hero = () => {
   };
 
   return (
-    <section ref={section} onMouseMove={onMove} className="relative min-h-[100dvh] w-full bg-[#050505] overflow-hidden flex flex-col">
+    <section ref={section} data-scene data-hero data-title="Start" onMouseMove={onMove} className="home-scene relative min-h-[100svh] w-full bg-[#050505] overflow-hidden flex flex-col">
       {/* ==========================================
           DESKTOP VIEW
       ========================================== */}

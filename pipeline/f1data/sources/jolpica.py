@@ -9,7 +9,7 @@ from .. import config
 from ..errors import SourceFormatError
 from ..http import HttpClient
 from ..logging_setup import get_logger
-from ..normalize import clean, to_float, to_int, to_str
+from ..normalize import to_float, to_int, to_str
 
 log = get_logger("jolpica")
 
@@ -350,10 +350,6 @@ def _parse_result(item: dict[str, Any]) -> ResultRow | None:
         fastest_time_s=_lap_seconds((fastest.get("Time") or {}).get("time")),
         fastest_speed_kph=to_float((fastest.get("AverageSpeed") or {}).get("speed")),
     )
-
-
-def season_has_results(rows: dict[int, list[ResultRow]], round_number: int) -> bool:
-    return bool(clean(rows.get(round_number)))
 
 
 def _lap_seconds(text: object) -> float | None:

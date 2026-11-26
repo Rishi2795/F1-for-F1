@@ -1,22 +1,22 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 
-import AppLayout from "./components/layout/Applayout";
-import FloatingDock from "./components/floatingdock";
+import AppLayout from "./components/layout/applayout";
+import FloatingDock from "./components/layout/floatingdock";
 import { CommandPalette } from "./components/search/commandpalette";
-import CurveScrollRail from "./components/curvescroll";
+import ScrollProgress from "./components/layout/scrollprogress";
 import { ErrorBoundary } from "./components/ui/errorboundary";
 import { PageLoader } from "./components/ui/states";
 import { ServerNotice } from "./components/ui/servernotice";
 
 // Route-level code splitting: each page's code (and its heavy deps) loads only when visited.
-const About = lazy(() => import("./pages/about"));
-const Home = lazy(() => import("./pages/home"));
+const Home = lazy(() => import("./pages/home")); // the landing page, "/"
+const RaceArchive = lazy(() => import("./pages/racearchive")); // "/explore"
 const RaceDashboard = lazy(() => import("./pages/racedashboard"));
 const StrategySim = lazy(() => import("./pages/simulation"));
 const DriverProfile = lazy(() => import("./pages/driverprofile"));
 const DriversHub = lazy(() => import("./pages/drivers"));
-const AboutPage = lazy(() => import("./pages/about_app"));
+const About = lazy(() => import("./pages/about")); // "/about_app"
 const NotFound = lazy(() => import("./pages/notfound"));
 const Standings = lazy(() => import("./pages/standings"));
 const Ratings = lazy(() => import("./pages/ratings"));
@@ -36,6 +36,7 @@ const Methodology = lazy(() => import("./pages/methodology"));
 const StandingsRedirect = lazy(() => import("./pages/standings").then((m) => ({ default: m.StandingsRedirect })));
 
 export default function App() {
+  const onLanding = useLocation().pathname === "/"; // the landing page navigates with its dots, not a progress bar
   return (
     <div className="relative">
       <a
@@ -50,7 +51,7 @@ export default function App() {
         Skip to main content
       </a>
       {/* Global components (always visible) */}
-      <CurveScrollRail />
+      {!onLanding && <ScrollProgress />}
       <FloatingDock />
       <CommandPalette />
       <ServerNotice />
@@ -59,12 +60,12 @@ export default function App() {
         <Suspense fallback={<PageLoader />}>{/* only reached before the layout itself is ready */}
           <Routes>
             <Route element={<AppLayout />}>
-              <Route path="/" element={<About />} />
+              <Route path="/" element={<Home />} />
               <Route path="/simulation" element={<StrategySim />} />
-              <Route path="/about_app" element={<AboutPage />} />
+              <Route path="/about_app" element={<About />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/news" element={<News />} />
-              <Route path="/explore" element={<Home />} />
+              <Route path="/explore" element={<RaceArchive />} />
               <Route path="/race/:year/:round" element={<RaceDashboard />} />
               <Route path="/race/:year/:round/lab" element={<RaceLab />} />
 

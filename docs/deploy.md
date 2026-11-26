@@ -1,6 +1,6 @@
 # Deploying
 
-**Frontend → Vercel. API → Render.** The API is small and read-only: no database, no FastF1, no
+**Frontend → Vercel. API → Render.** The API is small and read-only: no database, no live-timing library, no
 secrets. Remove the old `MONGO_URI_NEW` variable; nothing uses it any more.
 
 ## 1. API on Render

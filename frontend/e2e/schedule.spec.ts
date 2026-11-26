@@ -11,6 +11,25 @@ test.describe("schedule, news and possible standings", () => {
     await expect(page.getByRole("link", { name: "Results →" }).first()).toBeVisible();
   });
 
+  test("on a phone the schedule is a countdown, a weekend card and a deck of rounds you swipe, opening on the next race", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/schedule");
+    await expect(page.getByRole("timer")).toBeVisible();
+    await expect(page.getByLabel("This weekend")).toBeVisible();
+    const strip = page.getByRole("group", { name: "Jump to a round" });
+    await expect(strip.getByRole("button").first()).toBeVisible();
+    const deck = page.getByRole("list", { name: /Rounds, swipe sideways/ });
+    await expect(deck).toBeVisible();
+    // the deck opens on the next race (scrolled sideways to it), and the strip agrees
+    await deck.scrollIntoViewIfNeeded();
+    await expect(deck.locator("li").filter({ hasText: "NEXT" }).first()).toBeInViewport();
+    await expect(strip.locator("[aria-current=true]")).toHaveCount(1);
+    // the filter reaches finished rounds, with their results
+    await page.getByRole("button", { name: "DONE" }).click();
+    await expect(deck.getByRole("link", { name: "Results →" }).first()).toBeAttached();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  });
+
   test("the news page links out safely and can be filtered by publisher", async ({ page }) => {
     await page.goto("/news");
     const first = page.locator("ul a[href^='https://']").first();

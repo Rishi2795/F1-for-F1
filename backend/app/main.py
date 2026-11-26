@@ -1,7 +1,7 @@
 """F1 for F1 API: a small, read-only service over precomputed, validated data.
 
-No upstream (FastF1, Jolpica, ...) is ever called at request time; the pipeline publishes
-JSON files and this app serves them. See plan.md.
+No upstream data source is ever called at request time; the pipeline publishes
+JSON files and this app serves them. See docs/plan.md.
 """
 
 from __future__ import annotations

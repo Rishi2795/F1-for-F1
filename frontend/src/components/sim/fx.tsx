@@ -1,6 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useMemo, type ReactNode } from "react";
-import { useCountUp } from "../../hooks/useCountUp";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -13,12 +12,6 @@ export function Reveal({ children, delay = 0, className = "", y = 16 }: { childr
       {children}
     </motion.div>
   );
-}
-
-/** A number that counts up to its value. */
-export function AnimatedNumber({ value, format }: { value: number; format: (n: number) => string }) {
-  const shown = useCountUp(value, 900);
-  return <>{format(shown)}</>;
 }
 
 /** Between the setup and a live race: the screen slides and fades rather than cutting. */

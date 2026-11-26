@@ -90,9 +90,6 @@ class Publisher:
             return "kept_previous"
         return "written" if write_if_changed(self.race_path(doc.season, doc.round), dumps(doc)) else "unchanged"
 
-    def write_telemetry(self, doc: TelemetryDoc) -> bool:
-        return write_if_changed(self.root / "telemetry" / str(doc.season) / f"{doc.round}.json", dumps(doc))
-
     def write_laps(self, doc: LapDoc) -> bool:
         return write_if_changed(self.root / "laps" / str(doc.season) / f"{doc.round}.json", dumps(doc))
 

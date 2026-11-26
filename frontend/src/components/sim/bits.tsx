@@ -1,6 +1,5 @@
 import { useId, type ReactNode } from "react";
 import { COMPOUND_COLOR, COMPOUND_LETTER, type Compound } from "../../lib/sim/types";
-import { control as _unused } from "./format";
 
 
 /** A tyre as a coloured ring with its letter. The name is for screen readers; the colour is never the only cue. */

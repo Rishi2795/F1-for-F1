@@ -1,6 +1,6 @@
 import { motion, useScroll, useSpring } from "framer-motion";
 
-export default function TopProgress() {
+export default function ScrollProgress() {
   const { scrollYProgress } = useScroll();
   
   // Spring physics makes the bar "liquid"—it won't stutter on mobile touch
