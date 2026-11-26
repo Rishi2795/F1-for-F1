@@ -27,7 +27,7 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements-dev.txt
       - run: pip install -r backend/requirements-dev.txt
-      - name: Lint (includes the no-print and no-FastF1 rules)
+      - name: Lint (includes the no-print and banned-imports rules)
         run: ruff check backend
       - name: Tests
         working-directory: backend

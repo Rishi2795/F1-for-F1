@@ -16,11 +16,22 @@ from . import SCHEMA_VERSION, config
 from .coverage import RANK
 from .logging_setup import get_logger
 from .models import (
+    Champions,
     DriverListEntry,
     DriverProfile,
+    DuelsDoc,
+    IncidentDoc,
+    LapDoc,
+    NextForecasts,
     RaceDoc,
     RaceIndex,
+    RatingsCurrent,
+    RatingSummary,
+    ReplayDoc,
+    SeasonStandings,
     SeasonSummary,
+    TelemetryDoc,
+    TitleForecast,
 )
 
 log = get_logger("export")
@@ -66,16 +77,77 @@ class Publisher:
         if not doc.drivers:
             return "kept_previous" if self.race_path(doc.season, doc.round).exists() else "unchanged"
         existing = self.load_race(doc.season, doc.round)
+        if existing:
+            doc = _carry_extras(existing, doc)
         if existing and RANK[existing.quality.status] > RANK[doc.quality.status]:
             log.warning(
                 "keeping previous %s R%d (%s) - new build is only %s",
-                doc.season, doc.round, existing.quality.status, doc.quality.status,
+                doc.season,
+                doc.round,
+                existing.quality.status,
+                doc.quality.status,
             )
             return "kept_previous"
         return "written" if write_if_changed(self.race_path(doc.season, doc.round), dumps(doc)) else "unchanged"
 
+    def write_laps(self, doc: LapDoc) -> bool:
+        return write_if_changed(self.root / "laps" / str(doc.season) / f"{doc.round}.json", dumps(doc))
+
+    def write_race(self, doc: RaceDoc) -> bool:
+        """Rewrite an existing race document (used by season-wide clean-ups; no quality comparison)."""
+        return write_if_changed(self.race_path(doc.season, doc.round), dumps(doc))
+
     def publish_index(self, index: RaceIndex) -> None:
+        # A rebuild of the index must not lose the weekend timetables, which come from a different step.
+        previous = self.load_index(index.season)
+        if previous is not None:
+            kept = {e.round: e.sessions for e in previous.races}
+            for entry in index.races:
+                if not entry.sessions and kept.get(entry.round):
+                    entry.sessions = kept[entry.round]
         write_if_changed(self.root / "seasons" / str(index.season) / "races.json", dumps(index))
+
+    # -- ratings ---------------------------------------------------------------
+    def load_ratings(self) -> RatingsCurrent | None:
+        path = self.root / "ratings" / "current.json"
+        return RatingsCurrent.model_validate_json(path.read_text(encoding="utf-8")) if path.exists() else None
+
+    # -- champions -------------------------------------------------------------
+    def load_champions(self) -> Champions | None:
+        path = self.root / "champions.json"
+        return Champions.model_validate_json(path.read_text(encoding="utf-8")) if path.exists() else None
+
+    def publish_champions(self, champions: Champions) -> bool:
+        return write_if_changed(self.root / "champions.json", dumps(champions))
+
+    # -- standings -------------------------------------------------------------
+    def standings_path(self, season: int) -> Path:
+        return self.root / "seasons" / str(season) / "standings.json"
+
+    def load_standings(self, season: int) -> SeasonStandings | None:
+        path = self.standings_path(season)
+        if not path.exists():
+            return None
+        try:
+            return SeasonStandings.model_validate_json(path.read_text(encoding="utf-8"))
+        except ValueError:
+            log.warning("existing standings for %d failed validation; will be replaced", season)
+            return None
+
+    def publish_standings(self, standings: SeasonStandings) -> str:
+        """Never replace a longer standings history with a shorter one (e.g. after a partial upstream failure)."""
+        existing = self.load_standings(standings.season)
+        if existing and len(existing.rounds) > len(standings.rounds):
+            log.warning(
+                "keeping previous %d standings (%d rounds): new build only has %d",
+                standings.season,
+                len(existing.rounds),
+                len(standings.rounds),
+            )
+            return "kept_previous"
+        if not standings.rounds:
+            return "unchanged"
+        return "written" if write_if_changed(self.standings_path(standings.season), dumps(standings)) else "unchanged"
 
     def published_seasons(self) -> list[int]:
         base = self.root / "seasons"
@@ -88,27 +160,61 @@ class Publisher:
         return RaceIndex.model_validate_json(path.read_text(encoding="utf-8")) if path.exists() else None
 
     # -- drivers ---------------------------------------------------------------
+    def load_headshots(self) -> dict[str, str]:
+        path = self.root / "drivers" / "headshots.json"
+        if not path.exists():
+            return {}
+        return json.loads(path.read_text(encoding="utf-8")).get("headshots", {})
+
     def rebuild_drivers(self) -> int:
+        headshots = self.load_headshots()
         rows: dict[str, dict[int, list[tuple[RaceDoc, Any]]]] = {}
         for season in self.published_seasons():
             for path in sorted((self.root / "seasons" / str(season)).glob("race_*.json")):
                 doc = RaceDoc.model_validate_json(path.read_text(encoding="utf-8"))
                 for drv in doc.drivers:
                     rows.setdefault(drv.driver_code, {}).setdefault(season, []).append((doc, drv))
+        champions = self.load_champions()
+        ratings = self.load_ratings()
+        rated = {r.code: r for r in ratings.ratings} if ratings else {}
         listing: list[DriverListEntry] = []
         for code, by_season in rows.items():
             summaries = [_summarise(season, items) for season, items in sorted(by_season.items(), reverse=True)]
             latest = summaries[0]
             _, last_drv = max(by_season[latest.season], key=lambda t: t[0].round)
+            # A title counts only if code AND name match, so two drivers who share a 3-letter code never mix.
+            title_years = sorted(
+                c.season
+                for c in (champions.champions if champions else [])
+                if c.code == code and c.name == last_drv.driver_name
+            )
             profile = DriverProfile(
-                code=code, name=last_drv.driver_name, team=last_drv.team, number=last_drv.driver_number,
-                latest_season=latest.season, stats=latest, seasons=summaries,
+                code=code,
+                name=last_drv.driver_name,
+                team=last_drv.team,
+                team_color=last_drv.team_color,
+                number=last_drv.driver_number,
+                image=headshots.get(code),
+                latest_season=latest.season,
+                titles=len(title_years),
+                title_years=title_years,
+                rating=_rating_summary(rated.get(code), ratings),
+                stats=latest,
+                seasons=summaries,
             )
             write_if_changed(self.root / "drivers" / f"{code}.json", dumps(profile))
             listing.append(
                 DriverListEntry(
-                    code=code, name=last_drv.driver_name, team=last_drv.team, country=None,
+                    code=code,
+                    name=last_drv.driver_name,
+                    team=last_drv.team,
+                    country=None,
+                    image=headshots.get(code),
+                    number=last_drv.driver_number,
+                    team_color=last_drv.team_color,
+                    titles=len(title_years),
                     latest_season=latest.season,
+                    rating=float(rated[code].overall) if code in rated else None,
                 )
             )
         listing.sort(key=lambda d: (-d.latest_season, d.name))
@@ -148,12 +254,245 @@ class Publisher:
                     if len(finishes) != len(set(finishes)):
                         problems.append(f"{season} R{entry.round}: duplicate finishing positions")
                     problems.extend(_structural_problems(season, entry.round, doc))
+        for season in seasons:
+            problems.extend(self._standings_problems(season))
+        problems.extend(self._ratings_problems())
+        problems.extend(self._predictions_problems())
+        problems.extend(self._derived_problems())
+        problems.extend(self._telemetry_problems())
+        problems.extend(self._replay_problems())
+        problems.extend(self._incident_problems())
+        problems.extend(self._headshot_problems())
+        problems.extend(self._news_problems())
+        problems.extend(self._simulator_problems())
         manifest = self.root / "manifest.json"
         if not manifest.exists():
             problems.append("manifest.json missing")
         elif json.loads(manifest.read_text(encoding="utf-8")).get("content_sha256") != self.content_hash():
             problems.append("manifest content_sha256 does not match files (data edited without re-publishing?)")
         return problems
+
+    def _standings_problems(self, season: int) -> list[str]:
+        """Standings must be internally consistent and agree with the race results we publish."""
+        standings = self.load_standings(season)
+        if standings is None:
+            return []
+        found: list[str] = []
+        where = f"{season} standings"
+        previous: dict[str, float] = {}
+        for rnd in standings.rounds:
+            positions = [d.position for d in rnd.drivers if d.position is not None]
+            if len(positions) != len(set(positions)):
+                found.append(f"{where} R{rnd.round}: duplicate driver positions")
+            for d in rnd.drivers:
+                if d.points < previous.get(d.code, 0.0):
+                    found.append(f"{where} R{rnd.round} {d.code}: points went down")
+                previous[d.code] = d.points
+        if not standings.rounds:
+            return found
+        final = standings.rounds[-1]
+        # Official points include sprints, so they can never be LOWER than the race points we publish.
+        race_points: dict[str, float] = {}
+        for path in sorted((self.root / "seasons" / str(season)).glob("race_*.json")):
+            doc = RaceDoc.model_validate_json(path.read_text(encoding="utf-8"))
+            if doc.round > final.round:
+                continue
+            for drv in doc.drivers:
+                race_points[drv.driver_code] = race_points.get(drv.driver_code, 0.0) + drv.points
+        for d in final.drivers:
+            if d.points + 1e-6 < race_points.get(d.code, 0.0):
+                found.append(f"{where} {d.code}: standings points {d.points} < race points {race_points[d.code]}")
+        return found
+
+    def _headshot_problems(self) -> list[str]:
+        """Portrait links must be https links to F1's media host: nothing else may be loaded as a driver picture."""
+        from .headshots import acceptable
+
+        return [f"headshots: {code} has a link that is not an https png on media.formula1.com"
+                for code, url in self.load_headshots().items() if not acceptable(url)]
+
+    def _simulator_problems(self) -> list[str]:
+        """The simulator's model drives a public page: a missing file is fine, a broken or implausible one is not."""
+        path = self.root / "simulator" / "model.json"
+        if not path.exists():
+            return []
+        from .simmodel import problems
+
+        return problems(path.read_text(encoding="utf-8"))
+
+    def _news_problems(self) -> list[str]:
+        """Every headline must link to an https page on its own publisher's domain, with a title and a real date."""
+        path = self.root / "news.json"
+        if not path.exists():
+            return []
+        from .news import FEEDS, on_domain
+
+        try:
+            items = json.loads(path.read_text(encoding="utf-8")).get("items", [])
+        except ValueError:
+            return ["news.json: not valid JSON"]
+        found: list[str] = []
+        for i, it in enumerate(items):
+            domains = FEEDS.get(it.get("source", ""), (None, ()))[1]
+            if not it.get("title") or not on_domain(str(it.get("link", "")), domains):
+                found.append(f"news item {i}: no title, or a link that is not an https page on its publisher's site")
+            try:
+                datetime.fromisoformat(str(it.get("published")))
+            except ValueError:
+                found.append(f"news item {i}: no valid date")
+        return found
+
+    def _incident_problems(self) -> list[str]:
+        found: list[str] = []
+        for path in sorted((self.root / "incidents").glob("*/*.json")):
+            where = f"incidents {path.parent.name} R{path.stem}"
+            try:
+                doc = IncidentDoc.model_validate_json(path.read_text(encoding="utf-8"))
+            except ValueError as exc:
+                found.append(f"{where}: invalid ({type(exc).__name__})")
+                continue
+            race = self.load_race(doc.season, doc.round)
+            if race is None:
+                found.append(f"{where}: no matching race")
+                continue
+            codes = {d.driver_code for d in race.drivers}
+            for item in doc.items:
+                if any(c not in codes for c in item.drivers):
+                    found.append(f"{where}: names a driver who is not in the race")
+                    break
+        return found
+
+    def _replay_problems(self) -> list[str]:
+        """Replay files must parse, match their race, and hold possible values."""
+        found: list[str] = []
+        for path in sorted((self.root / "replay").glob("*/*.json")):
+            where = f"replay {path.parent.name} R{path.stem}"
+            try:
+                doc = ReplayDoc.model_validate_json(path.read_text(encoding="utf-8"))
+            except ValueError as exc:
+                found.append(f"{where}: invalid ({type(exc).__name__})")
+                continue
+            race = self.load_race(doc.season, doc.round)
+            if race is None:
+                found.append(f"{where}: no matching race")
+                continue
+            codes = {d.driver_code for d in race.drivers}
+            for d in doc.drivers:
+                cols = (d.f, d.speed, d.throttle, d.brake, d.gear, d.rpm, d.drs)
+                if d.code not in codes:
+                    found.append(f"{where} {d.code}: not in the race")
+                elif any(len(c) != doc.n for c in cols):
+                    found.append(f"{where} {d.code}: column length is not {doc.n}")
+                elif any(v is not None and not 0 <= v < 10_000 for v in d.f):
+                    found.append(f"{where} {d.code}: position outside the lap")
+                elif any(v is not None and not 0 <= v <= 400 for v in d.speed):
+                    found.append(f"{where} {d.code}: impossible speed")
+        return found
+
+    def _telemetry_problems(self) -> list[str]:
+        """Every telemetry file must parse, line up with its race, and hold physically possible readings."""
+        found: list[str] = []
+        for path in sorted((self.root / "telemetry").glob("*/*.json")):
+            where = f"telemetry {path.parent.name} R{path.stem}"
+            try:
+                doc = TelemetryDoc.model_validate_json(path.read_text(encoding="utf-8"))
+            except ValueError as exc:
+                found.append(f"{where}: invalid ({type(exc).__name__})")
+                continue
+            race = self.load_race(doc.season, doc.round)
+            if race is None:
+                found.append(f"{where}: no matching race")
+                continue
+            codes = {d.driver_code for d in race.drivers}
+            for d in doc.drivers:
+                lists = (d.t_ms, d.speed, d.throttle, d.brake, d.gear, d.rpm, d.drs)
+                if d.code not in codes:
+                    found.append(f"{where} {d.code}: not in the race")
+                elif any(len(x) != doc.n for x in lists):
+                    found.append(f"{where} {d.code}: channel length is not {doc.n}")
+                elif any(b < a for a, b in zip(d.t_ms, d.t_ms[1:], strict=False)):
+                    found.append(f"{where} {d.code}: clock goes backwards")
+                elif not 100 <= max(d.speed) <= 400 or min(d.speed) < 0 or max(d.throttle) > 100:
+                    found.append(f"{where} {d.code}: impossible readings")
+        return found
+
+    def _ratings_problems(self) -> list[str]:
+        ratings = self.load_ratings()
+        if ratings is None:
+            return []
+        found: list[str] = []
+        if not (self.root / "ratings" / "model.json").exists():
+            found.append("ratings: model card missing")
+        overall = [r.overall for r in ratings.ratings]
+        if overall != sorted(overall, reverse=True):
+            found.append("ratings: not sorted by overall rating")
+        if [r.rank for r in ratings.ratings] != list(range(1, len(ratings.ratings) + 1)):
+            found.append("ratings: ranks are not 1..n")
+        for r in ratings.ratings:
+            if not (self.root / "ratings" / "history" / f"{r.code}.json").exists():
+                found.append(f"ratings: history missing for {r.code}")
+            if abs((r.driver - 1500) + (r.car - 1500) - (r.overall - 1500)) > 2:  # rounding only
+                found.append(f"ratings {r.code}: overall is not driver + car")
+        return found
+
+    def _predictions_problems(self) -> list[str]:
+        root = self.root / "predictions"
+        if not root.exists():
+            return []
+        found: list[str] = []
+        for name in ("next.json", "championship.json", "model.json", "review.json"):
+            if not (root / name).exists():
+                found.append(f"predictions: {name} missing")
+        if found:
+            return found
+        nxt = NextForecasts.model_validate_json((root / "next.json").read_text(encoding="utf-8"))
+        for race in nxt.races:
+            where = f"predictions {race.season} R{race.round}"
+            for field, expected in (("win", 1.0), ("podium", 3.0)):
+                total = sum(getattr(d, field) for d in race.drivers)
+                if abs(total - expected) > 0.05:
+                    found.append(f"{where}: {field} probabilities add up to {total:.3f}, not {expected}")
+            if any(not 0.0 <= d.win <= d.podium + 1e-9 <= 1.0 + 1e-9 for d in race.drivers):
+                found.append(f"{where}: a win chance exceeds the podium chance, or a probability is out of range")
+        title = TitleForecast.model_validate_json((root / "championship.json").read_text(encoding="utf-8"))
+        if abs(sum(d.champion for d in title.drivers) - 1.0) > 0.02:
+            found.append("predictions: driver title odds do not add up to 1")
+        if abs(sum(c.champion for c in title.constructors) - 1.0) > 0.02:
+            found.append("predictions: constructor title odds do not add up to 1")
+        if title.races_left != len(title.remaining):
+            found.append("predictions: races_left does not match the remaining races")
+        return found
+
+    def _derived_problems(self) -> list[str]:
+        found: list[str] = []
+        for season in self.published_seasons():
+            for path in (self.root / "seasons" / str(season)).glob("race_*.json"):
+                doc = self.load_race(season, int(path.stem.split("_")[1]))
+                if doc is None:
+                    continue
+                where = f"{season} R{doc.round}"
+                if doc.excitement and not 0.0 <= doc.excitement.score <= 10.0:
+                    found.append(f"{where}: excitement score out of range")
+                quali = [d.quali_position for d in doc.drivers if d.quali_position is not None]
+                if quali and len(quali) != len(set(quali)):
+                    found.append(f"{where}: duplicate qualifying positions")
+                if any(d.quali_gap_pct is not None and d.quali_gap_pct < 0 for d in doc.drivers):
+                    found.append(f"{where}: a driver is faster than the pole lap")
+                if doc.tyre_model and not -0.12 <= doc.tyre_model.fuel_s_per_lap <= 0.0:
+                    found.append(f"{where}: tyre model has an impossible fuel effect")
+            duels_path = self.root / "duels" / f"{season}.json"
+            if duels_path.exists():
+                for duel in DuelsDoc.model_validate_json(duels_path.read_text(encoding="utf-8")).duels:
+                    if duel.qualifying.a + duel.qualifying.b > duel.qualifying.races:
+                        found.append(f"duels {season} {duel.a.code}/{duel.b.code}: more qualifying wins than sessions")
+                    if duel.race.a + duel.race.b > duel.race.races:
+                        found.append(f"duels {season} {duel.a.code}/{duel.b.code}: more race wins than races")
+        index = self.root / "circuits" / "index.json"
+        if index.exists():
+            for entry in json.loads(index.read_text(encoding="utf-8")):
+                if not (self.root / "circuits" / f"{entry['slug']}.json").exists():
+                    found.append(f"circuits: {entry['slug']} listed but missing")
+        return found
 
     def content_hash(self) -> str:
         digest = hashlib.sha256()
@@ -197,6 +536,26 @@ class Publisher:
         return content_hash
 
 
+def _carry_extras(old: RaceDoc, new: RaceDoc) -> RaceDoc:
+    """A rebuild must not erase qualifying and sprint results, which come from a different source and stage."""
+    prior = {d.driver_code: d for d in old.drivers}
+    drivers = []
+    for d in new.drivers:
+        o = prior.get(d.driver_code)
+        if o is not None and d.quali_position is None and d.sprint_position is None:
+            d = d.model_copy(
+                update={
+                    "quali_position": o.quali_position,
+                    "quali_gap_pct": o.quali_gap_pct,
+                    "sprint_position": o.sprint_position,
+                    "sprint_points": o.sprint_points,
+                }
+            )
+        drivers.append(d)
+    extras = {"excitement": old.excitement} if new.excitement is None and old.excitement is not None else {}
+    return new.model_copy(update={"drivers": drivers, **extras})
+
+
 def _structural_problems(season: int, rnd: int, doc: RaceDoc) -> list[str]:
     """Internal-consistency checks on one race document."""
     found: list[str] = []
@@ -207,6 +566,8 @@ def _structural_problems(season: int, rnd: int, doc: RaceDoc) -> list[str]:
     for d in doc.drivers:
         if not d.team.strip() or not d.driver_name.strip():
             found.append(f"{where} {d.driver_code}: empty team or name")
+        if not d.team_color:
+            found.append(f"{where} {d.driver_code}: no team colour")
         if d.stints:
             for prev, cur in zip(d.stints, d.stints[1:], strict=False):
                 if cur.lap_start != prev.lap_end + 1:
@@ -222,11 +583,32 @@ def _structural_problems(season: int, rnd: int, doc: RaceDoc) -> list[str]:
                 found.append(f"{where} {d.driver_code}: compound_source set on unknown compound")
         if d.grid is not None and d.pit_lane_start:
             found.append(f"{where} {d.driver_code}: grid and pit_lane_start both set")
+        if d.gap_to_winner_s is not None and (d.gap_to_winner_s <= 0 or d.finish in (None, 1)):
+            found.append(f"{where} {d.driver_code}: impossible gap to the winner")
+        if d.lap_positions and any(p is not None and not 1 <= p <= len(doc.drivers) + 2 for p in d.lap_positions):
+            found.append(f"{where} {d.driver_code}: lap position outside the field")
+    gaps = [(d.finish, d.gap_to_winner_s) for d in doc.drivers if d.gap_to_winner_s is not None and d.finish]
+    if any(b[1] < a[1] for a, b in zip(sorted(gaps), sorted(gaps)[1:], strict=False)):
+        found.append(f"{where}: gaps to the winner do not increase with finishing position")
     return found
 
 
 def _mean(values: list[float]) -> float | None:
     return round(statistics.fmean(values), 2) if values else None
+
+
+def _rating_summary(row, ratings) -> RatingSummary | None:
+    if row is None or ratings is None:
+        return None
+    return RatingSummary(
+        overall=row.overall,
+        driver=row.driver,
+        car=row.car,
+        rank=row.rank,
+        races=row.races,
+        provisional=row.provisional,
+        as_of=f"{ratings.season} R{ratings.round}",
+    )
 
 
 def _summarise(season: int, items: list[tuple[RaceDoc, Any]]) -> SeasonSummary:

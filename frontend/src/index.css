@@ -5,3 +5,387 @@
 body {
   @apply bg-slate-950 text-slate-100;
 }
+
+/* The one layout rule. Every page's content sits in `.page`: centred, never wider than 90rem (1440px), with the same side
+   gutter everywhere (20px on phones, 32px from small tablets, 48px from laptops). Pages do not set their own width or side
+   padding, so the left and right edges line up from page to page and the menu bar, headings and cards share them. */
+@layer components {
+  .page {
+    @apply mx-auto w-full max-w-[90rem] px-5 sm:px-8 lg:px-12;
+  }
+}
+
+/* Standings chart: lines are revealed left to right once; skipped for people who prefer reduced motion. */
+@keyframes f1-reveal {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.f1-reveal {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: f1-reveal 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .f1-reveal {
+    animation: none;
+  }
+}
+
+/* ---- Standings page effects (all decorative; skipped for reduced motion) ---- */
+
+/* Outlined display numerals / words. */
+.f1-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--stroke, rgba(255, 255, 255, 0.16));
+}
+
+/* Staggered entrance. */
+@keyframes f1-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.f1-rise {
+  animation: f1-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* The car slides in from the right. */
+@keyframes f1-drive {
+  from {
+    opacity: 0;
+    transform: translateX(80px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.f1-drive {
+  animation: f1-drive 1100ms cubic-bezier(0.22, 1, 0.36, 1) 150ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .f1-rise,
+  .f1-drive {
+    animation: none;
+  }
+}
+
+/* Race detail: small, quiet motion. Bars grow from their baseline, sections fade up as they scroll in. */
+@keyframes f1-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes f1-grow-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.f1-grow-x {
+  transform-origin: left center;
+  animation: f1-grow-x 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.f1-grow-y {
+  transform-origin: center bottom;
+  animation: f1-grow-y 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.f1-in {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 600ms ease-out, transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.f1-in.is-in {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .f1-grow-x,
+  .f1-grow-y {
+    animation: none;
+  }
+  .f1-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Dots on the driver/car map pop in one after another. */
+@keyframes f1-pop {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.f1-pop {
+  animation: f1-pop 520ms cubic-bezier(0.22, 1.4, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .f1-pop {
+    animation: none;
+  }
+}
+
+/* ---- Glass: translucent, blurred, hairline-bordered surfaces over a faint dot field. No gradients. ---- */
+.f1-dots {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='1.5' cy='1.5' r='1' fill='white' fill-opacity='0.09'/%3E%3C/svg%3E");
+  background-size: 24px 24px;
+  background-attachment: fixed;
+}
+.glass {
+  background-color: rgba(255, 255, 255, 0.04);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: border-color 300ms ease, background-color 300ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.glass-hover:hover {
+  background-color: rgba(255, 255, 255, 0.075);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+/* A cell inside a hairline grid (gap-px on a white/10 background): darker glass so the hairlines read. */
+.glass-cell {
+  background-color: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  transition: background-color 300ms ease;
+}
+.glass-cell:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Route changes: the new page eases in. */
+@keyframes f1-page-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.f1-page {
+  animation: f1-page-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .f1-page {
+    animation: none;
+  }
+  .glass,
+  .glass-cell {
+    transition: none;
+  }
+  .glass-hover:hover {
+    transform: none;
+  }
+}
+
+/* A circuit outline drawing itself, then a marker circling it. */
+@keyframes f1-draw {
+  to { stroke-dashoffset: 0; }
+}
+.f1-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: f1-draw 2400ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .f1-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---- Dot look ------------------------------------------------------------------------------------------------------
+   Display type (headlines and big numbers of at least 24px) in Doto, a free dot-matrix face (SIL OFL), in the spirit of
+   dot-matrix phone type. src/lib/theme.ts marks the elements that are big enough with data-dot, from their real size.
+   Body text, small labels and anything small keep their own faces: dots are for sizes where they can be read. */
+:root {
+  --font-dot: "Doto Variable", "Doto", ui-monospace, monospace;
+}
+[data-theme="dot"] [data-dot],
+[data-theme="dot"] [data-dot] * {
+  font-family: var(--font-dot);
+  font-style: normal !important;
+  font-weight: 700;
+  font-variation-settings: "ROND" 100; /* round dots */
+  letter-spacing: 0.02em;
+}
+/* An outlined headline word becomes red dots, so the whole headline is one dot-matrix piece. */
+[data-theme="dot"] [data-dot] :is(.f1-outline, [class*="text-stroke"], [class*="text-transparent"]) {
+  -webkit-text-stroke: 0 !important;
+  color: #ef4444 !important;
+}
+/* A small unit or note inside a big number ("km", "pts") stays in the normal face. */
+[data-theme="dot"] [data-dot] :is(.font-sans, [class~="text-xs"], [class~="text-sm"], [class~="text-base"], [class~="text-lg"]) {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-weight: 500;
+  font-variation-settings: normal;
+  letter-spacing: normal;
+}
+
+/* Strategy simulator effects: rain streaks over a wet race, a pulse for a safety car, a chequered banner. */
+@keyframes sim-rain {
+  from { background-position: 0 0; }
+  to { background-position: -48px 140px; }
+}
+.sim-rain {
+  background-image: repeating-linear-gradient(105deg, rgba(147, 197, 253, 0) 0 8px, rgba(147, 197, 253, 0.5) 8px 9px, rgba(147, 197, 253, 0) 9px 26px);
+  background-size: 48px 140px;
+  animation: sim-rain 0.55s linear infinite;
+}
+@keyframes sim-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.45); }
+  50% { box-shadow: 0 0 0 10px rgba(251, 191, 36, 0); }
+}
+.sim-pulse { animation: sim-pulse 1.6s ease-out infinite; }
+@keyframes sim-checker-slide {
+  from { background-position: 0 0; }
+  to { background-position: 48px 0; }
+}
+.sim-checker {
+  background-image: conic-gradient(#fff 25%, #000 0 50%, #fff 0 75%, #000 0);
+  background-size: 16px 16px;
+  animation: sim-checker-slide 1.2s linear infinite;
+}
+@keyframes sim-light {
+  from { opacity: 0.15; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sim-rain, .sim-pulse, .sim-checker { animation: none; }
+}
+
+/* Long tables fit one screen on a laptop: the table scrolls inside its frame and keeps its header in view. */
+@media (min-width: 1024px) {
+  .table-fit {
+    max-height: calc(100dvh - 9rem);
+    overflow-y: auto;
+  }
+  .table-fit thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #0a0a0a;
+  }
+}
+
+/* Fluid scale: everything sized in rem follows the screen. A little smaller than the browser default on laptops (where the
+   old sizes were large), larger again on big displays, and comfortably readable on phones. */
+html {
+  font-size: 15px;
+}
+@media (min-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+@media (min-width: 1024px) {
+  html {
+    font-size: clamp(13.5px, 0.2vw + 11.3px, 15.5px);
+  }
+}
+
+/* Home page: every section is a full-screen scene. On a laptop-sized screen it snaps from one to the next and each scene eases in
+   as it arrives. (Phones, short windows and reduced motion keep an ordinary scrolling page.) */
+@media (min-height: 520px) {
+  html.snap-home {
+    scroll-snap-type: y mandatory;
+  }
+  .home-scene {
+    scroll-snap-align: start;
+    min-height: 100svh;
+  }
+  .home-scene-end {
+    scroll-snap-align: end;
+  }
+  /* the site footer is the last stop, so mandatory snapping can no longer pull the page back off it */
+  html.snap-home .site-footer {
+    scroll-snap-align: end;
+  }
+}
+/* The cube turn between scenes (see lib/homescenes.ts). Each scene tips away from its bottom edge as it leaves and swings in from its top
+   edge as it arrives. Where scroll-driven animation is supported the browser does it off the main thread (class cube-css); elsewhere
+   the script sets the same transform on each frame (attribute data-turning). Nothing is applied at rest. */
+@keyframes cube-in {
+  from {
+    transform: perspective(1100px) rotateX(-82deg) translateZ(-60px);
+    transform-origin: 50% 0%;
+    opacity: 0.25;
+  }
+  to {
+    transform: none;
+    transform-origin: 50% 0%;
+    opacity: 1;
+  }
+}
+@keyframes cube-out {
+  from {
+    transform: none;
+    transform-origin: 50% 100%;
+    opacity: 1;
+  }
+  to {
+    transform: perspective(1100px) rotateX(82deg) translateZ(-60px);
+    transform-origin: 50% 100%;
+    opacity: 0.25;
+  }
+}
+@media (min-height: 520px) and (prefers-reduced-motion: no-preference) {
+  html.scenes-on .home-scene {
+    scroll-snap-align: none; /* the invisible .scene-anchor over each scene does the snapping, see lib/homescenes.ts */
+  }
+  .scene-anchor {
+    position: absolute;
+    left: 0;
+    width: 1px;
+    pointer-events: none;
+    visibility: hidden;
+    scroll-snap-align: start;
+  }
+  html.scenes-on.cube-css .home-scene {
+    animation: cube-in cubic-bezier(0.25, 0.1, 0.25, 1), cube-out cubic-bezier(0.55, 0, 0.55, 0.2);
+    animation-fill-mode: backwards, forwards; /* entry only holds before it starts, exit only after it ends: the two never fight over transform */
+    animation-timeline: view(), view();
+    animation-range: entry 0% entry 100%, exit 0% exit 100%;
+  }
+  html.scenes-on:not(.cube-css) .home-scene {
+    backface-visibility: hidden;
+  }
+  html.scenes-on:not(.cube-css) .home-scene[data-turning] {
+    will-change: transform;
+    pointer-events: none;
+  }
+}
+
+/* Pages with a few big scenes (the schedule): scrolling settles on a scene when it is close, but never forces it. */
+@media (min-width: 1024px) and (min-height: 600px) {
+  html.snap-proximity {
+    scroll-snap-type: y proximity;
+  }
+  .snap-target {
+    scroll-snap-align: start;
+  }
+}
+
+/* On phones the dot rail sits along the right edge, so every scene keeps a gutter of its own beside it: nothing is drawn under the dots. */
+@media (max-width: 1023px) {
+  html.snap-home .home-scene:not([data-hero]) {
+    padding-right: 1.9rem;
+  }
+}
+
+/* The home page is navigated with its dots: no browser scrollbar beside them. */
+html.snap-home {
+  scrollbar-width: none;
+  overscroll-behavior-y: none; /* no rubber-band bounce fighting the snap at the first and last scene */
+}
+html.snap-home::-webkit-scrollbar {
+  display: none;
+}

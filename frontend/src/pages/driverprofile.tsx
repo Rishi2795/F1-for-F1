@@ -1,46 +1,29 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { ErrorState, Skeleton } from "../components/ui/states";
+import { ChampionBadge } from "../components/ui/championbadge";
 import { fmt, fmtSigned } from "../lib/format";
+import { framing, useDriverPhotos } from "../lib/driverphotos";
+import { portrait } from "../lib/headshots";
+import { CuboidFace, CuboidStack } from "../components/ui/cuboid";
+import { WeekendPanel } from "../components/driver/weekendpanel";
+import { RatingPanel } from "../components/ratings/ratingpanel";
 import type { DriverProfile } from "../types/api";
 
-/* DNA and AI insight arrive with the ratings model (see plan.md). The API answers 404
-   "not_available" for them today, so the panels are only drawn when data exists. */
-type DriverDNA = {
-  pace: number;
-  racecraft: number;
-  tyres: number;
-  consistency: number;
-  wet: number;
-  risk_management: number;
-};
-
-type AIInsight = {
-  rating: number;
-  tier: string;
-  strength: string;
-  weakness: string;
-  trend: string;
-  risk: string;
-  summary: string;
-};
-
+/** `/driver/:code`: one driver's career, seasons, ratings and (for the current grid) this weekend's chances. */
 export default function DriverPage() {
   const { code = "" } = useParams();
   const stats = useApi<DriverProfile>(code ? `/drivers/${code}` : null);
-  // Not built yet: only request them once the ratings model ships (VITE_FEATURE_DRIVER_AI=true).
-  const withAi = import.meta.env.VITE_FEATURE_DRIVER_AI === "true" && code !== "";
-  const dna = useApi<DriverDNA>(withAi ? `/drivers/${code}/dna` : null).data;
-  const ai = useApi<AIInsight>(withAi ? `/ai/driver/${code}` : null).data;
 
   useDocumentTitle(stats.data?.name ?? "Driver");
+  const photos = useDriverPhotos();
 
   if (stats.loading) {
     return (
-      <div className="min-h-screen bg-[#050505] px-4 py-14 md:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-12">
+      <div className="min-h-screen py-14">
+        <div className="page grid gap-8 lg:grid-cols-12">
           <Skeleton className="h-[420px] lg:col-span-4" />
           <Skeleton className="h-[420px] lg:col-span-8" />
         </div>
@@ -49,56 +32,80 @@ export default function DriverPage() {
   }
   if (!stats.data) {
     return (
-      <div className="min-h-screen bg-[#050505]">
+      <div className="min-h-screen">
         <ErrorState error={stats.error} onRetry={stats.reload} subject="driver" backTo={{ href: "/drivers", label: "All drivers" }} />
       </div>
     );
   }
   const driver = stats.data;
+  const photo = photos[driver.code];
+  const official = portrait(driver.image, 6);
+  const teamColour = `#${(driver.team_color ?? "888888").replace("#", "")}`;
   const s = driver.stats;
 
   return (
-    <div className="min-h-screen bg-[#050505] px-4 py-14 text-zinc-200 md:px-8">
-      <div className="mx-auto mb-10 flex max-w-7xl justify-between">
+    <div className="min-h-screen py-14 text-zinc-200">
+      <div className="page mb-10 flex justify-between">
         <Link to="/drivers" className="text-xs font-mono text-zinc-400 hover:text-white">
           ← ALL DRIVERS
         </Link>
-        <span className="text-xs font-mono text-red-600">DRIVER PROFILE</span>
+        <span className="text-xs font-mono text-red-500">DRIVER PROFILE</span>
       </div>
 
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 lg:grid-cols-12">
+      <div className="page grid grid-cols-1 gap-8 lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <div className="overflow-hidden rounded-xl border border-white/10 bg-[#080808]">
-            <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-gradient-to-br from-zinc-800 to-black">
-              <span aria-hidden="true" className="text-9xl font-black italic text-white/10">
-                {driver.code}
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          {/* Pinned, and as tall as the screen: it stays in view while the cards on the right scroll past, and the portrait takes the
+              spare height. On a very short window it is an ordinary card, so nothing is ever cut off. */}
+          <div data-testid="driver-card" className="flex flex-col overflow-hidden rounded-sm border border-white/10 bg-[#080808] lg:sticky lg:top-8 lg:h-[calc(100svh-4rem)] lg:min-h-[34rem] lg:max-h-[56rem] [@media(max-height:640px)]:lg:static [@media(max-height:640px)]:lg:h-auto">
+            <div className="relative flex h-[380px] flex-none items-center justify-center overflow-hidden glass-cell lg:h-auto lg:min-h-[18rem] lg:flex-1" style={photo ? undefined : { backgroundImage: `linear-gradient(165deg, ${teamColour}55 0%, ${teamColour}14 45%, #050505 85%)` }}>
+              {driver.number !== null && (
+                <span aria-hidden="true" className="f1-outline absolute -right-3 top-2 text-[10rem] font-black italic leading-none" style={{ "--stroke": `${teamColour}77` } as CSSProperties}>{driver.number}</span>
+              )}
+              {!photo && official && (
+                <>
+                  <img src={official} alt={driver.name} referrerPolicy="no-referrer" onError={(ev) => { ev.currentTarget.style.display = "none"; }} className="absolute bottom-0 left-1/2 h-full w-auto max-w-full -translate-x-1/2 object-contain object-bottom" />
+                  <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#080808] to-transparent" />
+                </>
+              )}
+              {photo ? (
+                <>
+                  <img src={`/drivers/${photo.file}`} alt={`${driver.name}`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: framing(photo, 1.05, 0.4) }} />
+                  <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#080808] to-transparent" />
+                </>
+              ) : !official ? (
+                <span aria-hidden="true" className="f1-outline relative text-9xl font-black italic">{driver.code}</span>
+              ) : null}
             </div>
+            {!photo && official && <p className="border-t border-white/10 px-4 py-2 text-[10px] leading-snug text-zinc-500">Portrait © Formula 1, shown from formula1.com.</p>}
+            {photo && (
+              <p className="border-t border-white/10 px-4 py-2 text-[10px] leading-snug text-zinc-500">
+                Photo: © {photo.credit},{" "}
+                {photo.licenceUrl ? <a href={photo.licenceUrl} rel="noopener noreferrer" className="underline">{photo.licence}</a> : photo.licence}
+                {photo.source && <> · <a href={photo.source} rel="noopener noreferrer" className="underline">Wikimedia Commons</a></>} · resized and cropped
+              </p>
+            )}
             <div className="space-y-3 p-6">
               <h1 className="text-3xl font-black italic text-white">{driver.name}</h1>
+              <ChampionBadge titles={driver.titles} years={driver.title_years} />
               <p className="text-sm text-zinc-400">
                 {driver.team ?? "—"}
                 {driver.number !== null && ` · #${driver.number}`}
               </p>
-              {ai && (
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl font-black text-red-600">{ai.rating}</span>
-                  <span className="text-xs font-mono uppercase text-zinc-500">{ai.tier}</span>
-                </div>
-              )}
-              {ai && (
-                <div className="flex flex-wrap gap-2 text-[10px]">
-                  <Tag text={ai.strength} />
-                  <Tag text={ai.trend} />
-                  <Tag text={`${ai.risk} Risk`} />
-                </div>
-              )}
+              <dl className="grid grid-cols-3 gap-2 pt-2">
+                {([["Wins", s.wins], ["Podiums", s.podiums], ["Races", s.races]] as const).map(([k, v]) => (
+                  <div key={k} className="rounded-sm border border-white/10 bg-white/[0.03] px-3 py-2">
+                    <dt className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500">{k}</dt>
+                    <dd className="font-serif text-2xl text-white">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500">{driver.latest_season} season</p>
             </div>
           </div>
         </div>
 
-        <div className="space-y-8 lg:col-span-8">
+        <CuboidStack className="space-y-8 lg:col-span-8">
+          <CuboidFace>
           <Panel title={`${driver.latest_season} SEASON`}>
             <Grid4>
               <Mini label="Races" value={s.races} />
@@ -114,19 +121,25 @@ export default function DriverPage() {
               <Mini label="Recent form (avg finish, last 5)" value={fmt(s.recent_form)} />
             </Grid4>
           </Panel>
+          </CuboidFace>
 
+          {driver.latest_season >= 2026 && <CuboidFace><WeekendPanel code={driver.code} /></CuboidFace>}
+
+          {driver.rating && <CuboidFace><RatingPanel code={driver.code} name={driver.name} rating={driver.rating} /></CuboidFace>}
+
+          <CuboidFace>
           <Panel title="BY SEASON">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <caption className="sr-only">Season-by-season results for {driver.name}</caption>
                 <thead className="text-xs uppercase text-zinc-500">
                   <tr>
-                    <th scope="col" className="py-2 pr-4">Season</th>
-                    <th scope="col" className="pr-4">Team</th>
-                    <th scope="col" className="pr-4">Races</th>
-                    <th scope="col" className="pr-4">Wins</th>
-                    <th scope="col" className="pr-4">Podiums</th>
-                    <th scope="col">Race pts</th>
+                    <th scope="col" className="py-2 pr-4">SEASON</th>
+                    <th scope="col" className="pr-4">TEAM</th>
+                    <th scope="col" className="pr-4">RACES</th>
+                    <th scope="col" className="pr-4">WINS</th>
+                    <th scope="col" className="pr-4">PODIUMS</th>
+                    <th scope="col">RACE_PTS</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -144,26 +157,9 @@ export default function DriverPage() {
               </table>
             </div>
           </Panel>
+          </CuboidFace>
 
-          {dna && (
-            <Panel title="PERFORMANCE_DNA">
-              <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
-                <Bar label="Pace" value={dna.pace} />
-                <Bar label="Racecraft" value={dna.racecraft} />
-                <Bar label="Tyres" value={dna.tyres} />
-                <Bar label="Consistency" value={dna.consistency} />
-                <Bar label="Wet" value={dna.wet} />
-                <Bar label="Risk Ctrl" value={dna.risk_management} />
-              </div>
-            </Panel>
-          )}
-
-          {ai && (
-            <Panel title="INSIGHT">
-              <p className="text-lg italic leading-relaxed text-zinc-300">"{ai.summary}"</p>
-            </Panel>
-          )}
-        </div>
+        </CuboidStack>
       </div>
     </div>
   );
@@ -180,7 +176,7 @@ function Panel({ children, title }: { children: ReactNode; title?: string }) {
     <div className="
       bg-[#080808]
       border border-white/10
-      rounded-xl
+      rounded-sm
       p-6
     ">
 
@@ -188,7 +184,7 @@ function Panel({ children, title }: { children: ReactNode; title?: string }) {
         <h3 className="
           text-xs
           font-mono
-          text-red-600
+          text-red-500
           mb-5
         ">
           {title}
@@ -219,7 +215,7 @@ function Mini({ label, value, signed }: { label: string; value: string | number;
     signed === undefined || signed === null
       ? "text-white"
       : signed >= 0
-        ? "text-green-500"
+        ? "text-white"
         : "text-red-500";
 
   return (
@@ -234,63 +230,5 @@ function Mini({ label, value, signed }: { label: string; value: string | number;
       </p>
 
     </div>
-  );
-}
-
-
-function Bar({ label, value }: { label: string; value: number }) {
-
-  const v = Math.max(0, Math.min(100, value));
-
-  const color =
-    v > 80
-      ? "bg-green-500"
-      : v > 65
-      ? "bg-yellow-500"
-      : "bg-red-500";
-
-  return (
-    <div className="space-y-1">
-
-      <div className="
-        flex justify-between
-        text-[10px]
-        font-mono
-        text-zinc-400
-      ">
-
-        <span>{label}</span>
-
-        <span>{v}</span>
-
-      </div>
-
-      <div className="h-2 bg-white/10 rounded">
-
-        <div
-          className={`${color} h-full rounded transition-all`}
-          style={{ width: `${v}%` }}
-        />
-
-      </div>
-
-    </div>
-  );
-}
-
-
-function Tag({ text }: { text: string }) {
-  return (
-    <span className="
-      px-2 py-1
-      bg-red-600/10
-      border border-red-600/30
-      rounded
-      text-red-500
-      uppercase
-      font-mono
-    ">
-      {text}
-    </span>
   );
 }

@@ -1,7 +1,7 @@
 """F1 for F1 API: a small, read-only service over precomputed, validated data.
 
-No upstream (FastF1, Jolpica, ...) is ever called at request time; the pipeline publishes
-JSON files and this app serves them. See plan.md.
+No upstream data source is ever called at request time; the pipeline publishes
+JSON files and this app serves them. See docs/plan.md.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from app.core.errors import install_error_handlers
 from app.core.logging_setup import setup_logging
 from app.core.store import PublishedStore
 from app.middleware import RequestContextMiddleware
-from app.routers import drivers, meta, seasons
+from app.routers import circuits, drivers, meta, predictions, ratings, seasons
 
 log = logging.getLogger("app")
 
@@ -81,7 +81,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         seasons_available = store.seasons()
         return {"status": "ok" if seasons_available else "degraded", "seasons": seasons_available}
 
-    for router in (seasons.router, drivers.router, meta.router):
+    for router in (seasons.router, drivers.router, ratings.router, predictions.router, circuits.router, meta.router):
         app.include_router(router, prefix="/api")
         # Old frontend builds used a base URL without /api; keep until Vercel env is confirmed.
         app.include_router(router, include_in_schema=False)

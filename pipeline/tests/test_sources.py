@@ -40,6 +40,16 @@ def test_event_matching_tolerates_utc_vs_local_date():
 def test_parse_seasons():
     assert _parse_seasons("2020-2022") == [2020, 2021, 2022]
     assert _parse_seasons("2020,2024") == [2020, 2024]
+    assert _parse_seasons("2020-2023,2025-2026") == [2020, 2021, 2022, 2023, 2025, 2026]
+    assert _parse_seasons(" 2024 , 2024 ") == [2024]
+
+
+def test_parse_seasons_rejects_nonsense_with_a_message_not_a_traceback():
+    import pytest
+
+    for bad in ("abc", "2024-2020", "2020-", "", ","):
+        with pytest.raises(SystemExit):
+            _parse_seasons(bad)
     assert date.fromisoformat(ENTRY.date)
 
 

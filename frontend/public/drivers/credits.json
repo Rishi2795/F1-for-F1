@@ -1,0 +1,4 @@
+{
+  "_readme": "Driver photos. Empty on purpose: every card falls back to the team-colour number design. Add an entry per driver code only once you have the right to show the picture: { \"file\": \"VER.webp\", \"credit\": \"Photographer / agency\", \"licence\": \"e.g. licensed, or CC BY 4.0\", \"source\": \"https://…\", \"face\": [0.5, 0.4], \"width\": 1000, \"height\": 1500 }. Put the file next to this one. Nothing is shown, and nothing is requested, for a driver without an entry.",
+  "photos": {}
+}

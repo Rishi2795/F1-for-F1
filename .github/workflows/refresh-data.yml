@@ -1,0 +1,63 @@
+name: Refresh data
+
+# Pulls the latest results, rebuilds the models and forecasts, runs every data-quality gate, and opens a pull
+# request if anything changed. Merging it redeploys the site. Nothing here needs a login or a secret: every
+# source is free and public.
+on:
+  schedule:
+    # Race weekends: look every 20 minutes from Sunday midday to Monday small hours (UTC), which covers every flag-to-flag
+    # window from Australia to Las Vegas. A run with nothing new changes nothing and opens no pull request.
+    - cron: "*/20 5-23 * * 0"
+    - cron: "*/20 0-3 * * 1"
+    - cron: "30 6 * * *"   # and once a day for everything else (late corrections, qualifying, standings)
+  workflow_dispatch:
+    inputs:
+      seasons:
+        description: "Seasons to refresh, e.g. 2026 or 2024-2026 (default: the current season)"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75  # the replay download for a new race is the slow part (OpenF1 rate-limits)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pipeline/requirements-dev.txt
+      - run: pip install -r pipeline/requirements-dev.txt
+      - name: Refresh (ingest, qualifying, derived stats, ratings, forecasts, gates)
+        working-directory: pipeline
+        env:
+          SEASONS: ${{ inputs.seasons }}
+        run: python -m f1data refresh ${SEASONS:+--seasons "$SEASONS"}
+      - name: Open a pull request if the data changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Set the repository variable AUTO_MERGE to "true" to merge as soon as the checks pass (needs "Allow auto-merge"
+          # and a required CI check on main). Otherwise the pull request waits for a person, and so does the site.
+          AUTO_MERGE: ${{ vars.AUTO_MERGE }}
+        run: |
+          # Every run appends to the audit log, so only the published data decides whether anything is new.
+          if [ -z "$(git status --porcelain backend/data/published)" ]; then echo "Nothing new."; exit 0; fi
+          branch="data-refresh/$(date -u +%Y-%m-%d)"
+          git config user.name "f1-data-bot"
+          git config user.email "f1-data-bot@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add -A backend/data/published audit
+          git commit -m "Refresh data $(date -u +%Y-%m-%d)"
+          git push --force origin "$branch"
+          gh pr create --base main --head "$branch" --title "Refresh data $(date -u +%Y-%m-%d)" \
+            --body "Automated refresh. All data-quality gates passed (validate, audit chain). Merge to redeploy." \
+            || gh pr edit "$branch" --body "Automated refresh. All gates passed."
+          if [ "$AUTO_MERGE" = "true" ]; then gh pr merge "$branch" --auto --squash; fi

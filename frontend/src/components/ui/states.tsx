@@ -6,7 +6,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 export function PageLoader() {
   return (
-    <div className="min-h-screen bg-[#050505] px-6 pt-24" role="status" aria-label="Loading">
+    <div className="min-h-screen px-6 pt-24" role="status" aria-label="Loading">
       <Skeleton className="mb-6 h-10 w-1/3" />
       <Skeleton className="mb-3 h-5 w-2/3" />
       <Skeleton className="h-64 w-full" />
@@ -16,8 +16,8 @@ export function PageLoader() {
 
 export function RaceSkeleton() {
   return (
-    <div className="min-h-screen bg-[#050505] px-6 pt-24" role="status" aria-label="Loading race">
-      <div className="mx-auto max-w-[1400px] space-y-8">
+    <div className="min-h-screen pt-24" role="status" aria-label="Loading race">
+      <div className="page space-y-8">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-16 w-2/3" />
         <div className="grid gap-4 md:grid-cols-3">
@@ -59,7 +59,7 @@ export function ErrorState({ error, onRetry, backTo, subject = "page" }: ErrorPr
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center" role="alert">
       <h2 className="text-xl font-bold text-white">{title}</h2>
       <p className="max-w-md text-sm text-zinc-400">{message}</p>
-      {error?.requestId && !expected && <p className="font-mono text-xs text-zinc-600">Reference: {error.requestId}</p>}
+      {error?.requestId && !expected && <p className="font-mono text-xs text-zinc-400">Reference: {error.requestId}</p>}
       <div className="flex gap-3">
         {onRetry && !expected && (
           <button onClick={onRetry} className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500">

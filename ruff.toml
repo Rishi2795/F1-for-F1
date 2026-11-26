@@ -10,6 +10,9 @@ ignore = ["S101", "B008"]  # B008: FastAPI's Depends() in defaults is the docume
 "**/tests/**" = ["S", "E501"]
 "scripts/**" = ["E501"]  # operator scripts: long, readable check descriptions
 "backend/app/core/logging_setup.py" = ["E501"]
+"pipeline/f1data/predict/**" = ["S311"]  # Monte Carlo simulation: reproducible, not security-sensitive
+"pipeline/f1data/ratings/**" = ["S311"]
+"pipeline/f1data/predict/report.py" = ["E501"]  # the model card's prose lives here
 
 [lint.flake8-tidy-imports.banned-api]
 "fastf1".msg = "FastF1 needs an F1TV login for live-timing data. This project is credential-free by decision; use f1data.sources instead."

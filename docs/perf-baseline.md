@@ -8,13 +8,13 @@ commands at the bottom against production and paste the results here.
 
 | | Before (commit `593bb51`) | After (Phase 0) |
 |---|---|---|
-| What a race request did | Download + parse a FastF1 session, then loop 20 drivers over the laps | Read one precomputed JSON file (bytes served as-is, ETag, gzip) |
+| What a race request did | Download and parse a live-timing session, then loop 20 drivers over the laps | Read one precomputed JSON file (bytes served as-is, ETag, gzip) |
 | Cold load of one race | **7.2 s** and **7.3 s** (2021 R12 / R22, empty cache, fast home connection) | n/a, no upstream call at request time |
 | Request latency | not measured, includes the load above on every cache miss | **1.0–3.4 ms** time-to-first-byte locally (race, list, drivers, coverage) |
-| Cache survives redeploy | No: FastF1 cache lived on the container disk | Not needed |
+| Cache survives redeploy | No: the live-timing cache lived on the container disk | Not needed |
 | Races that failed to load lap data | 3 of 5 sampled races (2020 R1, 2024 R24, 2025 R24) | 0 of 152 played races have no lap data |
 | Tyre-compound agreement with an independent source (OpenF1, 2023–2026) | not measurable | 5,118 of 5,119 stints (99.98%) |
-| Python dependencies | 42 packages, 333 MB (FastF1, pandas, numpy, pymongo…) | 23 packages, 38 MB |
+| Python dependencies | 42 packages, 333 MB (a live-timing library, pandas, numpy, pymongo…) | 23 packages, 38 MB |
 | Process start → ready | ~0.2 s of imports locally | ~0.16 s (small difference: imports were never the bottleneck) |
 | On Render free tier (sleep/wake, slower CPU) | *not measured* | *not measured* |
 

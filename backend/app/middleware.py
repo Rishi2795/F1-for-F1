@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
-import os
 import re
 import secrets
 import time
@@ -133,7 +132,3 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 def _is_legacy_path(path: str) -> bool:
     """Root-level (no /api) data routes exist only for old frontend builds; logged so we know when to delete them."""
     return not path.startswith(("/api", "/docs", "/openapi")) and path not in ("/", "/health")
-
-
-def env_flag(name: str, default: bool = False) -> bool:
-    return os.getenv(name, str(default)).lower() in {"1", "true", "yes"}

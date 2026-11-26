@@ -24,18 +24,12 @@ backend/venv/
 __pycache__/
 *.pyc
 
-# FastF1 cache (CRITICAL)
-.fastf1-cache/
-backend/.fastf1-cache/
-
-# Precomputed race data (stored in MongoDB)
-backend/computed_data/
-
 # =========================
 # Environment variables
 # =========================
 .env
 .env.*
+!.env.example
 backend/.env
 frontend/.env
 
@@ -62,3 +56,6 @@ pipeline/.cache/
 # Playwright
 frontend/test-results/
 frontend/playwright-report/
+
+# Commons photo review output
+scripts/out/

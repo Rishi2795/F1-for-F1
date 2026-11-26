@@ -1,4 +1,5 @@
 import axios, { AxiosError } from "axios";
+import { trackRequest } from "./pending";
 import { reportError } from "./report";
 
 /** Base URL of the API (must include /api). Set VITE_API_URL in production. */
@@ -41,6 +42,15 @@ function normalise(error: unknown): ApiRequestError {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function fetchOnce<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const done = trackRequest(); // shows the "waking the server" notice if this takes too long
+  try {
+    return await fetchWithRetry<T>(path, signal);
+  } finally {
+    done();
+  }
+}
+
+async function fetchWithRetry<T>(path: string, signal?: AbortSignal): Promise<T> {
   // One retry for network errors and 502/503/504: the host may be waking up from sleep.
   for (let attempt = 0; ; attempt++) {
     try {

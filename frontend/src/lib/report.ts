@@ -27,7 +27,3 @@ export function reportError(context: string, error: unknown): void {
     navigator.sendBeacon(endpoint, JSON.stringify(event));
   }
 }
-
-export function recentErrors(): readonly ErrorEvent[] {
-  return buffer;
-}

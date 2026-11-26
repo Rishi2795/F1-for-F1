@@ -120,6 +120,25 @@ def run(base: str, origin: str | None, expect_season: int | None) -> int:
     else:
         r.check(False, "found a played race to test")
 
+    standings = request(f"{api}/seasons/{latest}/standings")
+    srounds = (standings.data() or {}).get("rounds", []) if standings.status == 200 else []
+    r.check(bool(srounds), f"{latest} standings are served", f"{len(srounds)} rounds")
+
+    ratings = request(f"{api}/ratings")
+    rated = (ratings.data() or {}).get("ratings", []) if ratings.status == 200 else []
+    r.check(len(rated) >= 10, "driver and car ratings are served", f"{len(rated)} drivers")
+    forecast = request(f"{api}/predictions/next")
+    races = (forecast.data() or {}).get("races", []) if forecast.status == 200 else []
+    r.check(forecast.status in (200, 404), "race forecasts are served (or cleanly absent)", f"{len(races)} race(s)")
+    title = request(f"{api}/predictions/championship")
+    r.check(title.status in (200, 404), "championship forecast is served (or cleanly absent)")
+    circuits = request(f"{api}/circuits")
+    r.check(circuits.status in (200, 404), "circuit profiles are served (or cleanly absent)")
+    duels = request(f"{api}/seasons/2024/duels")
+    r.check(duels.status in (200, 404), "teammate duels are served (or cleanly absent)")
+    card = request(f"{api}/ratings/model")
+    r.check(card.status == 200 and "metrics" in (card.data() or {}), "the ratings model card (accuracy report) is served")
+
     drivers = request(f"{api}/drivers")
     listed = drivers.data() if drivers.status == 200 else None
     r.check(isinstance(listed, list) and len(listed) >= 20, "/api/drivers is served", f"{len(listed) if isinstance(listed, list) else 'HTTP ' + str(drivers.status)} drivers")
@@ -149,6 +168,13 @@ def run(base: str, origin: str | None, expect_season: int | None) -> int:
         r.check("access-control-allow-credentials" not in pre.headers, "CORS does not allow credentials")
         evil = request(f"{api}/seasons", headers={"Origin": "https://evil.example"})
         r.check("access-control-allow-origin" not in evil.headers, "CORS refuses unknown origins")
+        # Without ALLOWED_ORIGINS the API falls back to allowing every *.vercel.app site.
+        stranger = request(f"{api}/seasons", headers={"Origin": "https://some-other-project.vercel.app"})
+        r.check(
+            "access-control-allow-origin" not in stranger.headers,
+            "CORS refuses other *.vercel.app sites",
+            "set ALLOWED_ORIGINS on the host" if "access-control-allow-origin" in stranger.headers else "",
+        )
 
     failed = [x for x in r.results if not x[0]]
     sys.stdout.write(f"\n{len(r.results) - len(failed)}/{len(r.results)} checks passed\n")

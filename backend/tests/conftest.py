@@ -27,8 +27,24 @@ def data_dir(tmp_path: Path) -> Path:
         ]},
     )
     _write(tmp_path / "seasons" / "2024" / "race_1.json", {"season": 2024, "round": 1, "drivers": []})
+    _write(
+        tmp_path / "seasons" / "2024" / "standings.json",
+        {"season": 2024, "rounds": [{"round": 1, "event_name": "Bahrain Grand Prix", "drivers": [], "constructors": []}]},
+    )
     _write(tmp_path / "drivers" / "index.json", [{"code": "VER", "name": "Max Verstappen"}])
     _write(tmp_path / "drivers" / "VER.json", {"code": "VER", "name": "Max Verstappen"})
+    _write(tmp_path / "ratings" / "current.json", {"version": "ratings-v1", "ratings": [{"code": "VER", "overall": 1900}]})
+    _write(tmp_path / "ratings" / "model.json", {"version": "ratings-v1", "metrics": {}})
+    _write(tmp_path / "laps" / "2024" / "1.json", {"season": 2024, "round": 1, "laps": 57, "drivers": []})
+    _write(tmp_path / "teampace" / "2024.json", {"season": 2024, "rounds": [], "teams": []})
+    _write(tmp_path / "duels" / "2024.json", {"season": 2024, "duels": []})
+    _write(tmp_path / "circuits" / "index.json", [{"slug": "sakhir", "name": "Bahrain Grand Prix"}])
+    _write(tmp_path / "circuits" / "sakhir.json", {"slug": "sakhir", "races": []})
+    _write(tmp_path / "predictions" / "next.json", {"version": "forecast-v1", "races": [{"round": 22}]})
+    _write(tmp_path / "predictions" / "championship.json", {"version": "forecast-v1", "drivers": []})
+    _write(tmp_path / "predictions" / "review.json", [])
+    _write(tmp_path / "predictions" / "model.json", {"version": "forecast-v1", "variants": {}})
+    _write(tmp_path / "ratings" / "history" / "VER.json", {"code": "VER", "history": [[2024, 1, 1500, 1500]]})
     _write(tmp_path / "coverage.json", {"seasons": {}})
     _write(tmp_path / "manifest.json", {"schema_version": 1})
     return tmp_path
