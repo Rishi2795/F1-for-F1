@@ -115,6 +115,14 @@ class OpenF1Source:
             return []
         return data if isinstance(data, list) else []
 
+    def driver_records(self, code: str) -> list[dict]:
+        """Every record OpenF1 holds for one driver (one per session they appeared in), oldest first."""
+        try:
+            data = self.http.get_json("drivers", {"name_acronym": code})
+        except SourceUnavailable:
+            return []
+        return data if isinstance(data, list) else []
+
     def race_control(self, session_key: int) -> list[dict]:
         """Race-control messages (flags, incidents, penalties, safety cars), each with its time and often the car."""
         try:

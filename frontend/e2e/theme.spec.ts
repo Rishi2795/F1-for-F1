@@ -6,14 +6,16 @@ test.describe("typeface", () => {
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dot");
     const family = () => page.getByRole("heading", { level: 1 }).evaluate((el) => getComputedStyle(el).fontFamily);
     await expect.poll(family).toContain("Doto"); // headlines are marked a moment after the page renders
-    const toggle = page.getByRole("group", { name: "Typeface" });
-    await toggle.scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: "Menu" }).click(); // the switch is the first thing in the Menu
+    const toggle = page.getByRole("dialog", { name: "Menu" }).getByRole("group", { name: "Typeface" });
+    await expect(toggle).toBeVisible();
     await toggle.getByRole("button", { name: "Classic" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "classic");
     await expect.poll(family).not.toContain("Doto");
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "classic"); // remembered on this device
-    await page.getByRole("group", { name: "Typeface" }).getByRole("button", { name: "Dot" }).click();
+    await page.getByRole("button", { name: "Menu" }).click();
+    await page.getByRole("dialog", { name: "Menu" }).getByRole("group", { name: "Typeface" }).getByRole("button", { name: "Dot" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dot");
   });
 

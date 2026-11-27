@@ -2,8 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Black behind everything, so pulling the page past its top, bottom or sides (rubber-band scrolling on phones and trackpads) shows black,
+   not a blue-grey. The colour must be on `html` too: it is what the browser paints outside the page. */
+html {
+  background-color: #050505;
+  color-scheme: dark;
+}
 body {
-  @apply bg-slate-950 text-slate-100;
+  @apply bg-[#050505] text-slate-100;
 }
 
 /* The one layout rule. Every page's content sits in `.page`: centred, never wider than 90rem (1440px), with the same side
@@ -305,8 +311,10 @@ html {
   .home-scene-end {
     scroll-snap-align: end;
   }
-  /* the site footer is the last stop, so mandatory snapping can no longer pull the page back off it */
-  html.snap-home .site-footer {
+  /* the site footer is the last stop, so mandatory snapping cannot pull the page back off it. It only becomes a snap point once the
+     visitor has scrolled (lib/homescenes.ts adds snap-footer): while the page is still loading, a phone's first snap pass picked the
+     footer and carried a fresh visit straight to the bottom of the page. */
+  html.snap-home.snap-footer .site-footer {
     scroll-snap-align: end;
   }
 }

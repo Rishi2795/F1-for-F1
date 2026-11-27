@@ -218,6 +218,10 @@ def run_predict(publisher: Publisher, audit: AuditLog) -> None:
         "forecast.build", "predictions", "success",
         details={"version": card["version"], **counts, "winner_log_loss": best["winner_log_loss"]},
     )
+    # a title that is already mathematically decided makes that driver the season's champion (badges and counts follow)
+    if publisher.record_clinched_champion():
+        publisher.rebuild_drivers()
+        log.info("champions: a title was clinched this season and is now recorded")
 
 
 def run_refresh(seasons: list[int], skip_sync: bool, refresh: bool) -> int:

@@ -7,6 +7,7 @@ import { StatBoard } from "../components/ui/statboard";
 import { ErrorState, Skeleton } from "../components/ui/states";
 import { chip } from "../components/ui/chipstyle";
 import { PhoneNext, RoundDeck } from "../components/schedule/phoneschedule";
+import { RacesTabs } from "../components/ui/racestabs";
 import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { pct } from "../lib/forecast";
@@ -49,14 +50,20 @@ export default function Schedule() {
   return (
     <div className="min-h-screen pb-32 pt-10 text-zinc-300 md:pt-12">
       <div className="page space-y-6 lg:space-y-10">
-        <PageHead kicker="CALENDAR" title="The season" accent="schedule" intro={<span className="max-lg:hidden">Every round, the weekend timetable in your own time zone, and a forecast for what is still to come.</span>} />
+        {/* On a laptop the heading, the season chips and the next-race card are one screen, the card taking what is left. */}
+        <div className="space-y-6 lg:flex lg:h-[calc(100dvh-8.5rem)] lg:min-h-[30rem] lg:flex-col lg:gap-5 lg:space-y-0">
+        <PageHead kicker="CALENDAR" title="The season" accent="schedule" intro={<span className="max-lg:hidden [@media(max-height:780px)]:hidden">Every round, the weekend timetable in your own time zone, and a forecast for what is still to come.</span>} />
 
-        {seasons.data && season && <SeasonChips seasons={seasons.data.seasons} value={season} onChange={(s) => { setPicked(s); setFilter("all"); }} />}
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          {seasons.data && season ? <SeasonChips seasons={seasons.data.seasons} value={season} onChange={(s) => { setPicked(s); setFilter("all"); }} /> : <span />}
+          <RacesTabs current="calendar" />
+        </div>
         {(seasons.loading || races.loading) && <Skeleton className="h-96" />}
         {races.error && <ErrorState error={races.error} onRetry={races.reload} subject="schedule" />}
 
-        {next && <div className="max-lg:hidden"><NextUp race={next} forecast={forecastOf(next)} zone={zone} /></div>}
+        {next && <div className="max-lg:hidden lg:min-h-0 lg:flex-1"><NextUp race={next} forecast={forecastOf(next)} zone={zone} /></div>}
         {next && <PhoneNext race={next} forecast={forecastOf(next)} zone={zone} />}
+        </div>
 
         {list.length > 0 && (
           <div className="max-lg:hidden">
@@ -155,11 +162,11 @@ function NextUp({ race, forecast, zone }: { race: RaceIndexEntry; forecast?: For
   const left = start ? countdown(start.getTime() - now) : null;
   const top = forecast?.drivers.slice(0, 3) ?? [];
   return (
-    <section id="next-scene" aria-labelledby="next-h" className="snap-target glass relative grid gap-8 p-6 md:p-8 lg:min-h-[calc(100dvh-2.5rem)] lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:p-12" style={{ boxShadow: "inset 3px 0 0 #dc2626" }}>
-      <div className="space-y-6">
+    <section id="next-scene" aria-labelledby="next-h" className="glass relative grid gap-8 p-6 md:p-8 lg:h-full lg:min-h-0 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-10 lg:overflow-hidden lg:px-12 lg:py-6" style={{ boxShadow: "inset 3px 0 0 #dc2626" }}>
+      <div className="space-y-6 lg:space-y-5">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-red-500">NEXT_RACE · ROUND {race.round}</p>
-          <h2 id="next-h" className="mt-3 text-3xl font-black uppercase italic leading-[0.95] tracking-tighter text-white md:text-5xl lg:text-6xl">{race.event_name}</h2>
+          <h2 id="next-h" className="mt-3 text-3xl font-black uppercase italic leading-[0.95] tracking-tighter text-white md:text-5xl lg:text-5xl xl:text-6xl">{race.event_name}</h2>
           <p className="mt-2 text-zinc-300">{race.location}{race.country ? `, ${race.country}` : ""}</p>
         </div>
         {left && (
@@ -169,8 +176,8 @@ function NextUp({ race, forecast, zone }: { race: RaceIndexEntry; forecast?: For
             ) : (
               <div className="grid max-w-md grid-cols-3 gap-px overflow-hidden rounded-sm border border-white/10 bg-white/10">
                 {([["Days", left.days, true], ["Hours", left.hours, false], ["Min", left.minutes, false]] as const).map(([k, v, head]) => (
-                  <div key={k} className={`px-4 py-3 text-center lg:py-5 ${head ? "bg-white text-black" : "glass-cell"}`}>
-                    <div className={`font-serif text-4xl tabular-nums lg:text-5xl ${head ? "text-black" : "text-white"}`}>{String(v).padStart(2, "0")}</div>
+                  <div key={k} className={`px-4 py-3 text-center lg:py-3 ${head ? "bg-white text-black" : "glass-cell"}`}>
+                    <div className={`font-serif text-4xl tabular-nums lg:text-4xl xl:text-5xl ${head ? "text-black" : "text-white"}`}>{String(v).padStart(2, "0")}</div>
                     <div className={`font-mono text-[9px] uppercase tracking-[0.25em] ${head ? "text-zinc-600" : "text-zinc-400"}`}>{k}</div>
                   </div>
                 ))}
@@ -184,13 +191,13 @@ function NextUp({ race, forecast, zone }: { race: RaceIndexEntry; forecast?: For
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 lg:space-y-4">
         {race.sessions && race.sessions.length > 0 ? (
           <div>
             <h3 className="mb-3 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400">Weekend timetable{zone ? ` · ${zone}` : ""}</h3>
             <ul className="divide-y divide-white/10 border-y border-white/10">
               {race.sessions.map((s) => (
-                <li key={s.name} className={`flex items-baseline justify-between gap-4 py-2.5 ${s.name === "Race" ? "bg-white/[0.05] px-2" : ""}`}>
+                <li key={s.name} className={`flex items-baseline justify-between gap-4 py-2.5 lg:py-1.5 ${s.name === "Race" ? "bg-white/[0.05] px-2" : ""}`}>
                   <span className={s.name === "Race" ? "font-bold text-white" : "text-zinc-200"}>{s.name}</span>
                   <time dateTime={s.starts} className={`font-mono text-sm tabular-nums ${s.name === "Race" ? "text-red-300" : "text-zinc-300"}`}>{sessionTime(s)}</time>
                 </li>
@@ -217,7 +224,7 @@ function NextUp({ race, forecast, zone }: { race: RaceIndexEntry; forecast?: For
       <button
         type="button"
         onClick={() => document.getElementById("cal-h")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" })}
-        className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600 lg:flex"
+        className="absolute bottom-2 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-400 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600 lg:flex"
       >
         All rounds
         <span aria-hidden="true" className="animate-bounce text-base leading-none">↓</span>

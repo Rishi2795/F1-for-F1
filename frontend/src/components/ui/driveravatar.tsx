@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useDriverImages } from "../../lib/driverimages";
 import { avatarStyle } from "../../lib/driverphotos";
+import { DriverSilhouette } from "./driversilhouette";
 
 /** A round driver picture for tables and lists. It shows a licensed photo if we hold one, else Formula 1's official portrait,
- *  and when there is none (or it does not load) the race number or code in the team's colour. Decorative: the driver's
+ *  and when there is none (or it does not load) a head-and-shoulders silhouette in the team's colour. Decorative: the driver's
  *  name is always next to it. */
-export function DriverAvatar({ code, color, number, size = 32 }: { code: string; color?: string | null; number?: number | null; size?: number }) {
+export function DriverAvatar({ code, color, size = 32 }: { code: string; color?: string | null; number?: number | null; size?: number }) {
   const image = useDriverImages()(code, size > 60 ? 4 : 2);
   const [failed, setFailed] = useState(false);
   const colour = `#${(color ?? "888888").replace("#", "")}`;
@@ -16,7 +17,7 @@ export function DriverAvatar({ code, color, number, size = 32 }: { code: string;
       ) : image?.kind === "official" && !failed ? (
         <img src={image.url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="absolute left-1/2 top-[4%] h-[128%] w-[128%] max-w-none -translate-x-1/2 object-cover object-top" />
       ) : (
-        <span className="grid h-full w-full place-items-center bg-black/55 font-mono text-[10px] font-bold text-white">{number ?? code.slice(0, 2)}</span>
+        <span className="absolute inset-0 bg-black/55"><DriverSilhouette color={colour} className="absolute bottom-0 left-0 h-[92%] w-full" /></span>
       )}
     </span>
   );

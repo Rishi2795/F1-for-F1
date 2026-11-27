@@ -5,6 +5,7 @@ import { ChampionBadge } from "../ui/championbadge";
 import { prefetch } from "../../lib/api";
 import { framing } from "../../lib/driverphotos";
 import { useDriverImages } from "../../lib/driverimages";
+import { DriverSilhouette } from "../ui/driversilhouette";
 
 export type PodiumEntry = {
   id: string;
@@ -94,7 +95,13 @@ export function Podium({ entries, leaderPoints }: { entries: PodiumEntry[]; lead
                   )}
                 </div>
               )}
-              <div className={`min-w-0 ${img ? "pt-1" : "mt-auto pt-6 sm:pt-10"}`}>
+              {!img && withPictures && (
+                <div className="relative my-1 min-h-[6.5rem] flex-1 sm:min-h-[10rem]">
+                  <span aria-hidden="true" className="absolute inset-0" style={{ backgroundImage: `radial-gradient(ellipse 70% 62% at 50% 92%, ${e.color}55, transparent 72%)` }} />
+                  <DriverSilhouette color={e.color} className="absolute inset-x-0 bottom-0 mx-auto h-full w-auto max-w-full" />
+                </div>
+              )}
+              <div className={`min-w-0 ${img || withPictures ? "pt-1" : "mt-auto pt-6 sm:pt-10"}`}>
                 <h3 className={`line-clamp-3 break-words font-extrabold leading-tight tracking-tight text-white sm:line-clamp-2 ${lead ? "text-sm sm:text-2xl lg:text-3xl" : "text-xs sm:text-xl"}`}>{e.label}</h3>
                 {e.sublabel && (
                   <p className="mt-0.5 flex items-start gap-1.5 text-[10px] leading-tight text-zinc-400 sm:items-center sm:gap-2 sm:truncate sm:text-sm">

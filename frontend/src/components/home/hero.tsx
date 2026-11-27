@@ -62,7 +62,7 @@ const Hero = () => {
           >
             <img src={assets.desktopBg} referrerPolicy="no-referrer" onError={hideBroken} className="absolute inset-0 h-full w-full object-cover object-center brightness-[0.25]" alt="" />
             {/* a soft red rim light between the photo and the cutout, so it glows behind the car, not over it */}
-            <motion.div aria-hidden="true" className="absolute bottom-[8%] left-[18%] z-10 h-[40%] w-[62%] rounded-full bg-red-700/30 blur-[110px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2.4, delay: 0.7, ease: "easeOut" }} />
+            <motion.div aria-hidden="true" className="absolute bottom-[8%] left-[18%] z-10 h-[40%] w-[62%] bg-[radial-gradient(closest-side,rgba(185,28,28,0.34),transparent)]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2.4, delay: 0.7, ease: "easeOut" }} />
             <img src={assets.desktopCutout} className="absolute inset-0 z-20 h-full w-full object-cover object-center drop-shadow-[0_30px_60px_rgba(0,0,0,1)]" alt="A 2026-era Formula 1 car" />
           </motion.div>
         </motion.div>

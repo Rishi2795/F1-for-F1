@@ -30,6 +30,29 @@ test.describe("schedule, news and possible standings", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
   });
 
+  test("the full race list is one tap from the calendar, and back", async ({ page }) => {
+    await page.goto("/schedule");
+    const tabs = page.getByRole("navigation", { name: "Races" });
+    await expect(tabs.getByRole("link", { name: "Calendar" })).toHaveAttribute("aria-current", "page");
+    await tabs.getByRole("link", { name: /All races/ }).click();
+    await expect(page).toHaveURL(/\/explore$/);
+    await expect(page.getByRole("navigation", { name: "Races" }).getByRole("link", { name: /All races/ })).toHaveAttribute("aria-current", "page");
+    await page.getByRole("navigation", { name: "Races" }).getByRole("link", { name: "Calendar" }).click();
+    await expect(page).toHaveURL(/\/schedule$/);
+  });
+
+  test("on a phone the rounds can be read as a list, then as cards again", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/schedule");
+    await page.getByRole("button", { name: "List" }).click();
+    const list = page.getByRole("list", { name: "All rounds" });
+    await expect(list).toBeVisible();
+    await page.getByRole("button", { name: "DONE" }).click();
+    await expect(list.getByRole("link", { name: "Results →" }).first()).toBeVisible();
+    await page.getByRole("button", { name: "Cards" }).click();
+    await expect(page.getByRole("list", { name: /Rounds, swipe sideways/ })).toBeVisible();
+  });
+
   test("the news page links out safely and can be filtered by publisher", async ({ page }) => {
     await page.goto("/news");
     const first = page.locator("ul a[href^='https://']").first();

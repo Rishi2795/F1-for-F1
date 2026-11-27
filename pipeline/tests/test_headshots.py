@@ -16,9 +16,16 @@ class FakeOpenF1:
     def session_drivers(self, key):
         return self._d.get(key, [])
 
+    def driver_records(self, code):
+        return self._by_code.get(code, [])
+
+    _by_code: dict = {}
+
 
 def test_only_https_pngs_on_the_f1_media_host_are_accepted():
     assert acceptable(OK)
+    assert acceptable("https://www.formula1.com/content/dam/fom-website/drivers/N/NYCDEV01_Nyck_De%20Vries/nycdev01.png.transform/1col/image.png")
+    assert not acceptable("https://www.formula1.com.evil.example/x.png")
     assert not acceptable(OK.replace("https://", "http://"))
     assert not acceptable(OK.replace("media.formula1.com", "evil.example.com"))
     assert not acceptable("https://media.formula1.com.evil.example/x.png")
@@ -40,3 +47,16 @@ def test_the_data_gate_rejects_a_foreign_link(tmp_path):
     (tmp_path / "drivers" / "headshots.json").write_text('{"headshots": {"NOR": "https://evil.example/x.png"}}')
     problems = Publisher(tmp_path)._headshot_problems()
     assert problems and "NOR" in problems[0]
+
+
+def test_a_driver_the_season_sweep_missed_is_asked_for_by_name():
+    """Someone who left mid-season is not in a season's last session, so the codes still without a portrait are looked up directly."""
+    s = {2025: [{"session_key": 1, "date_start": "2025-12-07T13:00:00"}]}
+    d = {1: [{"name_acronym": "NOR", "headshot_url": OK}]}
+    src = FakeOpenF1(s, d)
+    src._by_code = {
+        "RIC": [{"headshot_url": "https://evil.example/old.png"}, {"headshot_url": OK.replace("LANNOR01_Lando_Norris/lannor01", "DANRIC01_Daniel_Ricciardo/danric01")}, {"headshot_url": None}],
+        "NOP": [{"headshot_url": None}],  # nothing usable: stays without a portrait, never a made-up link
+    }
+    got = collect(src, today=datetime(2026, 11, 1, tzinfo=UTC), wanted=["NOR", "RIC", "NOP"])
+    assert set(got) == {"NOR", "RIC"} and "danric01" in got["RIC"]

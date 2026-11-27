@@ -4,6 +4,8 @@ import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { prefetch } from "../lib/api";
 import { ErrorState, Skeleton } from "../components/ui/states";
+import { RacesTabs } from "../components/ui/racestabs";
+import { Logo } from "../components/ui/logo";
 import type { DataStatus, RaceIndexEntry } from "../types/api";
 
 const STATUS_LABEL: Record<DataStatus, string | null> = {
@@ -49,9 +51,7 @@ export default function RaceArchive() {
     
     {/* LOGO */}
     <div onClick={() => navigate("/")} className="cursor-pointer shrink-0">
-      <h1 className="font-serif italic text-2xl sm:text-3xl tracking-tight leading-none">
-        F1<span className="hidden xs:inline text-red-500 font-sans not-italic font-black text-[10px] tracking-[0.3em] ml-2 uppercase">FOR FORMULA 1</span>
-      </h1>
+      <h1 className="leading-none"><Logo className="text-xl sm:text-2xl" /></h1>
     </div>
 
     {/* SEARCH BAR */}
@@ -80,10 +80,11 @@ export default function RaceArchive() {
   </div>
 </header>
 
-      <div className="page py-16">
-        
+      <div className="page py-8 md:py-16">
+        <div className="mb-6 md:mb-8"><RacesTabs current="results" /></div>
+
         {/* EDITORIAL HEADING */}
-        <div className="mb-14 space-y-2">
+        <div className="mb-8 space-y-2 md:mb-14">
           <div className="flex items-center gap-3">
             <div className="h-[1px] w-12 bg-red-600" />
             <span className="text-[10px] font-black tracking-[0.5em] uppercase text-red-500">The Calendar</span>
@@ -109,9 +110,9 @@ export default function RaceArchive() {
                   onClick={() => navigate(`/race/${race.season}/${race.round}`)}
                   onMouseEnter={() => !disabled && prefetch(`/seasons/${race.season}/races/${race.round}`)}
                   onFocus={() => !disabled && prefetch(`/seasons/${race.season}/races/${race.round}`)}
-                  className="group relative flex flex-col bg-[#0A0A0A] border border-white/[0.05] rounded-sm p-6 text-left transition-all duration-500 enabled:hover:bg-white enabled:hover:text-black enabled:active:scale-[0.96] disabled:opacity-50"
+                  className="group relative flex flex-col bg-[#0A0A0A] border border-white/[0.05] rounded-sm p-4 md:p-6 text-left transition-all duration-500 enabled:hover:bg-white enabled:hover:text-black enabled:active:scale-[0.96] disabled:opacity-50"
                 >
-                  <span className="text-[11px] font-mono font-bold opacity-50 group-enabled:group-hover:text-red-500 group-enabled:group-hover:opacity-100 transition-all mb-8">
+                  <span className="text-[11px] font-mono font-bold opacity-50 group-enabled:group-hover:text-red-500 group-enabled:group-hover:opacity-100 transition-all mb-4 md:mb-8">
                     R{race.round.toString().padStart(2, "0")} · {race.date}
                   </span>
 

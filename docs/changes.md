@@ -62,7 +62,23 @@ Three compact portrait tiles across on phones (name, code, number; team and "rac
 
 Ten orphaned components (2,261 lines), the dead Driver DNA / AI-insight feature (backend stubs, frontend code, flag), an unused dependency (`recharts`), a stray root `package.json`, unreferenced images and scaffold assets, dead code in the landing page, eight more unused functions, and the boilerplate/stale docs. Lint went from **38 errors to 0**.
 
-### 1.8 Tidy-up and layout (second pass)
+### 1.8 Reported problems: opening at the bottom, lag, hidden race list, missing portraits, blue overscroll
+
+**A fresh visit opened at the very bottom of the landing page (phones, production only).** Reproduced with the production build on a phone-sized browser: the page jumped to 5857px of 6701px about half a second after loading, on a cold load, a warm cache and slow networks alike (a laptop was fine, and the dev server hid it, which is why tests missed it). Cause: the footer was a scroll-snap point, and a phone's first snap pass after the page renders chose it and carried the page to the bottom. Fix: the footer only becomes a snap point after the visitor first scrolls, touches or presses a key (`snap-footer` class added by `lib/homescenes.ts`; rule in `index.css`). Scroll restoration is also set to manual in `main.tsx` before the first render, so a reload or Back visit is never put back on an old scene. Tests: a fresh visit stays at the top at 300 ms, 0.7 s, 1.5 s and 3 s, the footer is still reachable after a scroll, and a reload from scene 3, 5 or 6 returns to the hero (phone and laptop).
+
+**Lag.** Changes made on principle, because headless Chromium has no GPU and cannot reproduce a phone's compositing cost (a traced scroll through all seven scenes stayed at 60 fps before and after): removed the `backdrop-filter` blurs that sat over moving content (the dock, the dot rail, the footer, two panels on the landing page), replaced the hero's 110px-blur glow and the footer glow with gradients, stopped the dot rail reading every scene's box on every scroll frame (resting positions are cached, 0.6 ms of work in total), and decode landing images off the main thread. **The rules cards** animated their height on every hover (laptops) or tap, re-flowing the whole grid on each frame; they are now buttons that open on a click or tap all at once with a fade, so nothing re-lays out while they move (they are keyboard-reachable now too).
+
+**The race list was hidden.** It lived only in the Menu. `components/ui/racestabs.tsx` puts a **Calendar | All races & results** switch at the top of both `/schedule` and `/explore`, so the full list is one tap from the calendar. On phones the schedule has a **Cards | List** toggle: a compact list of every round (date, name, circuit, and Results or Forecast link) next to the swipeable deck. The archive's cards are tighter on phones. (A labelled bottom tab bar was tried for the dock and reverted at your request: the dock is the icon pill again, where the current place opens to show its name.)
+
+**Missing driver portraits.** 17 of 42 drivers had none. Official portraits exist for any driver OpenF1 knows from 2023, but the collector only sampled each season's last session, so it missed Ricciardo, Sargeant, de Vries and Doohan; it now asks for any still-missing driver by name (`headshots.collect(wanted=...)`, `OpenF1Source.driver_records`) and also accepts Formula 1's `www.formula1.com` host (a de Vries portrait lives there). 25 -> 29 portraits. The 13 who remain (Camara and Hirakawa, new in 2026, and 11 who left before 2023) have no free official source, so every card, avatar, podium slot and profile now shows a head-and-shoulders silhouette in the team's colour (`components/ui/driversilhouette.tsx`) instead of a bare number. No picture of a real person is invented; the portraits that exist still come from formula1.com with a credit.
+
+**Blue-grey area when pulling the page past its edges** was the old `slate-950` body colour showing through. `html` and `body` are now `#050505` (and `color-scheme: dark`).
+
+**Simpler phone footer.** On phones the footer is now the wordmark and disclaimer, six quick links (Schedule, Race results, Standings, News, Forecast, Simulator), two lines of credits (data sources; Methodology, About, Source code) and the copyright bar: 411px, down from 793px. The full site map and source columns remain on laptops. **The Dot / Classic switch moved out of the footer** to the top of the Menu, as its own "Typeface" row, so it is found where settings are expected.
+
+**Champions.** Antonelli is recorded as the 2026 champion. The pipeline now does this itself: `Publisher.record_clinched_champion()` (called at the end of `run_predict`) adds the season in progress to `champions.json` once the forecast calls the title mathematically decided (`clinched_driver`, the same test the forecast page uses, so the two cannot disagree), then rebuilds the driver files so titles, badges and counts follow (Antonelli: 1 title, 2026). A finished season's official champion is never overwritten. **The Reign scene** now shows Hamilton (7), Verstappen (4), Alonso (2) and Antonelli (1); Norris is out. Portraits are Formula 1's official ones via the same driver-image path as the rest of the site (the old Pinterest hotlinks are gone from this scene), with the silhouette as a fallback.
+
+### 1.9 Tidy-up and layout (second pass)
 
 **Rule applied: no file refers to another project.** `docs/features.md` (a feature-by-feature comparison with a competing product, its repository and its pricing) is deleted, the one history row in `docs/plan.md` that named that product now just describes the work, and the two links to the deleted file are gone. Libraries and data sources the project actually uses or bans (Jolpica-F1, TracingInsights, OpenF1, and the lint ban on the live-timing library in `ruff.toml`) are kept because they are attribution or an enforced guard, not comparisons; incidental mentions of that library in `docs/deploy.md`, `docs/perf-baseline.md`, `backend/app/main.py` and `.gitignore` were reworded or removed. `docs/plan.md` still describes the old stack as history.
 
@@ -273,7 +289,7 @@ All inherit one base class that forbids unknown fields, so a typo in the pipelin
 | `StandingsRound` | 4 |  | The standings after one round. |
 | `SeasonStandings` | 5 | `seasons/{y}/standings.json` | All rounds' standings for a season. |
 | `Champion` | 3 |  | A season's champion. |
-| `Champions` | 2 | `champions.json` | The list of champions. |
+| `Champions` | 2 | `champions.json` | World champions by season, including this season once its title is mathematically decided. |
 
 
 The API itself defines **no** response models: it serves the validated bytes as written. The only API-side types are `Settings` (`backend/app/core/config.py`), `Blob` (bytes plus ETag, `core/store.py`) and `ApiError` (`core/errors.py`).
@@ -359,7 +375,7 @@ Frontend environment: `VITE_API_URL` (must include `/api`), optional `VITE_ERROR
 | `manifest.json`, `seasons.json`, `coverage.json`, `champions.json` | 4 | small | Bundle hash and metadata, seasons list, coverage matrix, champions | (dicts), `Champions` |
 | `news.json` | 1 | ~38 KB | 80 headlines from 5 publishers (text only) | (validated by `Publisher._news_problems`) |
 | `seasons/{year}/` | 189 | 6.6 MB | `races.json`, `standings.json`, `race_{n}.json` | `RaceIndex`, `SeasonStandings`, `RaceDoc` |
-| `drivers/` | 48 | 200 KB | `index.json`, `{CODE}.json` | `DriverListEntry`, `DriverProfile` |
+| `drivers/` | 48 | 200 KB | `index.json`, `{CODE}.json`, `headshots.json` (code → link to F1's official portrait; links only, never the pictures; 29 of 42 drivers) | `DriverListEntry`, `DriverProfile` |
 | `circuits/` | 35 | 288 KB | `index.json`, `{slug}.json` | `CircuitIndexEntry`, `CircuitDoc` |
 | `duels/` | 8 | 48 KB | `{year}.json` | `DuelsDoc` |
 | `teampace/` | 8 | 64 KB | `{year}.json` | `TeamPaceDoc` |
@@ -415,15 +431,15 @@ The pipeline is the only thing that talks to the outside world. It writes the JS
 | `pipeline/f1data/__main__.py` | 5 |  |
 | `pipeline/f1data/audit.py` | 99 | Append-only, hash-chained audit log (JSON Lines). |
 | `pipeline/f1data/build.py` | 406 | Assemble one published RaceDoc from the sources. Missing data stays missing. |
-| `pipeline/f1data/cli.py` | 533 | Command line entry point:  python -m f1data <command> |
+| `pipeline/f1data/cli.py` | 537 | Command line entry point:  python -m f1data <command> |
 | `pipeline/f1data/config.py` | 26 | Paths and settings. Everything is overridable by environment variable; no secrets here. |
 | `pipeline/f1data/consistency.py` | 43 | Season-wide clean-up that needs more than one race at a time. |
 | `pipeline/f1data/coverage.py` | 75 | Coverage matrix: for every expected race, which kinds of data we actually have. |
 | `pipeline/f1data/derive.py` | 418 | Things worked out from the published races: excitement, teammate duels, circuit profiles. |
 | `pipeline/f1data/errors.py` | 17 | Typed errors so callers can tell "source is down" from "source has no data". |
-| `pipeline/f1data/export.py` | 638 | Write the published JSON bundle. Never overwrites good data with worse data. |
+| `pipeline/f1data/export.py` | 664 | Write the published JSON bundle. Never overwrites good data with worse data. |
 | `pipeline/f1data/extras.py` | 84 | Qualifying and sprint results, added to published races without rebuilding them. |
-| `pipeline/f1data/headshots.py` | 59 | Links to the official driver portraits. |
+| `pipeline/f1data/headshots.py` | 79 | Links to the official driver portraits. |
 | `pipeline/f1data/http.py` | 129 | The single HTTP client every JSON source uses: throttle, retry, timeout, disk cache. |
 | `pipeline/f1data/lapdoc.py` | 188 | Per-lap detail for one race: lap times, gap to the leader, sector bests, top speeds, flags and undercuts. |
 | `pipeline/f1data/logging_setup.py` | 72 | Structured logging for the pipeline. One setup function; nobody calls print(). |
@@ -448,7 +464,7 @@ The pipeline is the only thing that talks to the outside world. It writes the JS
 | `pipeline/f1data/schedule.py` | 35 | The weekend timetable (practice, qualifying, sprint, race) for each round, merged into the season's race index. |
 | `pipeline/f1data/simmodel.py` | 596 | The strategy simulator's model: how lap time responds to tyres, fuel, heat and rain, fitted from real race laps. |
 | `pipeline/f1data/sources/jolpica.py` | 364 | Jolpica-F1 (Ergast successor): schedule, results, pit stops. Free, no key. |
-| `pipeline/f1data/sources/openf1.py` | 149 | OpenF1: free historical stints/tyres for 2023+. Used as a fallback when the |
+| `pipeline/f1data/sources/openf1.py` | 157 | OpenF1: free historical stints/tyres for 2023+. Used as a fallback when the |
 | `pipeline/f1data/sources/tracinginsights.py` | 244 | TracingInsights per-year GitHub repos: per-lap compound/stint/tyre-age/weather, 2018+. |
 | `pipeline/f1data/standings.py` | 65 | Build a season's championship standings document from official standings plus our race data. |
 | `pipeline/f1data/telemetry.py` | 182 | Fastest-lap car data for each driver, laid along the circuit. |
@@ -460,11 +476,12 @@ The pipeline is the only thing that talks to the outside world. It writes the JS
 |---|---:|---|
 | `pipeline/tests/test_audit_export.py` | 105 | Unit tests for `audit export` (8 tests) |
 | `pipeline/tests/test_build.py` | 99 | Unit tests for `build` (11 tests) |
+| `pipeline/tests/test_champions_clinched.py` | 36 | Unit tests for `champions clinched` (3 tests) |
 | `pipeline/tests/test_consistency.py` | 31 | Unit tests for `consistency` (2 tests) |
 | `pipeline/tests/test_derive.py` | 124 | Unit tests for `derive` (7 tests) |
 | `pipeline/tests/test_extras.py` | 77 | Unit tests for `extras` (6 tests) |
 | `pipeline/tests/test_fill.py` | 135 | Unit tests for `fill` (14 tests) |
-| `pipeline/tests/test_headshots.py` | 42 | Unit tests for `headshots` (3 tests) |
+| `pipeline/tests/test_headshots.py` | 62 | Unit tests for `headshots` (4 tests) |
 | `pipeline/tests/test_lapdoc.py` | 85 | Unit tests for `lapdoc` (8 tests) |
 | `pipeline/tests/test_maps.py` | 45 | Unit tests for `maps` (4 tests) |
 | `pipeline/tests/test_metrics.py` | 56 | Unit tests for `metrics` (8 tests) |
@@ -500,9 +517,9 @@ Run by people (or the deploy-check workflow), never by the app.
 
 | File | Lines | Purpose |
 |---|---:|---|
-| `frontend/src/main.tsx` | 17 | Mounts the app inside the router, error boundary and global styles. |
+| `frontend/src/main.tsx` | 21 | Mounts the app inside the router, error boundary and global styles. |
 | `frontend/src/App.tsx` | 95 | Route table (lazy-loaded pages: Home `/`, RaceArchive `/explore`, About `/about_app`, …), global dock, search palette, server notice, skip link, and the top progress bar on every page except `/`. |
-| `frontend/src/index.css` | 391 | Tailwind layers, the `.page` layout rule, fluid type scale, dot-field background, the cube-turn keyframes, scene snapping and the mobile gutter beside the dots. |
+| `frontend/src/index.css` | 399 | Tailwind layers, the `.page` layout rule, fluid type scale, dot-field background, the cube-turn keyframes, scene snapping and the mobile gutter beside the dots. |
 
 ### Pages: `frontend/src/pages` (one per route)
 
@@ -511,22 +528,22 @@ Run by people (or the deploy-check workflow), never by the app.
 | `frontend/src/pages/about.tsx` | 171 | `/about_app` What the project is, where the data comes from, what it will not pretend, and who made it. |
 | `frontend/src/pages/circuit.tsx` | 163 | `/circuit/:slug` One circuit: track drawn from a real lap, what to expect (pole-to-win rate, overtaking rank, safety-car rate) and every race held there. |
 | `frontend/src/pages/circuits.tsx` | 47 | `/circuits` Every track with search and a thumbnail drawn from real position data. |
-| `frontend/src/pages/driverprofile.tsx` | 234 | `/driver/:code` One driver: career table, season-by-season, ratings card, this-weekend chances (current grid only), pinned portrait card. |
-| `frontend/src/pages/drivers.tsx` | 128 | `/drivers` Every driver since 2020 as portrait tiles (3 across on phones) with search and All / On the grid / Champions filters. |
+| `frontend/src/pages/driverprofile.tsx` | 238 | `/driver/:code` One driver: career table, season-by-season, ratings card, this-weekend chances (current grid only), pinned portrait card. |
+| `frontend/src/pages/drivers.tsx` | 130 | `/drivers` Every driver since 2020 as portrait tiles (3 across on phones) with search and All / On the grid / Champions filters. |
 | `frontend/src/pages/duels.tsx` | 105 | `/duels` Teammate head-to-heads per season: qualifying, race result and pace. |
 | `frontend/src/pages/forecast.tsx` | 73 | `/forecast` Next-race odds, title odds, possible final standings, track record and the model card. |
-| `frontend/src/pages/home.tsx` | 678 | `/` The landing page: seven full-screen scenes (hero, 2026 cars, engineering, the reign, tech history, hall of fame, the rules) that turn like faces of a cube as you scroll. |
+| `frontend/src/pages/home.tsx` | 641 | `/` The landing page: seven full-screen scenes (hero, 2026 cars, engineering, the reign, tech history, hall of fame, the rules) that turn like faces of a cube as you scroll. |
 | `frontend/src/pages/methodology.tsx` | 203 | `/methodology` How every number and model works, with live data-coverage figures and a chapter index. |
 | `frontend/src/pages/my.tsx` | 86 | `/my` 'My driver': a briefing on the driver you pick, saved on this device only. |
 | `frontend/src/pages/news.tsx` | 167 | `/news` Headlines from five publishers: text only, linking out. Phones get a top story plus swipeable per-day rails. |
 | `frontend/src/pages/notfound.tsx` | 21 | The 404 page for any unknown address. |
 | `frontend/src/pages/pitwall.tsx` | 40 | `/pitwall` The hub of analysis tools, each shown as the question it answers (a 3D ring carousel). |
 | `frontend/src/pages/play.tsx` | 109 | `/play` 'Beat the model': pick a podium, get scored against the forecast; picks kept on the device. |
-| `frontend/src/pages/racearchive.tsx` | 158 | `/explore` The race archive: every race with search, season filter and a worth-watching score. |
+| `frontend/src/pages/racearchive.tsx` | 160 | `/explore` The race archive: every race with search, season filter and a worth-watching score. |
 | `frontend/src/pages/racedashboard.tsx` | 65 | `/race/:year/:round` One race: story, results, qualifying ladder, lap chart, tyre strategy, pace, team cards, head-to-head. |
 | `frontend/src/pages/racelab.tsx` | 74 | `/race/:year/:round/lab` The race lab: map replay, telemetry, gap and pace charts, incidents, 'where it went wrong'. |
 | `frontend/src/pages/ratings.tsx` | 126 | `/ratings` Driver or car? Ratings that separate driver skill from car strength. |
-| `frontend/src/pages/schedule.tsx` | 227 | `/schedule` The calendar: next race with countdown, weekend timetable in your time zone, forecast. Desktop: month lists. Phones: see components/schedule. |
+| `frontend/src/pages/schedule.tsx` | 234 | `/schedule` The calendar: next race with countdown, weekend timetable in your time zone, forecast. Desktop: month lists. Phones: see components/schedule. |
 | `frontend/src/pages/simulation.tsx` | 232 | `/simulation` The strategy simulator: plan stops, add rain and safety cars, test across hundreds of simulated races or race live. |
 | `frontend/src/pages/standings.tsx` | 425 | `/standings` (redirects to the latest season) and `/season/:year`: drivers and constructors tables, podium, points progression, pick-a-round. |
 | `frontend/src/pages/teampace.tsx` | 97 | `/team-pace` Round-by-round car pace: who is improving, who is fading. |
@@ -584,7 +601,7 @@ Run by people (or the deploy-check workflow), never by the app.
 | File | Lines | Purpose |
 |---|---:|---|
 | `frontend/src/components/home/hero.tsx` | 136 | The landing page's first scene: the car cut-out, title and 'Start exploring' link, with a pointer parallax. |
-| `frontend/src/components/home/scenedots.tsx` | 60 | A column of dots down the right edge: one per scene, the current one lit |
+| `frontend/src/components/home/scenedots.tsx` | 69 | A column of dots down the right edge: one per scene, the current one lit |
 | `frontend/src/components/home/techtimeline.tsx` | 161 | The history of F1 technology as one big, readable panel at a time: a rail of eras along the top (click or use the arrow keys), and the chosen era below in large type, wit |
 
 ### Components: `src/components/layout`
@@ -593,8 +610,8 @@ Run by people (or the deploy-check workflow), never by the app.
 |---|---:|---|
 | `frontend/src/components/layout/applayout.tsx` | 61 | AppLayout wraps every routed page: a faint dot field for the glass surfaces to sit on, the page itself (which eases in on each route change), and the footer |
 | `frontend/src/components/layout/floatingdock.tsx` | 92 | The bottom dock on every page: five main places, Menu and search; fades when idle. |
-| `frontend/src/components/layout/footer.tsx` | 169 | One footer for every page: who made this, where the data comes from, a map of the site, and when the data was last built |
-| `frontend/src/components/layout/menusheet.tsx` | 121 | The full menu: every page of the site, grouped, so nothing is only reachable by knowing where to look |
+| `frontend/src/components/layout/footer.tsx` | 211 | One footer for every page: who made this, where the data comes from, a map of the site, and when the data was last built |
+| `frontend/src/components/layout/menusheet.tsx` | 125 | The full menu: every page of the site, grouped, so nothing is only reachable by knowing where to look |
 | `frontend/src/components/layout/scrollprogress.tsx` | 24 | A thin red scroll-progress bar fixed at the top of every page except the landing page. |
 
 ### Components: `src/components/methodology`
@@ -659,7 +676,7 @@ Run by people (or the deploy-check workflow), never by the app.
 
 | File | Lines | Purpose |
 |---|---:|---|
-| `frontend/src/components/schedule/phoneschedule.tsx` | 236 | The weekend as three short columns (Fri, Sat, Sun), times in the viewer's own time zone |
+| `frontend/src/components/schedule/phoneschedule.tsx` | 288 | The weekend as three short columns (Fri, Sat, Sun), times in the viewer's own time zone |
 
 ### Components: `src/components/search`
 
@@ -687,7 +704,7 @@ Run by people (or the deploy-check workflow), never by the app.
 
 | File | Lines | Purpose |
 |---|---:|---|
-| `frontend/src/components/standings/podium.tsx` | 132 | The top three, arranged like a podium on every screen: P2 – P1 – P3, the leader tallest |
+| `frontend/src/components/standings/podium.tsx` | 139 | The top three, arranged like a podium on every screen: P2 – P1 – P3, the leader tallest |
 | `frontend/src/components/standings/progressionchart.tsx` | 215 | Championship points after each round |
 
 ### Components: `src/components/ui`
@@ -698,9 +715,11 @@ Run by people (or the deploy-check workflow), never by the app.
 | `frontend/src/components/ui/chipstyle.ts` | 5 | Square buttons in the site's label style: quiet until hovered, solid white when chosen |
 | `frontend/src/components/ui/cuboid.tsx` | 48 | A stack of faces that tilt as they roll past on laptop-sized screens (used on the driver page); plain on phones. |
 | `frontend/src/components/ui/datatable.tsx` | 47 | One table look for the whole site, taken from the standings table: a soft rounded frame, small tracked header, hairline rows that light up on hover, an italic position an |
-| `frontend/src/components/ui/driveravatar.tsx` | 23 | A round driver picture for tables and lists |
+| `frontend/src/components/ui/driveravatar.tsx` | 24 | A round driver picture for tables and lists |
+| `frontend/src/components/ui/driversilhouette.tsx` | 25 | A driver with no picture we may show: a head and shoulders in the team's colour, so every tile, avatar and card is filled the same way |
 | `frontend/src/components/ui/errorboundary.tsx` | 30 | Catches render errors in a route so one broken page cannot blank the whole app |
 | `frontend/src/components/ui/pagehead.tsx` | 32 | The opening of a page |
+| `frontend/src/components/ui/racestabs.tsx` | 16 | The two ways into the races, always one tap apart: the calendar (what is next, and when) and every race with its results |
 | `frontend/src/components/ui/reveal.tsx` | 28 | Fades its content up the first time it scrolls into view |
 | `frontend/src/components/ui/scorebar.tsx` | 13 | A 0-10 score as a number and a flat bar |
 | `frontend/src/components/ui/seasonchips.tsx` | 12 | A row of season chips, newest first |
@@ -725,7 +744,7 @@ Unit tests sit beside these as `*.test.ts` (23 files, 114 tests).
 | `frontend/src/lib/forecast.ts` | 33 | 0.317 -> "32%", 0.034 -> "3.4%", 0.0004 -> "<1%", 0.9996 -> ">99%" |
 | `frontend/src/lib/format.ts` | 45 | Display helpers |
 | `frontend/src/lib/headshots.ts` | 21 | Official driver portraits: a standard studio shot in team kit, on a transparent background, published by Formula 1 |
-| `frontend/src/lib/homescenes.ts` | 128 | The home page as full-screen scenes |
+| `frontend/src/lib/homescenes.ts` | 139 | The home page as full-screen scenes |
 | `frontend/src/lib/images.ts` | 7 | For third-party images we do not control: if one fails (blocked hotlink, 404), hide it instead of showing the browser's broken-image icon and alt text |
 | `frontend/src/lib/laps.ts` | 79 | Laps a driver was in the pit lane or on an out-lap: the end of each stint but the last, and the lap after |
 | `frontend/src/lib/pending.ts` | 43 | Tracks API requests that are taking suspiciously long, so the UI can explain why |
@@ -757,7 +776,7 @@ Unit tests sit beside these as `*.test.ts` (23 files, 114 tests).
 
 `src/lib/api.test.ts`, `src/lib/color.test.ts`, `src/lib/driverphotos.test.ts`, `src/lib/events.test.ts`, `src/lib/forecast.test.ts`, `src/lib/headshots.test.ts`, `src/lib/laps.test.ts`, `src/lib/pending.test.ts`, `src/lib/picks.test.ts`, `src/lib/racestory.test.ts`, `src/lib/ratings.test.ts`, `src/lib/replay.test.ts`, `src/lib/schedule.test.ts`, `src/lib/sim/control.test.ts`, `src/lib/sim/optimise.test.ts`, `src/lib/sim/physics.test.ts`, `src/lib/sim/plan.test.ts`, `src/lib/sim/race.test.ts`, `src/lib/telemetry.test.ts`, `src/lib/timeago.test.ts`, `src/lib/titlemaths.test.ts`, `src/lib/trackmap.test.ts`, `src/lib/wrong.test.ts`, `tests/photo-registry.test.ts`
 
-### Browser tests: `frontend/e2e` (Playwright, 164 tests)
+### Browser tests: `frontend/e2e` (Playwright, 173 tests)
 
 | File | Lines | Purpose |
 |---|---:|---|
@@ -768,10 +787,10 @@ Unit tests sit beside these as `*.test.ts` (23 files, 114 tests).
 | `frontend/e2e/menu.spec.ts` | 63 | The full-screen menu. |
 | `frontend/e2e/photos.spec.ts` | 43 | Official portraits and the simulator link; fallbacks when a portrait fails. |
 | `frontend/e2e/racelab.spec.ts` | 80 | Race lab replay, fastest-lap telemetry, older races. |
-| `frontend/e2e/schedule.spec.ts` | 138 | Schedule (desktop and phone deck), news, forecast standings, pit-wall ring, methodology, ratings. |
-| `frontend/e2e/scroll.spec.ts` | 110 | Scroll position, no sideways scroll at 360/768/1024, landing scenes (desktop + phone), schedule scene. |
+| `frontend/e2e/schedule.spec.ts` | 161 | Schedule (desktop, phone deck and list, Calendar / All races tabs), news, forecast standings, pit-wall ring, methodology, ratings. |
+| `frontend/e2e/scroll.spec.ts` | 169 | Scroll position, no sideways scroll at 360/768/1024, landing scenes (every scene one screen, fresh visit and reload open on the hero, footer reachable, rules cards), section links, the schedule fitting one laptop screen. |
 | `frontend/e2e/simulator.spec.ts` | 137 | The strategy simulator end to end. |
-| `frontend/e2e/theme.spec.ts` | 34 | Typeface toggle. |
+| `frontend/e2e/theme.spec.ts` | 36 | Typeface switch (in the Menu), and no dot-matrix text at unreadable sizes. |
 | `frontend/e2e/ui.spec.ts` | 334 | Calendar, race page, bad addresses, resilience, drivers, standings, assets. |
 
 ### Frontend config and static files
@@ -866,13 +885,13 @@ Run after all changes above:
 | Check | Result |
 |---|---|
 | Backend tests (`pytest`) | **33 passed** |
-| Pipeline tests (`pytest`, 24 test files) | **162 passed** |
+| Pipeline tests (`pytest`, 25 test files) | **166 passed** |
 | Python lint (`ruff check backend pipeline`) | **clean** |
 | Frontend types (`tsc -b`) | **clean** |
-| Frontend unit tests (Vitest) | **114 passed** (23 files) |
+| Frontend unit tests (Vitest) | **115 passed** (23 files) |
 | Frontend lint (`eslint .`) | **0 errors** (was 38) |
 | Production build (`vite build`) | **builds**; entry chunk 280 KB (93 KB gzip), `motion` 130 KB (44 KB gzip) |
-| Browser tests (Playwright, 164 tests, one worker, against the dev server and the real API) | **164 passed**, including axe accessibility on 27 routes and "no sideways scroll" at 360, 768 and 1024 px |
+| Browser tests (Playwright, 173 tests, one worker, against the **production build** and the real API) | **173 passed**, including axe accessibility on 27 routes, "no sideways scroll" at 360, 768 and 1024 px, and a fresh phone visit opening on the hero |
 | Landing scenes | exactly one viewport each and landing at the top at 390×844, 360×640, 412×915 |
 
 Not verified: behaviour on real phones (checked in phone-sized Chromium only); Safari's scroll-driven animation path (Chrome's was exercised; Safari and Firefox use the scripted fallback or the CSS path depending on version); the deployed site.
@@ -895,5 +914,6 @@ npm run typecheck && npm test && npm run lint && npm run build && npm run e2e
 
 1. **Long pages still to redo for phones** (same approach as News/Schedule/Drivers): Standings, Forecast, Methodology (12 screens), Race, Driver profile, Duels, Ratings, Team pace, Circuits. The landing page is the only one with full one-screen snapped scenes.
 2. Decide on the replay payload (8.3) and the legacy routes (8.3).
+   For the 13 drivers without a portrait: licensed photos could be added through `scripts/commons_photos.py` (review, then register in `frontend/public/drivers/credits.json`).
 3. Self-host the landing page's hotlinked images (in `pages/home.tsx`).
 4. The Python pipeline is one flat package of 27 modules plus `ratings/`, `predict/` and `sources/`. It is organised by clear module names and each file's docstring (section 7), and moving files would touch every import and test; group it into subpackages (e.g. `race/`, `enrich/`) only if it keeps growing.

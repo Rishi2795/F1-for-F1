@@ -124,6 +124,7 @@ export function RoundDeck({ races, next, forecastOf, layout }: { races: RaceInde
   const deck = useRef<HTMLOListElement>(null);
   const strip = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const [view, setView] = useState<"cards" | "list">("cards");
   const first = sorted[0]?.round;
 
   // open on the next race (or the first card when there is none in this list)
@@ -157,6 +158,14 @@ export function RoundDeck({ races, next, forecastOf, layout }: { races: RaceInde
     return () => { el.removeEventListener("scroll", onScroll); if (frame) cancelAnimationFrame(frame); };
   }, [sorted]);
 
+  // switching back from the list: land on the card you were last on
+  useEffect(() => {
+    const el = deck.current;
+    const card = el?.children[active] as HTMLElement | undefined;
+    if (view === "cards" && el && card) el.scrollLeft = card.offsetLeft - (el.clientWidth - card.clientWidth) / 2;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+
   // keep the lit round number in view in the strip
   useEffect(() => {
     const el = strip.current;
@@ -171,8 +180,50 @@ export function RoundDeck({ races, next, forecastOf, layout }: { races: RaceInde
   };
 
   if (sorted.length === 0) return <p className="text-sm text-zinc-400 lg:hidden">No rounds to show here.</p>;
+  const tab = (on: boolean) => `px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] ${on ? "bg-white text-black" : "text-zinc-300"} focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600`;
   return (
     <div className="space-y-4 lg:hidden">
+      <div role="group" aria-label="How to see the rounds" className="inline-flex divide-x divide-white/15 overflow-hidden rounded-sm border border-white/15">
+        <button type="button" aria-pressed={view === "cards"} onClick={() => setView("cards")} className={tab(view === "cards")}>Cards</button>
+        <button type="button" aria-pressed={view === "list"} onClick={() => setView("list")} className={tab(view === "list")}>List</button>
+      </div>
+
+      {view === "list" && (
+        <ol aria-label="All rounds" className="divide-y divide-white/10 overflow-hidden rounded-sm border border-white/10 bg-white/[0.03]">
+          {sorted.map((r) => {
+            const upcoming = r.data_status === "scheduled";
+            const isNext = r.round === next?.round;
+            const fav = forecastOf(r)?.drivers[0];
+            return (
+              <li key={r.round} className={`flex items-center gap-3 p-3 ${isNext ? "bg-red-500/[0.08]" : ""}`}>
+                <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-sm text-center leading-none ${isNext ? "bg-red-500 text-black" : upcoming ? "bg-white text-black" : "border border-white/20 text-zinc-300"}`}>
+                  <span>
+                    <span className="block font-serif text-lg">{dayOf(r)}</span>
+                    <span className="block font-mono text-[8px] font-bold tracking-widest">{monthOf(r)}</span>
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-white">{r.event_name}</p>
+                  <p className="truncate font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                    R{String(r.round).padStart(2, "0")} · {r.location}
+                    {isNext ? <span className="ml-2 text-red-400">NEXT</span> : null}
+                  </p>
+                </div>
+                {upcoming ? (
+                  <Link to="/forecast" className="shrink-0 text-right font-mono text-[10px] uppercase tracking-widest text-zinc-300">
+                    {fav ? <span className="block text-white">{fav.name.split(" ").at(-1)} <span className="text-red-400">{pct(fav.win)}</span></span> : null}
+                    Forecast →
+                  </Link>
+                ) : (
+                  <Link to={`/race/${r.season}/${r.round}`} className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-zinc-200">Results →</Link>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+
+      {view === "cards" && <>
       <div ref={strip} role="group" aria-label="Jump to a round" className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-8 sm:px-8 [&::-webkit-scrollbar]:hidden">
         {sorted.map((r, i) => {
           const upcoming = r.data_status === "scheduled";
@@ -231,6 +282,7 @@ export function RoundDeck({ races, next, forecastOf, layout }: { races: RaceInde
         })}
       </ol>
       <p aria-hidden="true" className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">{String(active + 1).padStart(2, "0")} / {String(sorted.length).padStart(2, "0")} · swipe</p>
+      </>}
     </div>
   );
 }

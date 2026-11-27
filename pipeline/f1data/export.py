@@ -16,6 +16,7 @@ from . import SCHEMA_VERSION, config
 from .coverage import RANK
 from .logging_setup import get_logger
 from .models import (
+    Champion,
     Champions,
     DriverListEntry,
     DriverProfile,
@@ -119,6 +120,31 @@ class Publisher:
 
     def publish_champions(self, champions: Champions) -> bool:
         return write_if_changed(self.root / "champions.json", dumps(champions))
+
+    def record_clinched_champion(self) -> bool:
+        """The champion of the season in progress, once the forecast calls the title mathematically decided.
+
+        It is the same test the forecast page uses (the lead is bigger than every point still available, with an
+        allowance for sprints), so the two can never disagree. Finished seasons come from the official record, which
+        is never replaced.
+        """
+        try:
+            doc = json.loads((self.root / "predictions" / "championship.json").read_text(encoding="utf-8"))
+            listing = json.loads((self.root / "drivers" / "index.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return False
+        code, season = doc.get("clinched_driver"), doc.get("season")
+        if not code or not isinstance(season, int):
+            return False
+        champions = self.load_champions() or Champions(champions=[])
+        if any(c.season == season for c in champions.champions):
+            return False
+        name = next((d.get("name") for d in listing if d.get("code") == code), None)
+        if not name:
+            return False
+        added = Champion(season=season, code=str(code), name=str(name))
+        merged = sorted([*champions.champions, added], key=lambda c: c.season)
+        return self.publish_champions(Champions(champions=merged))
 
     # -- standings -------------------------------------------------------------
     def standings_path(self, season: int) -> Path:
@@ -305,10 +331,10 @@ class Publisher:
         return found
 
     def _headshot_problems(self) -> list[str]:
-        """Portrait links must be https links to F1's media host: nothing else may be loaded as a driver picture."""
+        """Portrait links must be https links to Formula 1's own hosts: nothing else may load as a driver picture."""
         from .headshots import acceptable
 
-        return [f"headshots: {code} has a link that is not an https png on media.formula1.com"
+        return [f"headshots: {code} has a link that is not an https png on Formula 1's media hosts"
                 for code, url in self.load_headshots().items() if not acceptable(url)]
 
     def _simulator_problems(self) -> list[str]:

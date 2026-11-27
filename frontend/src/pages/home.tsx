@@ -1,3 +1,5 @@
+import { DriverSilhouette } from "../components/ui/driversilhouette";
+import { useDriverImages } from "../lib/driverimages";
 import { hideBroken } from "../lib/images";
 import { useState, useRef } from "react";
 import { useHomeScenes } from "../lib/homescenes";
@@ -187,7 +189,7 @@ export default function Home() {
     style={{ backgroundImage: `radial-gradient(#fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }} 
   />
 
-  <div className="max-w-[1200px] mx-auto w-full border border-white/5 relative z-10 bg-[#070707]/30 backdrop-blur-sm flex flex-col">
+  <div className="max-w-[1200px] mx-auto w-full border border-white/5 relative z-10 bg-[#070707]/60 flex flex-col">
     
     {/* HEADER BLOCK - Optimized Height */}
     <div className="border-b border-white/5 p-4 md:p-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -301,28 +303,21 @@ export default function Home() {
     {/* PODIUM GRID */}
     <ReignBento />
     <div className="hidden md:flex items-end justify-center gap-2 md:gap-4 w-full max-w-6xl h-full max-h-[450px] md:max-h-[550px] z-10">
-      {REIGN.map((driver, i) => (
+      {REIGN.map((driver) => (
         <motion.div
-          key={i}
+          key={driver.code}
           className={`relative flex-1 ${driver.h} min-w-[100px] bg-zinc-900/40 border border-white/10 group overflow-hidden`}
         >
-          {/* IMAGE LAYER */}
+          {/* PORTRAIT LAYER */}
           <div className="absolute inset-0 w-full h-full">
-            <img 
-              src={driver.img}
-              alt={driver.name}
-              referrerPolicy="no-referrer"
-              onError={hideBroken}
-              loading="lazy" 
-              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 object-[50%_15%]" 
-            />
-            <div className={`absolute inset-0 bg-gradient-to-t ${driver.color} via-black/20 to-transparent opacity-80`} />
+            <ReignPortrait d={driver} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
           </div>
 
           {/* 7x / 4x BADGE */}
           <div className="absolute top-3 left-3 md:top-5 md:left-5 z-30">
-            <div className="backdrop-blur-md bg-white/5 border border-white/10 px-2 py-1 rounded-sm">
-              <span className="text-lg md:text-2xl font-black italic text-black group-hover:text-red-500 transition-colors">
+            <div className="bg-black/40 border border-white/10 px-2 py-1 rounded-sm">
+              <span className="text-lg md:text-2xl font-black italic text-white group-hover:text-red-500 transition-colors">
                 {driver.titles}
               </span>
             </div>
@@ -330,9 +325,9 @@ export default function Home() {
 
           {/* HOVER REVEAL: TITLE YEARS */}
           <div className="absolute top-3 right-3 md:top-5 md:right-5 z-30 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
-            <p className="text-[10px] md:text-[9px] font-mono text-red-800 text-right uppercase leading-tight max-w-[80px]">
+            <p className="text-[10px] md:text-[9px] font-mono text-zinc-400 text-right uppercase leading-tight max-w-[80px]">
               Championship_Years: <br/>
-              <span className="text-red-500 font-bold font-extrabold">{driver.years}</span>
+              <span className="text-red-500 font-bold">{driver.years}</span>
             </p>
           </div>
 
@@ -550,62 +545,65 @@ export default function Home() {
 
 /* ================= 15. SUB-COMPONENTS ================= */
 
-// The reign podium: the three living champions. Listed in podium order for the layout: P2, P1, P3.
-const REIGN = [
-        { 
-          name: "Verstappen", 
-          titles: "4x", 
-          years: "2021, 2022, 2023, 2024",
-          img: "https://i.pinimg.com/736x/2e/1f/a3/2e1fa3c0cc232ed9c7b5a3cab31b12e6.jpg", 
-          h: "h-[80%]", 
-          pos: "P2", 
-          color: "from-zinc-900" 
-        },
-        { 
-          name: "Hamilton", 
-          titles: "7x", 
-          years: "2008, 2014, 2015, 2017, 2018, 2019, 2020",
-          img: "https://i.pinimg.com/736x/96/8a/4a/968a4a1ae6eff274e6c7f28e8565af20.jpg", 
-          h: "h-full", 
-          pos: "P1", 
-          color: "from-red-900/40" 
-        },
-        { 
-          name: "L. Norris", 
-          titles: "1x", 
-          years: "2025",
-          img: "https://i.pinimg.com/736x/86/70/18/867018263dcdc332666cfa0746a0a794.jpg", 
-          h: "h-[70%]", 
-          pos: "P3", 
-          color: "from-orange-900/30" 
-        }
+// The reign: the living world champions, most titles first. Antonelli's 2026 title is already decided (the forecast calls it clinched).
+// Hamilton and Verstappen keep their original photographs; the others use Formula 1's official portraits (credited in the footer, never copied).
+// If a photograph does not load, the official portrait (or a silhouette) takes its place.
+type ReignEntry = { code: string; name: string; titles: string; years: string; h: string; glow: string; photo?: string };
+const REIGN: ReignEntry[] = [
+  { code: "VER", name: "Verstappen", titles: "4x", years: "2021, 2022, 2023, 2024", h: "h-[80%]", glow: "#3b6cf5", photo: "https://i.pinimg.com/736x/2e/1f/a3/2e1fa3c0cc232ed9c7b5a3cab31b12e6.jpg" },
+  { code: "HAM", name: "Hamilton", titles: "7x", years: "2008, 2014, 2015, 2017, 2018, 2019, 2020", h: "h-full", glow: "#dc2626", photo: "https://i.pinimg.com/736x/96/8a/4a/968a4a1ae6eff274e6c7f28e8565af20.jpg" },
+  { code: "ALO", name: "Alonso", titles: "2x", years: "2005, 2006", h: "h-[68%]", glow: "#10b981" },
+  { code: "ANT", name: "Antonelli", titles: "1x", years: "2026", h: "h-[56%]", glow: "#14b8a6" },
 ];
+
+/** A champion's portrait in a glow of their colour: Formula 1's official picture, else a licensed photo, else a silhouette. */
+function ReignPortrait({ d }: { d: ReignEntry }) {
+  const img = useDriverImages()(d.code, 6);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const photo = d.photo && !photoFailed ? d.photo : null;
+  return (
+    <>
+      {!photo && <span aria-hidden="true" className="absolute inset-0" style={{ backgroundImage: `radial-gradient(ellipse 85% 75% at 50% 100%, ${d.glow}77, transparent 72%)` }} />}
+      {photo ? (
+        <>
+          <img src={photo} alt={d.name} referrerPolicy="no-referrer" onError={() => setPhotoFailed(true)} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover object-[50%_15%] brightness-[0.8] md:grayscale md:brightness-100 md:transition-all md:duration-700 md:group-hover:grayscale-0" />
+          <span aria-hidden="true" className="absolute inset-0" style={{ backgroundImage: `linear-gradient(to top, ${d.glow}55, transparent 55%)` }} />
+        </>
+      ) : img?.kind === "official" ? (
+        <img src={img.url} alt={d.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={hideBroken} className="absolute inset-0 h-full w-full origin-top scale-[1.18] object-cover object-[50%_6%]" />
+      ) : img?.kind === "licensed" ? (
+        <img src={`/drivers/${img.photo.file}`} alt={d.name} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover object-top" />
+      ) : (
+        <DriverSilhouette color={d.glow} className="absolute bottom-0 left-1/2 h-[80%] w-[90%] -translate-x-1/2" />
+      )}
+    </>
+  );
+}
 
 
 /** Phones: the champions as a bento, the most decorated one large on top and the other two side by side beneath, with the years
  *  always shown (there is no hover on a phone). */
 function ReignBento() {
-  const order = [REIGN[1], REIGN[0], REIGN[2]]; // Hamilton, Verstappen, Norris
+  const order = [...REIGN].sort((x, y) => parseInt(y.titles) - parseInt(x.titles)); // most titles first
   return (
-    <div className="z-10 grid h-full max-h-[560px] w-full grid-cols-2 grid-rows-[1.25fr_1fr] gap-2 md:hidden">
+    <div className="z-10 grid h-full max-h-[560px] w-full grid-cols-3 grid-rows-[1.25fr_1fr] gap-2 md:hidden">
       {order.map((d, i) => (
         <motion.figure
-          key={d.name}
+          key={d.code}
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: i * 0.08, duration: 0.5 }}
-          className={`relative m-0 overflow-hidden border border-white/10 bg-zinc-900 ${i === 0 ? "col-span-2" : ""}`}
+          className={`relative m-0 overflow-hidden border border-white/10 bg-zinc-900 ${i === 0 ? "col-span-3" : ""}`}
         >
-          <img src={d.img} alt={d.name} referrerPolicy="no-referrer" onError={hideBroken} loading="lazy" className="absolute inset-0 h-full w-full object-cover object-[50%_18%] brightness-[0.7]" />
-          <div className={`absolute inset-0 bg-gradient-to-t ${d.color} via-black/40 to-black/10`} />
+          <ReignPortrait d={d} />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-          <span aria-hidden="true" className={`absolute right-3 top-1 font-black italic leading-none text-transparent [-webkit-text-stroke:1.5px_rgba(255,255,255,0.75)] ${i === 0 ? "text-[5.5rem]" : "text-[3.6rem]"}`}>{d.titles}</span>
-          <span className="absolute left-3 top-3 border border-white/20 bg-black/40 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-white backdrop-blur-sm">{d.pos}</span>
-          <figcaption className="absolute inset-x-3 bottom-3">
-            <p className="font-mono text-[9px] uppercase tracking-[0.25em] text-red-400">{d.titles === "1x" ? "1 title" : `${d.titles.replace("x", "")} titles`}</p>
-            <h3 className={`font-black uppercase italic leading-none tracking-tighter text-white ${i === 0 ? "text-3xl" : "text-xl"}`}>{d.name}</h3>
-            <p className="mt-1 font-mono text-[9px] leading-snug text-zinc-300">{d.years.split(", ").join(" · ")}</p>
+          <span aria-hidden="true" className={`absolute right-2 top-1 font-black italic leading-none text-transparent [-webkit-text-stroke:1.5px_rgba(255,255,255,0.75)] ${i === 0 ? "text-[5.5rem]" : "text-[2.6rem]"}`}>{d.titles}</span>
+          <span className="absolute left-2 top-2 border border-white/20 bg-black/60 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-white">P{i + 1}</span>
+          <figcaption className="absolute inset-x-2 bottom-2">
+            <p className="font-mono text-[8px] uppercase tracking-[0.2em] text-red-400 sm:text-[9px]">{d.titles === "1x" ? "1 title" : `${d.titles.replace("x", "")} titles`}</p>
+            <h3 className={`font-black uppercase italic leading-none tracking-tighter text-white ${i === 0 ? "text-3xl" : "text-[0.95rem]"}`}>{d.name}</h3>
+            <p className={`mt-1 font-mono leading-snug text-zinc-300 ${i === 0 ? "text-[9px]" : "text-[8px]"}`}>{d.years.split(", ").join(" · ")}</p>
           </figcaption>
         </motion.figure>
       ))}
@@ -618,61 +616,34 @@ type Rule = { category: string; title: string; short: string; detail: string };
 function RuleCard({ rule, index }: { rule: Rule, index: number }) {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Opening a card used to animate its height (and, on laptops, on every hover), which re-flowed the whole grid on every frame. It now
+  // opens on a click or tap only, all at once, with a fade (compositor-only), so nothing is re-laid-out while it moves.
   return (
-    <motion.div 
-      onClick={() => setIsOpen(!isOpen)}
-      className="bg-white p-1 sm:p-5 md:p-6 flex flex-col transition-all duration-500 ease-[0.23,1,0.32,1] cursor-pointer relative border-b border-zinc-100 group overflow-hidden h-full"
+    <button
+      type="button"
+      aria-expanded={isOpen}
+      onClick={() => setIsOpen((o) => !o)}
+      className="group relative flex h-full w-full cursor-pointer flex-col overflow-hidden border-b border-zinc-100 bg-white p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600 sm:p-5 md:p-6"
     >
-      {/* 1. TOP BAR: Category & Index */}
-      <div className="flex justify-between items-start mb-1.5 sm:mb-3">
-        <span className="text-[7px] md:text-[8px] font-black px-1.5 py-0.5 border border-zinc-200 text-zinc-400 group-hover:border-red-600/20 group-hover:text-red-500 transition-colors uppercase tracking-widest">
+      <span className="mb-1.5 flex items-start justify-between sm:mb-3">
+        <span className="border border-zinc-200 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-widest text-zinc-400 transition-colors group-hover:border-red-600/20 group-hover:text-red-500 md:text-[8px]">
           {rule.category}
         </span>
-        <span className="hidden sm:inline text-[10px] font-mono text-zinc-200 group-hover:text-black transition-colors">
+        <span aria-hidden="true" className="font-mono text-sm leading-none text-red-500 sm:hidden">{isOpen ? "−" : "+"}</span>
+        <span className="hidden font-mono text-[10px] text-zinc-300 transition-colors group-hover:text-black sm:inline">
           // {index + 1 < 10 ? `0${index + 1}` : index + 1}
+          <span aria-hidden="true" className="ml-2 text-sm leading-none text-red-500">{isOpen ? "−" : "+"}</span>
         </span>
-      </div>
-      
-      {/* 2. PRIMARY DATA: The Title */}
-      <div className="space-y-1">
-        <h3 className="text-xs md:text-sm font-black uppercase tracking-tighter leading-tight text-black group-hover:italic transition-all">
-          {rule.title}
-        </h3>
-        
-        {/* Subtle prompt - disappears when open */}
-        {!isOpen && (
-          <div className="hidden sm:flex items-center gap-2 mt-2 md:hidden">
-            <span className="w-1 h-1 bg-red-600 rounded-full animate-pulse" />
-            <span className="text-[7px] font-black text-red-500/40 uppercase tracking-widest">Tap_to_Analyze</span>
-          </div>
-        )}
-      </div>
+      </span>
 
-      {/* 3. EXPANDABLE SECTION: Transitioned max-height */}
-      <div className={`transition-all duration-700 ease-[0.23,1,0.32,1] overflow-hidden ${
-        isOpen ? 'max-h-[400px] opacity-100 mt-6' : 'max-h-0 opacity-0 lg:group-hover:max-h-[400px] lg:group-hover:opacity-100 lg:group-hover:mt-6'
-      }`}>
-        <div className="pt-4 border-t border-zinc-100 space-y-4">
-          {/* Rule Short - Serif Accent */}
-          <p className="text-[11px] md:text-xs text-zinc-400 font-serif italic leading-relaxed border-l-2 border-red-600 pl-4">
-            {rule.short}
-          </p>
-          
-          {/* Rule Detail - Tech Specs */}
-          <p className="text-[10px] text-zinc-400 leading-snug uppercase font-bold tracking-tight">
-            {rule.detail}
-          </p>
+      <span className="block text-xs font-black uppercase leading-tight tracking-tighter text-black md:text-sm">{rule.title}</span>
 
-          {/* Micro Footer inside card */}
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-[6px] font-mono text-zinc-300 uppercase tracking-widest">Auth_Signal: Clear</span>
-            <motion.span animate={{ rotate: isOpen ? 45 : 0 }} className="text-lg font-light text-red-500 lg:hidden">+</motion.span>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. HOVER DECAL: Corner accent for Desktop */}
-      <div className="absolute top-0 right-0 w-0 h-0 border-t-[3px] border-r-[3px] border-transparent group-hover:border-t-red-600 group-hover:border-r-red-600 transition-all duration-300" />
-    </motion.div>
+      {isOpen && (
+        <span className="f1-rise mt-3 block space-y-3 border-t border-zinc-100 pt-3">
+          <span className="block border-l-2 border-red-600 pl-3 font-serif text-[11px] italic leading-relaxed text-zinc-500 md:text-xs">{rule.short}</span>
+          <span className="block text-[10px] font-bold uppercase leading-snug tracking-tight text-zinc-500">{rule.detail}</span>
+        </span>
+      )}
+    </button>
   );
 }

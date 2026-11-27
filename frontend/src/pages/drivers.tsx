@@ -4,6 +4,7 @@ import { useApi } from "../hooks/useApi";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { prefetch } from "../lib/api";
 import { ErrorState, Skeleton } from "../components/ui/states";
+import { DriverSilhouette } from "../components/ui/driversilhouette";
 import { ChampionBadge } from "../components/ui/championbadge";
 import { chip } from "../components/ui/chipstyle";
 import { readableOnDark } from "../lib/color";
@@ -99,12 +100,13 @@ function DriverCard({ d, photo }: { d: DriverListEntry; photo?: Photo }) {
       {d.number !== null && d.number !== undefined && (
         <span
           aria-hidden="true"
-          className={`f1-outline absolute font-black italic leading-none ${photo || (official && !failed) ? "-right-1 top-0 text-[4.6rem] sm:-right-2 sm:top-1 sm:text-[9rem]" : "inset-x-0 top-[8%] text-center text-[5.5rem] sm:text-[10.5rem]"}`}
-          style={{ "--stroke": `${colour}${photo || (official && !failed) ? "66" : "88"}` } as CSSProperties}
+          className="f1-outline absolute -right-1 top-0 text-[4.6rem] font-black italic leading-none sm:-right-2 sm:top-1 sm:text-[9rem]"
+          style={{ "--stroke": `${colour}66` } as CSSProperties}
         >
           {d.number}
         </span>
       )}
+      {!photo && !(official && !failed) && <DriverSilhouette color={colour} className="absolute bottom-0 left-1/2 h-[86%] w-[92%] -translate-x-1/2" />}
       {!photo && official && !failed && (
         <img src={official} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="absolute bottom-0 left-1/2 h-[90%] w-auto max-w-none -translate-x-1/2 object-contain object-bottom" />
       )}

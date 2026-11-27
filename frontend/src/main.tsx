@@ -8,6 +8,10 @@ import { applyTheme } from "./lib/theme";
 
 applyTheme();
 
+// The browser must not put a reload or a Back visit at its old scroll position: the pages fill in after they appear, and it would land the
+// landing page on whichever scene was open before. Set before the first render (AppLayout also does it, but that is too late to win).
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <BrowserRouter>
