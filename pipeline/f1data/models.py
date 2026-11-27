@@ -691,7 +691,7 @@ class Champion(_Model):
 
 
 class Champions(_Model):
-    """Drivers' world champions of every finished season (1950 onward)."""
+    """World champions of every finished season (1950 onward), and of this season once its title is decided."""
 
     schema_version: int = SCHEMA_VERSION
     champions: list[Champion]

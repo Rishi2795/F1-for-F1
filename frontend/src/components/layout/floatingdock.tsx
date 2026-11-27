@@ -66,7 +66,7 @@ export default function FloatingDock() {
       aria-label="Main"
       className={`fixed bottom-4 left-1/2 z-50 -translate-x-1/2 transition-all duration-500 sm:bottom-6 ${isVisible || menuOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}
     >
-      <div className="flex max-w-[calc(100vw-1rem)] items-center gap-0.5 rounded-full border border-white/10 bg-black/70 p-1 shadow-[0_8px_30px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:gap-1 sm:p-1.5">
+      <div className="flex max-w-[calc(100vw-1rem)] items-center gap-0.5 rounded-full border border-white/10 bg-black/85 p-1 shadow-[0_8px_30px_rgba(0,0,0,0.5)] sm:gap-1 sm:p-1.5">
         {TABS.map(({ label: name, path, Icon, on: isOn }) => {
           const active = isOn(pathname);
           return (

@@ -19,6 +19,23 @@ test.describe("scroll position", () => {
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0); // not where it was left
   });
 
+  test("tapping the link to the page you are already on takes you back to the top", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const dock = page.getByRole("navigation", { name: "Main" });
+    for (const [path, link, depth] of [["/", "Home", 2600], ["/news", "News", 900]] as const) {
+      await page.goto(path);
+      await expect(page.locator("main")).toBeVisible();
+      await page.waitForTimeout(1500);
+      await page.mouse.wheel(0, 40);
+      await page.waitForTimeout(400);
+      await page.evaluate((px) => { document.documentElement.style.scrollBehavior = "auto"; window.scrollTo(0, px); }, depth);
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+      await page.evaluate(() => window.dispatchEvent(new Event("touchstart"))); // the dock fades when idle; wake it
+      await dock.getByRole("link", { name: link, exact: true }).click();
+      await expect.poll(() => page.evaluate(() => window.scrollY), { message: `${link}: back at the top` }).toBe(0);
+    }
+  });
+
   test("a link to a section of a page still scrolls to that section", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto("/forecast#accuracy");
@@ -81,6 +98,55 @@ test.describe("scroll position", () => {
     await expect.poll(() => scenes.filter({ hasText: /TECH_/ }).evaluate((el) => Math.abs(el.getBoundingClientRect().top)), { timeout: 8000 }).toBeLessThan(5);
   });
 
+  for (const [label, size] of [["phone", { width: 390, height: 844 }], ["laptop", { width: 1440, height: 900 }]] as const) {
+    test(`home on a ${label}: a reload opens on the hero, not wherever the page was left`, async ({ page }) => {
+      await page.setViewportSize(size);
+      await page.goto("/");
+      await expect(page.locator("[data-scene]").first()).toBeVisible();
+      for (const scene of [3, 5, 6]) {
+        await page.evaluate((n) => { document.documentElement.style.scrollBehavior = "auto"; window.scrollTo(0, n * window.innerHeight); }, scene);
+        await page.waitForTimeout(500);
+        await page.reload();
+        await expect(page.locator("[data-scene]").first()).toBeVisible();
+        await page.waitForTimeout(1500); // the browser used to restore its old position once the page had grown tall enough
+        expect(await page.evaluate(() => window.scrollY), `after leaving it on scene ${scene}`).toBe(0);
+      }
+    });
+  }
+
+  test("home on a phone: a fresh visit opens on the hero (it used to be carried to the footer), and the footer is still reachable", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await expect(page.locator("[data-scene]").first()).toBeVisible();
+    for (const wait of [300, 700, 1500, 3000]) {
+      await page.waitForTimeout(wait);
+      expect(await page.evaluate(() => window.scrollY), `${wait}ms later`).toBeLessThan(20);
+    }
+    // once the visitor has scrolled, the footer is a stop of its own: the page can rest on it
+    await page.mouse.wheel(0, 100);
+    await page.waitForTimeout(1000); // let the snap from that nudge finish before jumping
+    await page.evaluate(() => { document.documentElement.style.scrollBehavior = "auto"; window.scrollTo(0, document.documentElement.scrollHeight); });
+    await page.waitForTimeout(1200);
+    const room = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight - window.scrollY);
+    expect(room, "still at the bottom, not pulled back").toBeLessThan(5);
+    await expect(page.getByRole("contentinfo")).toBeInViewport();
+  });
+
+  test("home: a rules card opens and closes on a click, all at once", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    const card = page.getByRole("button", { name: /Mandatory tyre compounds/i });
+    await card.evaluate((el) => el.scrollIntoView({ block: "center" }));
+    await expect(card).toHaveAttribute("aria-expanded", "false");
+    const before = await page.locator("[data-title='The rules']").evaluate((el) => (el as HTMLElement).offsetHeight);
+    await card.click();
+    await expect(card).toHaveAttribute("aria-expanded", "true");
+    await expect(card).toContainText(/two different tyre compounds/i);
+    await card.click();
+    await expect(card).toHaveAttribute("aria-expanded", "false");
+    expect(await page.locator("[data-title='The rules']").evaluate((el) => (el as HTMLElement).offsetHeight)).toBe(before); // closing puts it back exactly
+  });
+
   test("home on a phone: every scene is exactly one screen, it snaps, and the dots are there", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
@@ -98,13 +164,23 @@ test.describe("scroll position", () => {
     await expect(page.getByRole("navigation", { name: "Sections of the home page" })).toBeVisible();
   });
 
-  test("schedule: the next race is a full-screen scene", async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 800 });
-    await page.goto("/schedule");
-    const scene = page.locator("#next-scene");
-    await expect(scene).toBeVisible();
-    const h = await scene.evaluate((el) => el.getBoundingClientRect().height);
-    expect(h).toBeGreaterThan(700);
-    expect(h).toBeLessThanOrEqual(800);
-  });
+  for (const [w, h] of [[1512, 827], [1366, 768], [1280, 720], [1920, 1080]] as const) {
+    test(`schedule on a laptop (${w}x${h}): the heading, season chips and next race are one screen`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto("/schedule");
+      const card = page.locator("#next-scene");
+      await expect(card).toBeVisible();
+      await page.waitForTimeout(600);
+      const box = await page.evaluate(() => {
+        const c = document.getElementById("next-scene")!;
+        const head = document.querySelector("h1")!.getBoundingClientRect();
+        const r = c.getBoundingClientRect();
+        return { scrollY: window.scrollY, headTop: head.top, cardBottom: r.bottom, clipped: c.scrollHeight - c.clientHeight };
+      });
+      expect(box.scrollY, "the page did not snap away from its heading").toBe(0);
+      expect(box.headTop).toBeGreaterThan(0);
+      expect(box.cardBottom, "the whole next-race card is on the first screen").toBeLessThanOrEqual(h);
+      expect(box.clipped, "nothing in the card is cut off").toBeLessThanOrEqual(1);
+    });
+  }
 });

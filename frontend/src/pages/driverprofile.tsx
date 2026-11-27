@@ -6,6 +6,7 @@ import { ErrorState, Skeleton } from "../components/ui/states";
 import { ChampionBadge } from "../components/ui/championbadge";
 import { fmt, fmtSigned } from "../lib/format";
 import { framing, useDriverPhotos } from "../lib/driverphotos";
+import { DriverSilhouette } from "../components/ui/driversilhouette";
 import { portrait } from "../lib/headshots";
 import { CuboidFace, CuboidStack } from "../components/ui/cuboid";
 import { WeekendPanel } from "../components/driver/weekendpanel";
@@ -73,7 +74,10 @@ export default function DriverPage() {
                   <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#080808] to-transparent" />
                 </>
               ) : !official ? (
-                <span aria-hidden="true" className="f1-outline relative text-9xl font-black italic">{driver.code}</span>
+                <>
+                  <span aria-hidden="true" className="f1-outline absolute inset-x-0 top-[10%] text-center text-9xl font-black italic leading-none">{driver.code}</span>
+                  <DriverSilhouette color={teamColour} className="absolute bottom-0 left-1/2 h-[82%] w-auto max-w-full -translate-x-1/2" />
+                </>
               ) : null}
             </div>
             {!photo && official && <p className="border-t border-white/10 px-4 py-2 text-[10px] leading-snug text-zinc-500">Portrait © Formula 1, shown from formula1.com.</p>}

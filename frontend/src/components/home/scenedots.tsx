@@ -13,34 +13,43 @@ export function SceneDots() {
     const found = Array.from(document.querySelectorAll<HTMLElement>("[data-scene]")).map((el) => ({ el, title: el.dataset.title ?? "Section" }));
     // one frame later: the page's sections are all mounted by then, and state is not set inside the effect itself
     const first = requestAnimationFrame(() => setScenes(found));
+    // resting tops are measured when the page or window changes, so a scroll frame only compares numbers (no layout reads)
+    let tops: number[] = found.map((s) => sceneTop(s.el));
+    const remeasure = () => {
+      tops = found.map((s) => sceneTop(s.el));
+      pick();
+    };
     let frame = 0;
-    const measure = () => {
-      const mid = window.innerHeight * 0.45;
+    const pick = () => {
+      frame = 0;
+      const mid = window.scrollY + window.innerHeight * 0.45;
       let idx = 0;
-      found.forEach((s, i) => {
-        if (s.el.getBoundingClientRect().top <= mid) idx = i;
+      tops.forEach((t, i) => {
+        if (t <= mid) idx = i;
       });
       setActive(idx);
     };
     const onScroll = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(measure);
+      if (!frame) frame = requestAnimationFrame(pick);
     };
-    measure();
+    const watch = new ResizeObserver(remeasure);
+    found.forEach((s) => watch.observe(s.el));
+    pick();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    window.addEventListener("resize", remeasure);
     return () => {
       cancelAnimationFrame(first);
       cancelAnimationFrame(frame);
+      watch.disconnect();
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", remeasure);
     };
   }, []);
 
   if (scenes.length < 2) return null;
   // In <body>, not inside the page: the page eases in with a transform, which would make "fixed" mean "fixed to the page".
   return createPortal(
-    <nav aria-label="Sections of the home page" className="fixed right-1 top-1/2 z-[250] flex -translate-y-1/2 flex-col items-center gap-2 rounded-full border border-white/10 bg-black/40 px-1 py-2.5 backdrop-blur-sm lg:right-4 lg:gap-3 lg:border-white/15 lg:bg-black/70 lg:px-2.5 lg:py-4 lg:shadow-[0_0_30px_rgba(0,0,0,0.6)] lg:backdrop-blur-md">
+    <nav aria-label="Sections of the home page" className="fixed right-1 top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-2 rounded-full border border-white/10 bg-black/70 px-1 py-2.5 lg:right-4 lg:gap-3 lg:border-white/15 lg:bg-black/80 lg:px-2.5 lg:py-4">
       {scenes.map((s, i) => (
         <button
           key={s.title + i}

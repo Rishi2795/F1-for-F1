@@ -19,11 +19,21 @@ export function useHomeScenes(): void {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.add("snap-home");
+    // The footer joins the snap points only after the visitor first scrolls, touches or presses a key (see the CSS for why).
+    const INPUTS = ["wheel", "touchstart", "keydown", "pointerdown"];
+    const armFooter = () => {
+      root.classList.add("snap-footer");
+      INPUTS.forEach((t) => window.removeEventListener(t, armFooter));
+    };
+    INPUTS.forEach((t) => window.addEventListener(t, armFooter, { passive: true }));
     const room = window.matchMedia("(min-height: 520px)");
     const still = window.matchMedia("(prefers-reduced-motion: reduce)");
     const scenes = Array.from(document.querySelectorAll<HTMLElement>("[data-scene]"));
     if (!room.matches || still.matches) {
-      return () => root.classList.remove("snap-home");
+      return () => {
+        INPUTS.forEach((t) => window.removeEventListener(t, armFooter));
+        root.classList.remove("snap-home", "snap-footer");
+      };
     }
     root.classList.add("scenes-on");
     // Where the browser can tie an animation to scroll position (Chrome, Edge, Safari 26), the turn is a CSS animation that runs off the
@@ -116,7 +126,8 @@ export function useHomeScenes(): void {
       window.removeEventListener("resize", queue);
       watch.disconnect();
       anchors.forEach((a) => a.remove());
-      root.classList.remove("snap-home", "scenes-on", "cube-css");
+      INPUTS.forEach((t) => window.removeEventListener(t, armFooter));
+      root.classList.remove("snap-home", "snap-footer", "scenes-on", "cube-css");
       scenes.forEach((s) => {
         s.style.transform = "";
         s.style.transformOrigin = "";

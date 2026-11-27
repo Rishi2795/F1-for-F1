@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { PageLoader } from "../ui/states";
 import { Footer } from "./footer";
@@ -8,7 +8,8 @@ import { Footer } from "./footer";
  * (which eases in on each route change), and the footer.
  */
 export default function AppLayout() {
-  const { pathname, hash } = useLocation();
+  const { pathname, search, hash, key } = useLocation();
+  const last = useRef({ pathname, url: pathname + search });
 
   // Every visit starts at the top, including coming back with the browser's Back button: the browser's own scroll memory is
   // switched off, since pages load their content a moment after they appear and would land it mid-page.
@@ -16,8 +17,13 @@ export default function AppLayout() {
     if ("scrollRestoration" in history) history.scrollRestoration = "manual";
   }, []);
   useEffect(() => {
+    // A visit starts at the top: a different page, or a link to the very page you are already on (tapping Home while on Home, or News
+    // while on News). Only a change to the query (switching a tab or a season) keeps your place.
+    const url = pathname + search;
+    const before = last.current;
+    last.current = { pathname, url };
     if (!hash) {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      if (before.pathname !== pathname || before.url === url) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       return;
     }
     // a link to a section (/forecast#accuracy): wait for the page's code and data to put it on screen, then keep it lined up while the
@@ -43,7 +49,9 @@ export default function AppLayout() {
       } else if (++stable >= 25) stop();
     }, 80);
     return stop;
-  }, [pathname, hash]);
+  // `key` is new on every navigation, including to the same address; `search` is read through the ref, so it is not a trigger
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, hash, key]);
 
   return (
     <div className="f1-dots min-h-screen bg-[#050505] text-white">
