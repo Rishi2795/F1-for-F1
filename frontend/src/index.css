@@ -397,3 +397,134 @@ html.snap-home {
 html.snap-home::-webkit-scrollbar {
   display: none;
 }
+
+
+/* ---- Loading: thinking orbs, the route loader, and the shimmer on placeholder blocks ----
+   Everything animates transform and opacity only, so it runs on the compositor and stays smooth while the page is busy loading. */
+@keyframes orb-think {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.5);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.orb {
+  display: block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0.9rem rgba(255, 255, 255, 0.35);
+  animation: orb-think 1.3s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 170ms);
+}
+.orb--red {
+  background: #ef4444;
+  box-shadow: 0 0 1rem rgba(239, 68, 68, 0.6);
+}
+
+/* the page loader: three orbs chase round a thin ring, each a little behind the one before, with the F1 key breathing in the middle */
+@keyframes orb-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes orb-breathe {
+  0%,
+  100% {
+    transform: scale(0.96);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+.orbit {
+  position: relative;
+  width: 7rem;
+  height: 7rem;
+}
+.orbit__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.orbit__arm {
+  position: absolute;
+  inset: 0;
+  animation: orb-orbit 2.4s cubic-bezier(0.55, 0.1, 0.45, 0.9) infinite;
+  animation-delay: calc(var(--i, 0) * -0.26s);
+}
+.orbit__arm > .orb {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  margin: -0.275rem 0 0 -0.275rem;
+  animation: none;
+}
+.orbit__key {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: -1.15rem 0 0 -1.5rem;
+  display: grid;
+  width: 3rem;
+  height: 2.3rem;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 0.6rem;
+  box-shadow: 0 0.25rem 0 -0.05rem #dc2626;
+  color: #fff;
+  font-size: 1.05rem;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  animation: orb-breathe 2.4s ease-in-out infinite;
+}
+
+/* placeholder blocks: a soft light sweeps across (a moving layer, not a repainted gradient) */
+@keyframes skel-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.25rem;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+  animation: skel-sweep 1.7s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb,
+  .orbit__arm,
+  .orbit__key,
+  .skeleton::after {
+    animation: none;
+  }
+  .orb {
+    opacity: 0.85;
+    transform: none;
+  }
+  .orbit__arm > .orb {
+    opacity: 0.85;
+  }
+  .orbit__arm:nth-child(2) {
+    transform: rotate(120deg);
+  }
+  .orbit__arm:nth-child(3) {
+    transform: rotate(240deg);
+  }
+}

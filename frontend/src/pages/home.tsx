@@ -5,13 +5,14 @@ import { useState, useRef } from "react";
 import { useHomeScenes } from "../lib/homescenes";
 import { SceneDots } from "../components/home/scenedots";
 import { TechTimeline, TechTimelineMobile } from "../components/home/techtimeline";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import Hero from "../components/home/hero";
 import React from "react";
 
 
 
 export default function Home() {
+  const still = useReducedMotion();
   const containerRef = useRef(null);
 
   /* ================= 01. REGULATION DATA ARCHIVE ================= */
@@ -303,14 +304,14 @@ export default function Home() {
     {/* PODIUM GRID */}
     <ReignBento />
     <div className="hidden md:flex items-end justify-center gap-2 md:gap-4 w-full max-w-6xl h-full max-h-[450px] md:max-h-[550px] z-10">
-      {REIGN.map((driver) => (
+      {REIGN.map((driver, i) => (
         <motion.div
           key={driver.code}
           className={`relative flex-1 ${driver.h} min-w-[100px] bg-zinc-900/40 border border-white/10 group overflow-hidden`}
         >
           {/* PORTRAIT LAYER */}
           <div className="absolute inset-0 w-full h-full">
-            <ReignPortrait d={driver} />
+            <ReignPortrait d={driver} i={i} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
           </div>
 
@@ -416,12 +417,12 @@ export default function Home() {
           "
         >
           {/* Background Image: Changed to 70% height on mobile to ensure face is visible */}
-          <div className="absolute inset-0 h-[70%] md:h-full grayscale group-hover:grayscale-0 transition-all duration-1000">
+          <div className="absolute inset-0 h-[70%] md:h-full transition-transform duration-1000 group-hover:scale-[1.05]">
             <motion.img 
-              variants={{
-                hover: { scale: 1.08, filter: "brightness(0.8)" },
-                rest: { scale: 1, filter: "brightness(0.4)" }
-              }}
+              initial={still ? false : GREY}
+              whileInView={COLOUR}
+              viewport={{ once: true, amount: 0.35 }}
+              transition={reveal(i)}
               src={d.img}
               alt={d.name}
               referrerPolicy="no-referrer"
@@ -556,8 +557,15 @@ const REIGN: ReignEntry[] = [
   { code: "ANT", name: "Antonelli", titles: "1x", years: "2026", h: "h-[56%]", glow: "#14b8a6" },
 ];
 
+// The colour reveal used for the photographs on this page: they start grey and dim, then flood with colour (slightly past natural, so it
+// "pops") as the scene scrolls into view, settling from a small zoom. Same filter functions in the same order on both ends so it can animate.
+const GREY = { filter: "grayscale(1) brightness(0.55) saturate(1)", scale: 1.12 };
+const COLOUR = { filter: "grayscale(0) brightness(1) saturate(1.25)", scale: 1 };
+const reveal = (i: number) => ({ duration: 1.5, delay: 0.15 + i * 0.16, ease: [0.22, 1, 0.36, 1] as const });
+
 /** A champion's portrait in a glow of their colour: Formula 1's official picture, else a licensed photo, else a silhouette. */
-function ReignPortrait({ d }: { d: ReignEntry }) {
+function ReignPortrait({ d, i = 0 }: { d: ReignEntry; i?: number }) {
+  const still = useReducedMotion();
   const img = useDriverImages()(d.code, 6);
   const [photoFailed, setPhotoFailed] = useState(false);
   const photo = d.photo && !photoFailed ? d.photo : null;
@@ -566,11 +574,11 @@ function ReignPortrait({ d }: { d: ReignEntry }) {
       {!photo && <span aria-hidden="true" className="absolute inset-0" style={{ backgroundImage: `radial-gradient(ellipse 85% 75% at 50% 100%, ${d.glow}77, transparent 72%)` }} />}
       {photo ? (
         <>
-          <img src={photo} alt={d.name} referrerPolicy="no-referrer" onError={() => setPhotoFailed(true)} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover object-[50%_15%] brightness-[0.8] md:grayscale md:brightness-100 md:transition-all md:duration-700 md:group-hover:grayscale-0" />
+          <motion.img src={photo} alt={d.name} referrerPolicy="no-referrer" onError={() => setPhotoFailed(true)} loading="lazy" decoding="async" initial={still ? false : GREY} whileInView={COLOUR} viewport={{ once: true, amount: 0.4 }} transition={reveal(i)} className="absolute inset-0 h-full w-full object-cover object-[50%_15%]" />
           <span aria-hidden="true" className="absolute inset-0" style={{ backgroundImage: `linear-gradient(to top, ${d.glow}55, transparent 55%)` }} />
         </>
       ) : img?.kind === "official" ? (
-        <img src={img.url} alt={d.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={hideBroken} className="absolute inset-0 h-full w-full origin-top scale-[1.18] object-cover object-[50%_6%]" />
+        <motion.img src={img.url} alt={d.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={hideBroken} initial={still ? false : { ...GREY, scale: 1.3 }} whileInView={{ ...COLOUR, scale: 1.18 }} viewport={{ once: true, amount: 0.4 }} transition={reveal(i)} className="absolute inset-0 h-full w-full origin-top object-cover object-[50%_6%]" />
       ) : img?.kind === "licensed" ? (
         <img src={`/drivers/${img.photo.file}`} alt={d.name} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover object-top" />
       ) : (
@@ -596,7 +604,7 @@ function ReignBento() {
           transition={{ delay: i * 0.08, duration: 0.5 }}
           className={`relative m-0 overflow-hidden border border-white/10 bg-zinc-900 ${i === 0 ? "col-span-3" : ""}`}
         >
-          <ReignPortrait d={d} />
+          <ReignPortrait d={d} i={i} />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
           <span aria-hidden="true" className={`absolute right-2 top-1 font-black italic leading-none text-transparent [-webkit-text-stroke:1.5px_rgba(255,255,255,0.75)] ${i === 0 ? "text-[5.5rem]" : "text-[2.6rem]"}`}>{d.titles}</span>
           <span className="absolute left-2 top-2 border border-white/20 bg-black/60 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-white">P{i + 1}</span>

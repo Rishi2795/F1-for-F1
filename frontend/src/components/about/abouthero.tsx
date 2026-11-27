@@ -1,3 +1,4 @@
+import { Orbs } from "../ui/orbs";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -127,7 +128,7 @@ export function AboutHero() {
               </dl>
             </div>
           ) : (
-            <p className="p-3 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-500">Loading the circuit…</p>
+            <p className="flex items-center gap-3 p-3 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-500"><Orbs /> Loading the circuit</p>
           )}
         </motion.div>
       </div>

@@ -1,15 +1,33 @@
 import type { ApiRequestError } from "../../lib/api";
+import { OrbitLoader, Orbs } from "./orbs";
 
-export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/[0.06] ${className}`} aria-hidden="true" />;
+/** Big enough (about 10rem or taller) to carry the thinking orbs in its middle: read from the Tailwind height class (h-40, h-[480px]). */
+function isBig(className: string): boolean {
+  const px = className.match(/\bh-\[(\d+)px\]/);
+  if (px) return Number(px[1]) >= 160;
+  const step = className.match(/\bh-(\d+)\b/);
+  return step ? Number(step[1]) >= 40 : false;
 }
 
+/** A placeholder while something loads: a soft light sweeps across it, and a large one also shows the thinking orbs, so every panel on
+ *  every page says "working on it" in the same way. Decorative: the page-level loader is the one announced to screen readers. */
+export function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <div className={`skeleton ${className}`} aria-hidden="true">
+      {isBig(className) && (
+        <span className="absolute inset-0 grid place-items-center">
+          <Orbs />
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** The loader for a whole page (or a page that is still being fetched): the F1 key with orbs orbiting it. */
 export function PageLoader() {
   return (
-    <div className="min-h-screen px-6 pt-24" role="status" aria-label="Loading">
-      <Skeleton className="mb-6 h-10 w-1/3" />
-      <Skeleton className="mb-3 h-5 w-2/3" />
-      <Skeleton className="h-64 w-full" />
+    <div className="grid min-h-[80vh] place-items-center px-6">
+      <OrbitLoader />
     </div>
   );
 }
@@ -18,6 +36,10 @@ export function RaceSkeleton() {
   return (
     <div className="min-h-screen pt-24" role="status" aria-label="Loading race">
       <div className="page space-y-8">
+        <div className="flex items-center gap-3">
+          <Orbs />
+          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-500">Loading the race</span>
+        </div>
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-16 w-2/3" />
         <div className="grid gap-4 md:grid-cols-3">
