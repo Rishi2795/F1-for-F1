@@ -78,6 +78,13 @@ Ten orphaned components (2,261 lines), the dead Driver DNA / AI-insight feature 
 
 **Champions.** Antonelli is recorded as the 2026 champion. The pipeline now does this itself: `Publisher.record_clinched_champion()` (called at the end of `run_predict`) adds the season in progress to `champions.json` once the forecast calls the title mathematically decided (`clinched_driver`, the same test the forecast page uses, so the two cannot disagree), then rebuilds the driver files so titles, badges and counts follow (Antonelli: 1 title, 2026). A finished season's official champion is never overwritten. **The Reign scene** now shows Hamilton (7), Verstappen (4), Alonso (2) and Antonelli (1); Norris is out. Portraits are Formula 1's official ones via the same driver-image path as the rest of the site (the old Pinterest hotlinks are gone from this scene), with the silhouette as a fallback.
 
+**Later fixes from real-device feedback.**
+* **The cube turn froze on iPhones** (a scene stuck half-turned for a couple of seconds, with black around it). It was only ever built and tested in Chrome. The 3D turn now runs only in Chromium browsers (`canTurn()` in `lib/homescenes.ts`); iPhones (all Safari underneath) and Firefox get native scroll-snapping, with every scene still exactly one screen. A page restored from Safari's back-forward cache is also reset to the top.
+* **Tapping the link to the page you are already on** (Home on Home, News on News) now goes to the top (`components/layout/applayout.tsx`); only a change to the query (tabs, seasons) keeps your place.
+* **Logo and menu.** `components/ui/logo.tsx` is the outline of an F1 key with one red edge, then "for F1" (F1 is the help key: press F1 for F1); the favicon matches. The Menu is a numbered typographic index (two columns on laptops, a nudge and arrow on hover, a red edge on the current page), and the landing page's scroll dots now sit under it.
+* **Loading screens** (`components/ui/orbs.tsx`, `states.tsx`, `index.css`, `index.html`): a branded splash before any JavaScript arrives, a page loader (the F1 key with three orbs orbiting it and a changing status line), thinking orbs inside every large placeholder block, a shimmer on all placeholders, and orbs in the "Waking the server" notice. Transform and opacity only; reduced motion makes it static. `role="status"` stays on page-level loaders only.
+* **Colour reveal.** In The reign and the Hall of fame the photographs start grey and dim, then flood with colour (a little past natural, so it pops) as each scene scrolls into view, staggered card by card; reduced motion shows them in colour at once.
+
 ### 1.9 Tidy-up and layout (second pass)
 
 **Rule applied: no file refers to another project.** `docs/features.md` (a feature-by-feature comparison with a competing product, its repository and its pricing) is deleted, the one history row in `docs/plan.md` that named that product now just describes the work, and the two links to the deleted file are gone. Libraries and data sources the project actually uses or bans (Jolpica-F1, TracingInsights, OpenF1, and the lint ban on the live-timing library in `ruff.toml`) are kept because they are attribution or an enforced guard, not comparisons; incidental mentions of that library in `docs/deploy.md`, `docs/perf-baseline.md`, `backend/app/main.py` and `.gitignore` were reworded or removed. `docs/plan.md` still describes the old stack as history.
@@ -519,7 +526,7 @@ Run by people (or the deploy-check workflow), never by the app.
 |---|---:|---|
 | `frontend/src/main.tsx` | 21 | Mounts the app inside the router, error boundary and global styles. |
 | `frontend/src/App.tsx` | 95 | Route table (lazy-loaded pages: Home `/`, RaceArchive `/explore`, About `/about_app`, …), global dock, search palette, server notice, skip link, and the top progress bar on every page except `/`. |
-| `frontend/src/index.css` | 399 | Tailwind layers, the `.page` layout rule, fluid type scale, dot-field background, the cube-turn keyframes, scene snapping and the mobile gutter beside the dots. |
+| `frontend/src/index.css` | 530 | Tailwind layers, the `.page` layout rule, fluid type scale, dot-field background, the cube-turn keyframes, scene snapping and the mobile gutter beside the dots. |
 
 ### Pages: `frontend/src/pages` (one per route)
 
@@ -532,14 +539,14 @@ Run by people (or the deploy-check workflow), never by the app.
 | `frontend/src/pages/drivers.tsx` | 130 | `/drivers` Every driver since 2020 as portrait tiles (3 across on phones) with search and All / On the grid / Champions filters. |
 | `frontend/src/pages/duels.tsx` | 105 | `/duels` Teammate head-to-heads per season: qualifying, race result and pace. |
 | `frontend/src/pages/forecast.tsx` | 73 | `/forecast` Next-race odds, title odds, possible final standings, track record and the model card. |
-| `frontend/src/pages/home.tsx` | 641 | `/` The landing page: seven full-screen scenes (hero, 2026 cars, engineering, the reign, tech history, hall of fame, the rules) that turn like faces of a cube as you scroll. |
+| `frontend/src/pages/home.tsx` | 657 | `/` The landing page: seven full-screen scenes (hero, 2026 cars, engineering, the reign, tech history, hall of fame, the rules) that turn like faces of a cube as you scroll. |
 | `frontend/src/pages/methodology.tsx` | 203 | `/methodology` How every number and model works, with live data-coverage figures and a chapter index. |
 | `frontend/src/pages/my.tsx` | 86 | `/my` 'My driver': a briefing on the driver you pick, saved on this device only. |
 | `frontend/src/pages/news.tsx` | 167 | `/news` Headlines from five publishers: text only, linking out. Phones get a top story plus swipeable per-day rails. |
 | `frontend/src/pages/notfound.tsx` | 21 | The 404 page for any unknown address. |
 | `frontend/src/pages/pitwall.tsx` | 40 | `/pitwall` The hub of analysis tools, each shown as the question it answers (a 3D ring carousel). |
 | `frontend/src/pages/play.tsx` | 109 | `/play` 'Beat the model': pick a podium, get scored against the forecast; picks kept on the device. |
-| `frontend/src/pages/racearchive.tsx` | 160 | `/explore` The race archive: every race with search, season filter and a worth-watching score. |
+| `frontend/src/pages/racearchive.tsx` | 159 | `/explore` The race archive: every race with search, season filter and a worth-watching score. |
 | `frontend/src/pages/racedashboard.tsx` | 65 | `/race/:year/:round` One race: story, results, qualifying ladder, lap chart, tyre strategy, pace, team cards, head-to-head. |
 | `frontend/src/pages/racelab.tsx` | 74 | `/race/:year/:round/lab` The race lab: map replay, telemetry, gap and pace charts, incidents, 'where it went wrong'. |
 | `frontend/src/pages/ratings.tsx` | 126 | `/ratings` Driver or car? Ratings that separate driver skill from car strength. |
@@ -568,7 +575,7 @@ Run by people (or the deploy-check workflow), never by the app.
 
 | File | Lines | Purpose |
 |---|---:|---|
-| `frontend/src/components/about/abouthero.tsx` | 141 | Drivers' fastest laps raced against each other, a few colours to tell them apart |
+| `frontend/src/components/about/abouthero.tsx` | 142 | Drivers' fastest laps raced against each other, a few colours to tell them apart |
 | `frontend/src/components/about/countup.tsx` | 16 | A number that counts up from zero the first time it scrolls into view (and simply shows the value with reduced motion) |
 
 ### Components: `src/components/circuit`
@@ -608,10 +615,10 @@ Run by people (or the deploy-check workflow), never by the app.
 
 | File | Lines | Purpose |
 |---|---:|---|
-| `frontend/src/components/layout/applayout.tsx` | 61 | AppLayout wraps every routed page: a faint dot field for the glass surfaces to sit on, the page itself (which eases in on each route change), and the footer |
+| `frontend/src/components/layout/applayout.tsx` | 69 | AppLayout wraps every routed page: a faint dot field for the glass surfaces to sit on, the page itself (which eases in on each route change), and the footer |
 | `frontend/src/components/layout/floatingdock.tsx` | 92 | The bottom dock on every page: five main places, Menu and search; fades when idle. |
-| `frontend/src/components/layout/footer.tsx` | 211 | One footer for every page: who made this, where the data comes from, a map of the site, and when the data was last built |
-| `frontend/src/components/layout/menusheet.tsx` | 125 | The full menu: every page of the site, grouped, so nothing is only reachable by knowing where to look |
+| `frontend/src/components/layout/footer.tsx` | 212 | One footer for every page: who made this, where the data comes from, a map of the site, and when the data was last built |
+| `frontend/src/components/layout/menusheet.tsx` | 143 | The full menu: every page of the site, grouped, so nothing is only reachable by knowing where to look |
 | `frontend/src/components/layout/scrollprogress.tsx` | 24 | A thin red scroll-progress bar fixed at the top of every page except the landing page. |
 
 ### Components: `src/components/methodology`
@@ -718,14 +725,16 @@ Run by people (or the deploy-check workflow), never by the app.
 | `frontend/src/components/ui/driveravatar.tsx` | 24 | A round driver picture for tables and lists |
 | `frontend/src/components/ui/driversilhouette.tsx` | 25 | A driver with no picture we may show: a head and shoulders in the team's colour, so every tile, avatar and card is filled the same way |
 | `frontend/src/components/ui/errorboundary.tsx` | 30 | Catches render errors in a route so one broken page cannot blank the whole app |
+| `frontend/src/components/ui/logo.tsx` | 15 | The logo: the outline of a keyboard F1 key, then "for F1" |
+| `frontend/src/components/ui/orbs.tsx` | 41 | Three "thinking" orbs that swell and fade in turn |
 | `frontend/src/components/ui/pagehead.tsx` | 32 | The opening of a page |
 | `frontend/src/components/ui/racestabs.tsx` | 16 | The two ways into the races, always one tap apart: the calendar (what is next, and when) and every race with its results |
 | `frontend/src/components/ui/reveal.tsx` | 28 | Fades its content up the first time it scrolls into view |
 | `frontend/src/components/ui/scorebar.tsx` | 13 | A 0-10 score as a number and a flat bar |
 | `frontend/src/components/ui/seasonchips.tsx` | 12 | A row of season chips, newest first |
-| `frontend/src/components/ui/servernotice.tsx` | 17 | Explains a long wait instead of leaving a spinner that looks like a broken site |
+| `frontend/src/components/ui/servernotice.tsx` | 18 | Explains a long wait instead of leaving a spinner that looks like a broken site |
 | `frontend/src/components/ui/statboard.tsx` | 41 | A board of 2-4 headline stat tiles; numbers count up. |
-| `frontend/src/components/ui/states.tsx` | 77 | Shared loading skeletons, the page loader, and the error and empty states. |
+| `frontend/src/components/ui/states.tsx` | 99 | Shared loading skeletons, the page loader, and the error and empty states. |
 | `frontend/src/components/ui/tablestyle.ts` | 6 | Class names shared by every data table. |
 | `frontend/src/components/ui/themetoggle.tsx` | 17 | Switch the display type between the dot-matrix look and the classic one |
 
@@ -744,7 +753,7 @@ Unit tests sit beside these as `*.test.ts` (23 files, 114 tests).
 | `frontend/src/lib/forecast.ts` | 33 | 0.317 -> "32%", 0.034 -> "3.4%", 0.0004 -> "<1%", 0.9996 -> ">99%" |
 | `frontend/src/lib/format.ts` | 45 | Display helpers |
 | `frontend/src/lib/headshots.ts` | 21 | Official driver portraits: a standard studio shot in team kit, on a transparent background, published by Formula 1 |
-| `frontend/src/lib/homescenes.ts` | 139 | The home page as full-screen scenes |
+| `frontend/src/lib/homescenes.ts` | 154 | The home page as full-screen scenes |
 | `frontend/src/lib/images.ts` | 7 | For third-party images we do not control: if one fails (blocked hotlink, 404), hide it instead of showing the browser's broken-image icon and alt text |
 | `frontend/src/lib/laps.ts` | 79 | Laps a driver was in the pit lane or on an out-lap: the end of each stint but the last, and the lap after |
 | `frontend/src/lib/pending.ts` | 43 | Tracks API requests that are taking suspiciously long, so the UI can explain why |
@@ -788,7 +797,7 @@ Unit tests sit beside these as `*.test.ts` (23 files, 114 tests).
 | `frontend/e2e/photos.spec.ts` | 43 | Official portraits and the simulator link; fallbacks when a portrait fails. |
 | `frontend/e2e/racelab.spec.ts` | 80 | Race lab replay, fastest-lap telemetry, older races. |
 | `frontend/e2e/schedule.spec.ts` | 161 | Schedule (desktop, phone deck and list, Calendar / All races tabs), news, forecast standings, pit-wall ring, methodology, ratings. |
-| `frontend/e2e/scroll.spec.ts` | 169 | Scroll position, no sideways scroll at 360/768/1024, landing scenes (every scene one screen, fresh visit and reload open on the hero, footer reachable, rules cards), section links, the schedule fitting one laptop screen. |
+| `frontend/e2e/scroll.spec.ts` | 186 | Scroll position, no sideways scroll at 360/768/1024, landing scenes (every scene one screen, fresh visit and reload open on the hero, footer reachable, rules cards), section links, the schedule fitting one laptop screen. |
 | `frontend/e2e/simulator.spec.ts` | 137 | The strategy simulator end to end. |
 | `frontend/e2e/theme.spec.ts` | 36 | Typeface switch (in the Menu), and no dot-matrix text at unreadable sizes. |
 | `frontend/e2e/ui.spec.ts` | 334 | Calendar, race page, bad addresses, resilience, drivers, standings, assets. |

@@ -7,9 +7,34 @@
     <title>F1 for F1 · Formula 1 strategy analytics</title>
     <meta name="description" content="Race strategy, tyre and pit-stop analytics for Formula 1 seasons 2020 to 2026, built from open data." />
     <meta name="theme-color" content="#050505" />
+    <style>
+      html,body{margin:0;background:#050505;color:#fff}
+      .boot{position:fixed;inset:0;display:grid;place-items:center;background:#050505}
+      .boot-orbit{position:relative;width:7rem;height:7rem}
+      .boot-ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,255,255,.09)}
+      .boot-arm{position:absolute;inset:0;animation:boot-spin 2.4s cubic-bezier(.55,.1,.45,.9) infinite}
+      .boot-orb{position:absolute;left:50%;top:0;width:.55rem;height:.55rem;margin:-.275rem 0 0 -.275rem;border-radius:50%;background:#fff;box-shadow:0 0 .9rem rgba(255,255,255,.35)}
+      .boot-red{background:#ef4444;box-shadow:0 0 1rem rgba(239,68,68,.6)}
+      .boot-key{position:absolute;left:50%;top:50%;margin:-1.15rem 0 0 -1.5rem;display:grid;width:3rem;height:2.3rem;place-items:center;border:2px solid rgba(255,255,255,.85);border-radius:.6rem;box-shadow:0 .25rem 0 -.05rem #dc2626;font:italic 800 1.05rem/1 Arial,Helvetica,sans-serif;letter-spacing:-.06em;animation:boot-breathe 2.4s ease-in-out infinite}
+      @keyframes boot-spin{to{transform:rotate(360deg)}}
+      @keyframes boot-breathe{0%,100%{transform:scale(.96)}50%{transform:scale(1.05)}}
+      @media (prefers-reduced-motion:reduce){.boot-arm,.boot-key{animation:none}.boot-arm:nth-child(3){transform:rotate(120deg)}.boot-arm:nth-child(4){transform:rotate(240deg)}}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Shown until the app has loaded and replaces it (React empties #root on its first render): the same F1 key and orbiting orbs as the
+         in-app loader, with its own few lines of CSS because the app's stylesheet has not arrived yet. -->
+    <div id="root">
+      <div class="boot" role="status" aria-label="Loading">
+        <div class="boot-orbit" aria-hidden="true">
+          <span class="boot-ring"></span>
+          <span class="boot-arm" style="animation-delay:0s"><i class="boot-orb boot-red"></i></span>
+          <span class="boot-arm" style="animation-delay:-.26s"><i class="boot-orb"></i></span>
+          <span class="boot-arm" style="animation-delay:-.52s"><i class="boot-orb"></i></span>
+          <span class="boot-key">F1</span>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

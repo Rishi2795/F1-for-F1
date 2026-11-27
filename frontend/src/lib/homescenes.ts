@@ -4,6 +4,14 @@ import { useEffect } from "react";
  *  away from the bottom edge while the next one swings in from its top edge, with a little depth and shade. It snaps from one scene to
  *  the next on any screen with room for it (phones included). For anyone who prefers less motion, or on a very short window, it is an
  *  ordinary page: nothing turns, nothing snaps, nothing is hidden, so nothing can get stuck out of view. */
+/** The 3D turn is only used in Chromium-based browsers (Chrome, Edge, Samsung Internet, Chrome on Android), where it was built and tested.
+ *  On Safari (every iPhone browser is Safari underneath) it left a scene frozen half-turned for a couple of seconds, and Firefox has never run
+ *  it, so those get the page's native snapping, which is smooth everywhere: each scene is still exactly one screen. */
+function canTurn(): boolean {
+  const data = (navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } }).userAgentData;
+  return !!data?.brands?.some((b) => b.brand === "Chromium");
+}
+
 /** Where a scene sits on the page when at rest, in page coordinates. Unlike getBoundingClientRect or scrollIntoView this ignores the
  *  turn applied while it is mid-scroll, so scrolling "to" a scene that is currently tipped away still lands on it squarely. */
 export function sceneTop(el: HTMLElement): number {
@@ -26,11 +34,17 @@ export function useHomeScenes(): void {
       INPUTS.forEach((t) => window.removeEventListener(t, armFooter));
     };
     INPUTS.forEach((t) => window.addEventListener(t, armFooter, { passive: true }));
+    // coming back to the tab from Safari's back-forward cache restores the old scroll position: the landing page always opens at the top
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    };
+    window.addEventListener("pageshow", onShow);
     const room = window.matchMedia("(min-height: 520px)");
     const still = window.matchMedia("(prefers-reduced-motion: reduce)");
     const scenes = Array.from(document.querySelectorAll<HTMLElement>("[data-scene]"));
-    if (!room.matches || still.matches) {
+    if (!room.matches || still.matches || !canTurn()) {
       return () => {
+        window.removeEventListener("pageshow", onShow);
         INPUTS.forEach((t) => window.removeEventListener(t, armFooter));
         root.classList.remove("snap-home", "snap-footer");
       };
@@ -126,6 +140,7 @@ export function useHomeScenes(): void {
       window.removeEventListener("resize", queue);
       watch.disconnect();
       anchors.forEach((a) => a.remove());
+      window.removeEventListener("pageshow", onShow);
       INPUTS.forEach((t) => window.removeEventListener(t, armFooter));
       root.classList.remove("snap-home", "snap-footer", "scenes-on", "cube-css");
       scenes.forEach((s) => {
